@@ -1,14 +1,28 @@
 services:
+  db:
+    image: postgres:15-alpine
+    container_name: bucle-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Valentin_03
+      POSTGRES_DB: circular_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   backend:
     build: ./CircularApp-Backend
     container_name: bucle-backend
-    environment:
-      - DATABASE_URL=sqlite:///./sql_app.db
     ports:
       - "7860:7860"
     volumes:
-      - ./CircularApp-Backend/sql_app.db:/app/sql_app.db
       - ./CircularApp-Backend/uploads:/app/uploads
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgresql://postgres:Valentin_03@db:5432/circular_db
     restart: always
 
   frontend:
@@ -21,3 +35,6 @@ services:
     depends_on:
       - backend
     restart: always
+
+volumes:
+  postgres_data:

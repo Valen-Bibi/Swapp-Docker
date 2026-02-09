@@ -1,67 +1,57 @@
 from sqlalchemy import text
-from database import engine, SessionLocal, Base
-from models import Usuario, Producto, Solicitud
-
-# En reset_db.py (reemplaza la sección del PASO 1)
+# 👇 USAMOS LAS RUTAS ABSOLUTAS "app." PARA QUE DOCKER NO SE PIERDA
+from app.database import engine, SessionLocal, Base
+from app.models import Usuario, Producto, Solicitud
+from app import auth # Importamos auth para usar la función de hash
 
 def reset_database():
-    print("Iniciando limpieza profunda de la base de datos...")
+    print("🔥 INICIANDO REINICIO DE FÁBRICA...")
     
+    # 1. Limpiar tablas viejas
     with engine.connect() as connection:
-        connection.execute(text("DROP TABLE IF EXISTS registros CASCADE"))
         connection.execute(text("DROP TABLE IF EXISTS solicitudes CASCADE"))
-        connection.execute(text("DROP TABLE IF EXISTS productos CASCADE"))
-        connection.execute(text("DROP TABLE IF EXISTS usuarios CASCADE"))
-
         connection.execute(text("DROP TABLE IF EXISTS solicitud CASCADE"))
+        connection.execute(text("DROP TABLE IF EXISTS productos CASCADE"))
         connection.execute(text("DROP TABLE IF EXISTS producto CASCADE"))
+        connection.execute(text("DROP TABLE IF EXISTS usuarios CASCADE"))
         connection.execute(text("DROP TABLE IF EXISTS usuario CASCADE"))
-        
         connection.commit()
     
-    print("Tablas eliminadas correctamente.")
-
-    print("Creando nueva estructura normalizada...")
+    # 2. Crear tablas nuevas
     Base.metadata.create_all(bind=engine)
 
-    # PASO 3: CARGAR DATOS DE PRUEBA (SEEDING)
     db = SessionLocal()
     try:
-        # A. Crear Usuario
-        nuevo_usuario = Usuario(
-            usuario="ValentinDev", 
-            email="valentin@swapp.com", 
-            password_hash="hash_secreto_123"
-        )
-        db.add(nuevo_usuario)
-        db.commit()
-        db.refresh(nuevo_usuario)
+        password_encriptada = auth.get_password_hash("admin123")
 
-        # B. Crear Producto
-        nuevo_producto = Producto(
-            nombre="Monitor Samsung 24 Curvo",
-            sku="SAM-24-CRV",
-            descripcion="Monitor usado en buen estado"
+        usuario_admin = Usuario(
+            usuario="AdminBucle", 
+            email="admin@bucle.app", 
+            password_hash=password_encriptada,
+            rol="admin"
         )
-        db.add(nuevo_producto)
-        db.commit()
-        db.refresh(nuevo_producto)
-
-        # C. Crear Solicitud
-        nueva_solicitud = Solicitud(
-            usuario_id=nuevo_usuario.id,
-            producto_id=nuevo_producto.id,
-            estado="pendiente",
-            confianza=0.95,
-            cant_devuelta=1
-        )
-        db.add(nueva_solicitud)
-        db.commit()
+        db.add(usuario_admin)
         
-        print("¡Base de datos reiniciada y datos cargados con éxito!")
+        mis_productos = [
+            {"nombre": "cilindro_rosa_nuevo",  "sku": "CIL-ROSA-001", "desc": "Cilindro Rosa Impecable"},
+            {"nombre": "cilindro_celeste_viejo", "sku": "CIL-AZUL-OLD", "desc": "Cilindro Celeste para reparar"},
+            {"nombre": "tubo_co2",             "sku": "TUBO-CO2-STD", "desc": "Tubo estándar CO2"},
+            {"nombre": "matafuego_rojo",       "sku": "MAT-ROJO-X5",  "desc": "Matafuego 5kg"},
+        ]
+
+        for item in mis_productos:
+            nuevo_prod = Producto(
+                nombre=item["nombre"],
+                sku=item["sku"],
+                descripcion=item["desc"]
+            )
+            db.add(nuevo_prod)
+
+        db.commit()
+        print("✅ Base de datos reseteada. Usuario Admin creado.")
 
     except Exception as e:
-        print(f"Ocurrió un error cargando datos: {e}")
+        print(f"❌ Error: {e}")
         db.rollback()
     finally:
         db.close()
