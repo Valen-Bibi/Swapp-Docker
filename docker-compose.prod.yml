@@ -33,7 +33,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      NEXT_PUBLIC_API_URL: "176.52.137.246"
+      NEXT_PUBLIC_API_URL: ${API_URL}
     depends_on:
       - backend
     restart: always
