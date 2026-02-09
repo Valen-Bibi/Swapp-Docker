@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-
-// 👇 CORRECCIÓN IMPORTANTE:
-// Usamos "./" porque la carpeta 'context' está junto a 'layout.tsx' en el Frontend.
 import { AuthProvider } from "./context/AuthContext";
+
+import Navbar from "@/components/Navbar";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,7 +20,12 @@ export default function RootLayout({
 	return (
 		<html lang="es">
 			<body className={inter.className}>
-				<AuthProvider>{children}</AuthProvider>
+				<AuthProvider>
+					{/* 👇 2. AQUÍ LO PONEMOS: */}
+					<Navbar />
+
+					{children}
+				</AuthProvider>
 			</body>
 		</html>
 	);
