@@ -6,7 +6,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 // 👇 IMPORTANTE: Ruta corregida apuntando desde la raíz del proyecto
 import { useAuth } from "@/app/context/AuthContext";
 
-const API_URL = "http://127.0.0.1:7860";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:7860";
 
 function TramiteContent() {
 	const searchParams = useSearchParams();

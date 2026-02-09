@@ -22,7 +22,7 @@ export default function AdminDashboard() {
 
 	const [registros, setRegistros] = useState<RegistroIA[]>([]);
 
-	const API_URL = "http://127.0.0.1:7860";
+	const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:7860";
 
 	useEffect(() => {
 		if (isAuthenticated) {
