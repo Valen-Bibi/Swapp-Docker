@@ -5,14 +5,12 @@ services:
     container_name: bucle-db
     restart: always
     environment:
-      POSTGRES_USER: ${DB_USER} # 👇 Usamos variables
-      POSTGRES_PASSWORD: ${DB_PASS} # 👇 Usamos variables
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
       POSTGRES_DB: circular_db
-    # ❌ BORRAMOS LA SECCIÓN PORTS (Nadie entra desde fuera)
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  # Backend
   backend:
     build: ./CircularApp-Backend
     container_name: bucle-backend
@@ -23,20 +21,17 @@ services:
     depends_on:
       - db
     environment:
-      # Conectamos usando las variables secretas
       DATABASE_URL: postgresql://${DB_USER}:${DB_PASS}@db:5432/circular_db
       SECRET_KEY: ${SECRET_KEY}
     restart: always
 
-  # Frontend
   frontend:
     build: ./CircularApp-Frontend
     container_name: bucle-frontend
     ports:
       - "3000:3000"
     environment:
-      # 👇 AQUÍ ES DONDE PONDRÁS LA IP DE HUAWEI LUEGO
-      NEXT_PUBLIC_API_URL: ${API_URL}
+      NEXT_PUBLIC_API_URL: "176.52.137.246"
     depends_on:
       - backend
     restart: always
