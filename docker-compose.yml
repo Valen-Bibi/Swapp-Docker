@@ -36,5 +36,4 @@ services:
       - backend
     restart: always
 
-volumes:
-  postgres_data:
+volumes: postgres_data:git
