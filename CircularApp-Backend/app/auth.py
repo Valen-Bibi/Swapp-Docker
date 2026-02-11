@@ -5,11 +5,6 @@ from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
-# Importamos los esquemas desde el archivo vecino, no los definimos aquí
-# (Esto evita duplicación)
-# Nota: auth.py realmente solo necesita lógica, no suele importar schemas 
-# a menos que los uses dentro de funciones.
-
 load_dotenv()
 
 SECRET_KEY = os.getenv("SECRET_KEY", "supersecreto_bucle_app_local_key")

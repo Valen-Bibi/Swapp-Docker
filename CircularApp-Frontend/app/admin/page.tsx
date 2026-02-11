@@ -1,101 +1,82 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAuth } from "../context/AuthContext"; // 👇 Usamos el cerebro global
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+// Iconos
+import { CheckCircle, XCircle, Clock } from "lucide-react";
 
-interface RegistroIA {
-	id: string; // OJO: En tu DB los IDs son UUID (strings), no numbers
-	etiqueta: string; // Esto vendrá del "producto.nombre"
+// URL de tu Backend
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:7860";
+
+interface Solicitud {
+	id: string;
+	producto: { nombre: string; sku: string };
+	usuario: { email: string };
 	confianza: number;
 	estado: string;
-	imagen_url: string | null;
-	fecha: string | null;
+	foto_url: string;
+	fecha_hora: string;
 }
 
-export default function AdminDashboard() {
-	const { token, user, login, logout, isAuthenticated } = useAuth();
+export default function AdminPage() {
+	const { user, isAuthenticated, token } = useAuth();
+	const router = useRouter();
+	const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
+	const [loading, setLoading] = useState(true);
 
-	const [email, setEmail] = useState("");
-	const [password, setPassword] = useState("");
-	const [loading, setLoading] = useState(false);
-	const [errorMsg, setErrorMsg] = useState("");
-
-	const [registros, setRegistros] = useState<RegistroIA[]>([]);
-
-	const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:7860";
-
+	// 1. PROTECCIÓN DE RUTA 🛡️
 	useEffect(() => {
-		if (isAuthenticated) {
-			fetchHistorial();
+		// Si no hay usuario o no es admin, redirigir al Home
+		if (!loading && (!isAuthenticated || user?.rol !== "admin")) {
+			alert("⛔ Acceso restringido a Administradores");
+			router.push("/");
 		}
-	}, [isAuthenticated]);
+	}, [isAuthenticated, user, loading, router]);
 
-	const handleLogin = async (e: React.FormEvent) => {
-		e.preventDefault();
-		setLoading(true);
-		setErrorMsg("");
+	// 2. CARGAR DATOS (Solo si es admin)
+	useEffect(() => {
+		if (isAuthenticated && user?.rol === "admin") {
+			fetchSolicitudes();
+		} else {
+			setLoading(false); // Terminar carga si no es admin (para que actúe la protección)
+		}
+	}, [isAuthenticated, user]);
 
+	const fetchSolicitudes = async () => {
 		try {
-			const formData = new URLSearchParams();
-			formData.append("username", email);
-			formData.append("password", password);
-
-			const res = await fetch(`${API_URL}/token`, {
-				method: "POST",
-				headers: { "Content-Type": "application/x-www-form-urlencoded" },
-				body: formData,
+			const res = await fetch(`${API_URL}/historial`, {
+				headers: { Authorization: `Bearer ${token}` }, // Enviar token si tu backend lo pide
 			});
-
-			if (!res.ok) throw new Error("Credenciales incorrectas");
-
-			const data = await res.json();
-			login(data.access_token); // 👇 Usamos la función del contexto global!
-		} catch (err) {
-			setErrorMsg("Acceso denegado. Verifica tus datos.");
+			if (res.ok) {
+				const data = await res.json();
+				setSolicitudes(data);
+			}
+		} catch (error) {
+			console.error("Error cargando historial admin", error);
 		} finally {
 			setLoading(false);
 		}
 	};
 
-	const fetchHistorial = async () => {
-		try {
-			const res = await fetch(`${API_URL}/historial`); // ⚠️ ESTO FALTA EN BACKEND
-			if (res.ok) {
-				const data = await res.json();
-				// Mapeamos los datos del backend a la interfaz del frontend
-				const datosFormateados = data.map((item: any) => ({
-					id: item.id,
-					etiqueta: item.producto.nombre, // Accedemos al objeto anidado
-					confianza: item.confianza,
-					estado: item.estado,
-					imagen_url: item.foto_url ? `${API_URL}${item.foto_url}` : null,
-					fecha: item.fecha_hora,
-				}));
-				setRegistros(datosFormateados);
-			}
-		} catch (error) {
-			console.error("Error fetching data", error);
-		}
-	};
-
-	const cambiarEstado = async (id: string, estadoActual: string) => {
-		const nuevoEstado = estadoActual === "aprobado" ? "rechazado" : "aprobado";
-
+	// 3. CAMBIAR ESTADO (Aprobar/Rechazar)
+	const handleUpdateStatus = async (id: string, nuevoEstado: string) => {
 		try {
 			const res = await fetch(`${API_URL}/actualizar/${id}`, {
-				// ⚠️ ESTO FALTA EN BACKEND
 				method: "PUT",
 				headers: {
 					"Content-Type": "application/json",
-					Authorization: `Bearer ${token}`,
+					// Authorization: `Bearer ${token}`
 				},
 				body: JSON.stringify({ estado: nuevoEstado }),
 			});
 
 			if (res.ok) {
-				// Actualizar localmente
-				setRegistros((prev) =>
-					prev.map((r) => (r.id === id ? { ...r, estado: nuevoEstado } : r)),
+				// Actualizar UI localmente
+				setSolicitudes((prev) =>
+					prev.map((sol) =>
+						sol.id === id ? { ...sol, estado: nuevoEstado } : sol,
+					),
 				);
 			}
 		} catch (error) {
@@ -103,111 +84,102 @@ export default function AdminDashboard() {
 		}
 	};
 
-	// --- VISTA LOGIN ---
-	if (!isAuthenticated) {
+	if (loading)
 		return (
-			<div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-				<div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
-					<h1 className="text-2xl font-bold text-center mb-6">
-						Admin Bucle ♻️
-					</h1>
-					<form onSubmit={handleLogin} className="space-y-4">
-						<input
-							type="email"
-							placeholder="Email Admin"
-							value={email}
-							onChange={(e) => setEmail(e.target.value)}
-							className="w-full p-3 border rounded"
-							required
-						/>
-						<input
-							type="password"
-							placeholder="Contraseña"
-							value={password}
-							onChange={(e) => setPassword(e.target.value)}
-							className="w-full p-3 border rounded"
-							required
-						/>
-						{errorMsg && (
-							<p className="text-red-500 text-sm text-center">{errorMsg}</p>
-						)}
-						<button
-							disabled={loading}
-							className="w-full bg-gray-900 text-white py-3 rounded hover:bg-black">
-							{loading ? "Entrando..." : "Iniciar Sesión"}
-						</button>
-					</form>
-				</div>
+			<div className="p-10 text-center text-swapp-mint">
+				Verificando permisos...
 			</div>
 		);
-	}
+	if (!isAuthenticated || user?.rol !== "admin") return null; // No mostrar nada mientras redirige
 
-	// --- VISTA DASHBOARD ---
 	return (
-		<div className="min-h-screen bg-gray-50 p-8">
-			<div className="max-w-6xl mx-auto">
-				<header className="flex justify-between items-center mb-8">
-					<h1 className="text-3xl font-bold text-gray-800">Panel de Control</h1>
-					<div className="flex items-center gap-4">
-						<span className="text-gray-600">Hola, {user?.sub}</span>
-						<button
-							onClick={logout}
-							className="text-red-600 font-medium hover:underline">
-							Salir
-						</button>
-					</div>
-				</header>
+		<div className="p-6 pb-24">
+			<h1 className="text-2xl font-bold text-swapp-dark mb-6">
+				Panel de Control 🛠️
+			</h1>
 
-				<div className="bg-white rounded-xl shadow overflow-hidden">
-					<table className="w-full">
-						<thead className="bg-gray-100 border-b">
-							<tr>
-								<th className="p-4 text-left">Producto</th>
-								<th className="p-4 text-left">Foto</th>
-								<th className="p-4 text-left">Confianza</th>
-								<th className="p-4 text-left">Estado</th>
-								<th className="p-4 text-left">Acción</th>
-							</tr>
-						</thead>
-						<tbody>
-							{registros.map((reg) => (
-								<tr key={reg.id} className="border-b hover:bg-gray-50">
-									<td className="p-4 font-medium">{reg.etiqueta}</td>
-									<td className="p-4">
-										{reg.imagen_url && (
-											<img
-												src={reg.imagen_url}
-												alt="evidencia"
-												className="w-16 h-16 object-cover rounded"
-											/>
-										)}
-									</td>
-									<td className="p-4 text-sm text-gray-500">
-										{(reg.confianza * 100).toFixed(1)}%
-									</td>
-									<td className="p-4">
+			<div className="space-y-4">
+				{solicitudes.length === 0 ? (
+					<p className="text-gray-500 text-center">
+						No hay solicitudes pendientes.
+					</p>
+				) : (
+					solicitudes.map((sol) => (
+						<div
+							key={sol.id}
+							className="bg-white rounded-2xl p-4 shadow-lg border border-gray-100 flex flex-col gap-3">
+							{/* Cabecera: Producto y Estado */}
+							<div className="flex justify-between items-start">
+								<div>
+									<h3 className="font-bold text-lg text-swapp-navy">
+										{sol.producto.nombre}
+									</h3>
+									<p className="text-xs text-gray-400 font-mono">
+										{sol.producto.sku}
+									</p>
+									<p className="text-xs text-gray-500 mt-1">
+										Usuario: {sol.usuario?.email}
+									</p>
+								</div>
+								<span
+									className={`px-3 py-1 rounded-full text-xs font-bold capitalize
+                            ${
+															sol.estado === "aprobado"
+																? "bg-green-100 text-green-700"
+																: sol.estado === "rechazado"
+																	? "bg-red-100 text-red-700"
+																	: "bg-yellow-100 text-yellow-700"
+														}
+                        `}>
+									{sol.estado}
+								</span>
+							</div>
+
+							{/* Foto y Detalles */}
+							<div className="flex gap-4">
+								<div className="w-24 h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+									{/* Usamos la URL del backend */}
+									<img
+										src={`${API_URL}${sol.foto_url}`}
+										alt="Evidencia"
+										className="w-full h-full object-cover"
+									/>
+								</div>
+								<div className="flex-1 flex flex-col justify-center text-sm gap-1">
+									<p className="flex items-center gap-2">
+										<span className="font-semibold">Confianza IA:</span>
 										<span
-											className={`px-2 py-1 rounded text-xs font-bold uppercase ${reg.estado === "aprobado" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-											{reg.estado}
+											className={
+												sol.confianza > 0.85
+													? "text-green-600 font-bold"
+													: "text-orange-500"
+											}>
+											{(sol.confianza * 100).toFixed(1)}%
 										</span>
-									</td>
-									<td className="p-4">
-										<button
-											onClick={() => cambiarEstado(reg.id, reg.estado)}
-											className="text-blue-600 hover:underline text-sm font-semibold">
-											Cambiar
-										</button>
-									</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
-					{registros.length === 0 && (
-						<p className="text-center p-8 text-gray-500">
-							No hay solicitudes pendientes.
-						</p>
-					)}
-				</div>
+									</p>
+									<p className="text-gray-400 text-xs">
+										{new Date(sol.fecha_hora).toLocaleDateString()} -{" "}
+										{new Date(sol.fecha_hora).toLocaleTimeString()}
+									</p>
+								</div>
+							</div>
+
+							{/* Botones de Acción */}
+							<div className="flex gap-2 mt-2 pt-3 border-t border-gray-100">
+								<button
+									onClick={() => handleUpdateStatus(sol.id, "aprobado")}
+									className="flex-1 bg-swapp-mint/10 text-swapp-mint hover:bg-swapp-mint hover:text-white py-2 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2">
+									<CheckCircle size={16} /> Aprobar
+								</button>
+								<button
+									onClick={() => handleUpdateStatus(sol.id, "rechazado")}
+									className="flex-1 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white py-2 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2">
+									<XCircle size={16} /> Rechazar
+								</button>
+							</div>
+						</div>
+					))
+				)}
 			</div>
 		</div>
 	);

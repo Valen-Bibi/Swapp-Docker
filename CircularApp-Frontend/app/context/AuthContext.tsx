@@ -1,84 +1,56 @@
 "use client";
-
-import React from "react";
-
 import {
 	createContext,
 	useContext,
-	useEffect,
 	useState,
+	useEffect,
 	ReactNode,
 } from "react";
-import { jwtDecode } from "jwt-decode";
-import { useRouter } from "next/navigation";
-
-interface UserPayload {
-	sub: string; // email
-	id: string;
-	rol: string;
-	exp: number;
-}
 
 interface AuthContextType {
-	user: UserPayload | null;
 	token: string | null;
-	login: (token: string) => void;
+	user: any | null;
+	login: (token: string, userData: any) => void;
 	logout: () => void;
 	isAuthenticated: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-	const [user, setUser] = useState<UserPayload | null>(null);
 	const [token, setToken] = useState<string | null>(null);
-	const router = useRouter();
+	const [user, setUser] = useState<any | null>(null);
 
+	// Cargar sesión al iniciar
 	useEffect(() => {
-		const storedToken = localStorage.getItem("circular_token");
-		if (storedToken) {
-			try {
-				const decoded = jwtDecode<UserPayload>(storedToken);
-				// Verificar si expiró
-				if (decoded.exp * 1000 < Date.now()) {
-					logout();
-				} else {
-					setToken(storedToken);
-					setUser(decoded);
-				}
-			} catch (error) {
-				logout();
-			}
+		const storedToken = localStorage.getItem("swapp_token");
+		const storedUser = localStorage.getItem("swapp_user");
+		if (storedToken && storedUser) {
+			setToken(storedToken);
+			setUser(JSON.parse(storedUser));
 		}
 	}, []);
 
-	const login = (newToken: string) => {
-		localStorage.setItem("circular_token", newToken); // 👇 AQUÍ TAMBIÉN
-		const decoded = jwtDecode<UserPayload>(newToken);
+	const login = (newToken: string, userData: any) => {
+		localStorage.setItem("swapp_token", newToken);
+		localStorage.setItem("swapp_user", JSON.stringify(userData));
 		setToken(newToken);
-		setUser(decoded);
+		setUser(userData);
 	};
 
 	const logout = () => {
-		localStorage.removeItem("circular_token"); // 👇 Y AQUÍ
+		localStorage.removeItem("swapp_token");
+		localStorage.removeItem("swapp_user");
 		setToken(null);
 		setUser(null);
-		router.push("/");
 	};
 
 	return (
 		<AuthContext.Provider
-			value={{ user, token, login, logout, isAuthenticated: !!user }}>
+			value={{ token, user, login, logout, isAuthenticated: !!token }}>
 			{children}
 		</AuthContext.Provider>
 	);
 }
 
-// Hook personalizado para usarlo fácil
-export function useAuth() {
-	const context = useContext(AuthContext);
-	if (context === undefined) {
-		throw new Error("useAuth debe usarse dentro de un AuthProvider");
-	}
-	return context;
-}
+export const useAuth = () => useContext(AuthContext);

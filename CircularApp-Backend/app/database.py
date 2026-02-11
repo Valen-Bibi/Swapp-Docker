@@ -6,7 +6,6 @@ from sqlalchemy.orm import sessionmaker
 
 load_dotenv()
 
-# 2. Obtenemos la URL. Si no existe en el .env, usa la cadena fija como respaldo.
 SQLALCHEMY_DATABASE_URL = os.getenv(
     "DATABASE_URL", 
     "postgresql://postgres:Valentin_03@localhost:5432/circular_db"
