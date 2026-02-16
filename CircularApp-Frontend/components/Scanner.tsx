@@ -109,7 +109,7 @@ const Scanner = forwardRef<ScannerHandle, ScannerProps>(
 			<div className={`relative bg-black overflow-hidden ${className}`}>
 				<video
 					ref={videoRef}
-					className={`w-full h-full object-cover -scale-x-100 transition-opacity duration-500 ${isCameraActive ? "opacity-100" : "opacity-0"}`}
+					className={`w-full h-full object-cover transition-opacity duration-500 ${isCameraActive ? "opacity-100" : "opacity-0"}`}
 					muted
 					playsInline
 				/>

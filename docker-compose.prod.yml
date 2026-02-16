@@ -7,6 +7,8 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASS}
       POSTGRES_DB: circular_db
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -23,6 +25,7 @@ services:
       DATABASE_URL: postgresql://${DB_USER}:${DB_PASS}@db:5432/circular_db
       SECRET_KEY: ${SECRET_KEY}
     restart: always
+
   frontend:
     build:
       context: ./CircularApp-Frontend
