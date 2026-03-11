@@ -12,7 +12,7 @@ export default function BottomNav() {
 	}
 
 	return (
-		<div className="fixed bottom-0 left-0 w-full z-40 pointer-events-none drop-shadow-[0_-5px_15px_rgba(0,0,0,0.15)]">
+		<div className="fixed bottom-0 left-0 w-full z-40 pointer-events-none drop-shadow-[0_-5px_15px_rgba(0,0,0,0.07)]">
 			<div className="relative max-w-md mx-auto pointer-events-auto flex flex-col justify-end h-[100px]">
 				{/* 1. TU SVG PERSONALIZADO COMO FONDO */}
 				<img

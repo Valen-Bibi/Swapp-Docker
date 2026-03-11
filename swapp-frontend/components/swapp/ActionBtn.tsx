@@ -4,7 +4,7 @@ interface ActionBtnProps {
 	label: string;
 	icon: React.ReactNode;
 	active?: boolean;
-	onClick?: () => void; // ¡Agregamos esto para darle funcionalidad luego!
+	onClick?: () => void;
 }
 
 export default function ActionBtn({

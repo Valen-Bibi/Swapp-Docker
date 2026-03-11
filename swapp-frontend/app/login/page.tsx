@@ -23,7 +23,6 @@ export default function LoginPage() {
 		setErrorMsg("");
 
 		try {
-			// LOGIN (Obtener Token)
 			const formData = new URLSearchParams();
 			formData.append("username", email);
 			formData.append("password", password);
@@ -38,7 +37,6 @@ export default function LoginPage() {
 
 			const dataToken = await resToken.json();
 
-			// Decodificamos el JWT para extraer los datos del usuario
 			const payloadBase64 = dataToken.access_token.split(".")[1];
 			const base64 = payloadBase64.replace(/-/g, "+").replace(/_/g, "/");
 			const jsonPayload = decodeURIComponent(
@@ -50,14 +48,14 @@ export default function LoginPage() {
 			);
 			const decodedPayload = JSON.parse(jsonPayload);
 
-			// Guardamos la sesión en el contexto global
 			login(dataToken.access_token, {
 				email: email,
 				rol: decodedPayload.rol || "user",
 				id: decodedPayload.id,
+				first_name: decodedPayload.first_name,
+				last_name: decodedPayload.last_name,
 			});
 
-			// Redirigimos al inicio
 			router.push("/hub");
 		} catch (err: any) {
 			setErrorMsg(err.message);

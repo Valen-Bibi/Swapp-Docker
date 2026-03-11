@@ -41,7 +41,7 @@ const SiluetaAnimada = () => {
 				src={siluetas[index]}
 				alt="Silueta de envase"
 				className={`w-full h-full object-contain transition-all duration-300 ease-in-out drop-shadow-[0_0_8px_rgba(255,255,255,0.3)] ${
-					isFlipping ? "scale-x-0 opacity-0" : "scale-x-100 opacity-100"
+					isFlipping ? "scale-x-0 opacity-20" : "scale-x-100 opacity-90"
 				}`}
 			/>
 		</div>
@@ -108,7 +108,7 @@ export default function TutorialView({
 	};
 
 	return (
-		<div className="relative h-full w-full flex flex-col bg-gray-900 overflow-hidden">
+		<div className="fixed inset-0 flex flex-col bg-gray-900 overflow-hidden z-[60]">
 			{/* CAPA 1: Cámara real */}
 			<div className="absolute inset-0 bg-black z-0">
 				<Scanner

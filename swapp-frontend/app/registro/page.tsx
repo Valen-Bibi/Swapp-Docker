@@ -24,7 +24,6 @@ export default function RegistroPage() {
 		setErrorMsg("");
 
 		try {
-			// 1. REGISTRO
 			const resReg = await fetch(`${API_URL}/register`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
@@ -42,7 +41,6 @@ export default function RegistroPage() {
 				throw new Error(data.detail || "Error al registrarse");
 			}
 
-			// 2. AUTO-LOGIN DESPUÉS DE REGISTRARSE
 			const formData = new URLSearchParams();
 			formData.append("username", email);
 			formData.append("password", password);
@@ -57,7 +55,6 @@ export default function RegistroPage() {
 
 			const dataToken = await resToken.json();
 
-			// Decodificamos el JWT
 			const payloadBase64 = dataToken.access_token.split(".")[1];
 			const base64 = payloadBase64.replace(/-/g, "+").replace(/_/g, "/");
 			const jsonPayload = decodeURIComponent(
@@ -73,9 +70,10 @@ export default function RegistroPage() {
 				email: email,
 				rol: decodedPayload.rol || "user",
 				id: decodedPayload.id,
+				first_name: firstName,
+				last_name: lastName,
 			});
 
-			// ¡Éxito! Redirigimos al usuario a la pantalla principal o dashboard
 			router.push("/");
 		} catch (err: any) {
 			setErrorMsg(err.message);

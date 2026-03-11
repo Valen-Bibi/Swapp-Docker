@@ -67,13 +67,17 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
             detail="Credenciales incorrectas",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
     access_token = auth.create_access_token(
-        data={"sub": user.email, "rol": user.role, "id": user.user_id}
+        data={
+            "sub": user.email, 
+            "rol": user.role, 
+            "id": user.user_id,
+            "first_name": user.first_name,
+            "last_name": user.last_name
+        }
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
-# --- NUEVOS ENDPOINTS SWAPP ---
 
 class EscaneoCreate(BaseModel):
     user_id: int
@@ -81,14 +85,14 @@ class EscaneoCreate(BaseModel):
     confianza: float
     imagen_base64: str
 
-# EL ARREGLO ESTÁ ACÁ 👇 (El decorador ahora está pegado al margen izquierdo)
+
 @app.post("/escaneos")
 def registrar_escaneo(escaneo: EscaneoCreate, db: Session = Depends(get_db)):
-    # 1. Buscar el producto en la DB
+
     producto_db = db.query(models.Product).filter(models.Product.name == escaneo.producto_nombre).first()
     product_id = producto_db.product_id if producto_db else None
 
-    # 2. Procesar la imagen en Base64
+
     if "," in escaneo.imagen_base64:
         img_data_str = escaneo.imagen_base64.split(",")[1]
     else:
