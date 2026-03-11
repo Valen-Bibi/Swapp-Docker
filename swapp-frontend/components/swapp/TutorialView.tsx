@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Scanner, { ScannerHandle } from "@/components/Scanner";
 import { playShutterSound } from "@/utils/audio";
 
@@ -11,6 +11,42 @@ type TutorialStep =
 	| "SUCCESS_5000"
 	| "ERROR_RETRY"
 	| "CATALOG_VIEW";
+
+const SiluetaAnimada = () => {
+	const siluetas = [
+		"/siluetas/botella.svg",
+		"/siluetas/cilindro.svg",
+		"/siluetas/maquina.svg",
+	];
+
+	const [index, setIndex] = useState(0);
+	const [isFlipping, setIsFlipping] = useState(false);
+
+	useEffect(() => {
+		const interval = setInterval(() => {
+			setIsFlipping(true);
+
+			setTimeout(() => {
+				setIndex((prevIndex) => (prevIndex + 1) % siluetas.length);
+				setIsFlipping(false);
+			}, 300);
+		}, 1500);
+
+		return () => clearInterval(interval);
+	}, []);
+
+	return (
+		<div className="w-24 h-40 flex items-center justify-center">
+			<img
+				src={siluetas[index]}
+				alt="Silueta de envase"
+				className={`w-full h-full object-contain transition-all duration-300 ease-in-out drop-shadow-[0_0_8px_rgba(255,255,255,0.3)] ${
+					isFlipping ? "scale-x-0 opacity-0" : "scale-x-100 opacity-100"
+				}`}
+			/>
+		</div>
+	);
+};
 
 export default function TutorialView({
 	onRegisterClick,
@@ -92,19 +128,16 @@ export default function TutorialView({
 						<p className="text-gray-300 text-lg mb-6">
 							Tomá una foto de tu envase vacío para obtener un descuento.
 						</p>
-						<div className="inline-block bg-swapp-dark/60 border border-swapp-mint/50 text-swapp-mint px-4 py-2 rounded-full text-sm font-semibold shadow-lg backdrop-blur-sm">
-							👆 Tocá el botón y dale permiso a la cámara
+						<div className="inline-block bg-swapp-dark/60 text-swapp-mint px-4 py-2 rounded-full text-sm font-semibold shadow-lg backdrop-blur-sm">
+							Tocá el botón y dale permiso a la cámara
 						</div>
 					</div>
 
-					<div className="absolute bottom-40 mb-4 z-50 pointer-events-none">
-						<div className="w-24 h-40 border-4 border-dashed border-swapp-mint rounded-lg animate-bounce opacity-80 flex items-center justify-center">
-							<span className="text-swapp-mint text-xs text-center">
-								Silueta
-								<br />
-								Envase
-							</span>
-						</div>
+					<div className="absolute bottom-40 mb-4 z-50 pointer-events-none flex flex-col items-center">
+						<SiluetaAnimada />
+						<span className="text-swapp-mint text-xs text-center mt-4 font-semibold tracking-wider animate-pulse">
+							ENFOCÁ TU ENVASE
+						</span>
 					</div>
 				</div>
 			)}

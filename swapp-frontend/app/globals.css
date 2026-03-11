@@ -14,3 +14,11 @@ body {
       transparent,
       rgb(var(--background-end-rgb))) rgb(var(--background-start-rgb));
 }
+
+.bg-swapp-gradient {
+  background: linear-gradient(to bottom,
+      #172638 20%,
+      #132D46 40%,
+      #FFFFFF 60%,
+      #f0f1f4 70%);
+}

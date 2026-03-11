@@ -18,16 +18,15 @@ export default function RootLayout({
 	return (
 		<html lang="es">
 			<body
-				className={`${inter.className} bg-gray-200 min-h-screen flex justify-center`}>
+				className={`${inter.className} bg-gray-200 h-[100dvh] flex justify-center overflow-hidden`}>
 				<AuthProvider>
-					<div className="w-full max-w-md bg-white min-h-screen shadow-2xl relative flex flex-col overflow-hidden">
+					<div className="w-full max-w-md bg-white h-full shadow-2xl relative flex flex-col overflow-hidden">
 						<Header />
 
-						<main className="flex-1 overflow-y-auto bg-[linear-gradient(to_bottom,#172638_0%,#132D46_10%,#0A786A_20%,#01C38E_35%,#80E1C7_45%,#FFFFFF_60%,#f0f1f4_70%)] pb-24">
+						<main className="flex-1 overflow-hidden bg-swapp-gradient pb-24 relative">
 							{children}
 						</main>
 
-						{/* --- NUEVA BOTTOM NAVIGATION INTELIGENTE --- */}
 						<BottomNav />
 					</div>
 				</AuthProvider>

@@ -119,7 +119,7 @@ export default function MainScannerApp() {
 	};
 
 	return (
-		<div className="flex flex-col h-full min-h-screen bg-swapp-navy relative">
+		<div className="flex flex-col h-full min-h-screen bg-transparent relative">
 			{/* CONTENEDOR PRINCIPAL DE LA CÁMARA */}
 			<div
 				className={`transition-all duration-500 ease-in-out shadow-2xl overflow-hidden bg-black ${
