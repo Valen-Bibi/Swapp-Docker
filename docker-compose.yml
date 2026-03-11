@@ -1,33 +1,33 @@
 services:
   db:
-    image: postgres:15-alpine
-    container_name: bucle-db
+    image: postgres:17-alpine
+    container_name: swapp-db
     restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: Valentin_03
-      POSTGRES_DB: circular_db
+      POSTGRES_DB: swapp_db
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
   backend:
-    build: ./CircularApp-Backend
-    container_name: bucle-backend
+    build: ./swapp-backend
+    container_name: swapp-backend
     ports:
       - "7860:7860"
     volumes:
-      - ./CircularApp-Backend/uploads:/app/uploads
+      - ./swapp-backend/uploads:/app/uploads
     depends_on:
       - db
     environment:
-      - DATABASE_URL=postgresql://postgres:Valentin_03@db:5432/circular_db
+      - DATABASE_URL=postgresql://postgres:Valentin_03@db:5432/swapp_db
     restart: always
 
   frontend:
-    build: ./CircularApp-Frontend
-    container_name: bucle-frontend
+    build: ./swapp-frontend
+    container_name: swapp-frontend
     ports:
       - "3000:3000"
     environment:
