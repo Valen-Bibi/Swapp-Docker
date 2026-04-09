@@ -17,8 +17,16 @@ body {
 
 .bg-swapp-gradient {
   background: linear-gradient(to bottom,
-      #172638 20%,
-      #132D46 40%,
-      #FFFFFF 60%,
-      #f0f1f4 70%);
+      theme('colors.swapp.azul-petroleo') 10%,
+      theme('colors.swapp.azul-oceano') 20%,
+      theme('colors.swapp.tiza') 80%);
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

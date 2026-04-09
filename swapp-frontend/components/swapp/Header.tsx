@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, AuthProvider } from "@/context/AuthContext";
 
 export default function Header() {
 	const { user, logout, isAuthenticated } = useAuth();
@@ -31,14 +31,14 @@ export default function Header() {
 	const displayName = user?.first_name || formatName(user?.name || user?.email);
 
 	return (
-		<header className="bg-swapp-navy text-white p-4 flex justify-between items-center z-50 shadow-md relative">
+		<header className="bg-swapp-azul-petroleo text-white p-4 flex justify-between items-center z-50">
 			{/* LADO IZQUIERDO: Info del Usuario y Dropdown */}
 			<div className="relative">
 				<button
 					onClick={() => setIsDropdownOpen(!isDropdownOpen)}
 					className="flex items-center gap-3 text-left focus:outline-none hover:opacity-80 transition-opacity">
 					{/* Avatar / Icono */}
-					<div className="w-10 h-10 rounded-full border-2 border-swapp-mint bg-swapp-mint/10 flex items-center justify-center transition-colors">
+					<div className="w-10 h-10 rounded-full border-2 border-swapp-verde-agua bg-swapp-verde-agua/10 flex items-center justify-center transition-colors">
 						<svg
 							className="w-5 h-5"
 							fill="none"

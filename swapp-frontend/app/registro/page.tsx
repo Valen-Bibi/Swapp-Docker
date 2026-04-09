@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, AuthProvider } from "@/context/AuthContext";
 import Link from "next/link";
+import BackButton from "@/components/swapp/BackButton"; // <-- 1. Importamos el BackButton
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:7860";
 
@@ -83,7 +84,8 @@ export default function RegistroPage() {
 	};
 
 	return (
-		<div className="min-h-screen bg-swapp-navy flex flex-col justify-center items-center p-4">
+		<div className="min-h-screen bg-swapp-azul-petroleo flex flex-col justify-center items-center p-4">
+			<BackButton className="absolute top-6 left-6" />
 			<div className="w-full max-w-md bg-white/5 border border-white/10 p-8 rounded-3xl shadow-2xl">
 				<div className="text-center mb-8">
 					<h1 className="text-3xl font-bold text-white mb-2">Crear Cuenta</h1>
@@ -99,27 +101,27 @@ export default function RegistroPage() {
 				<form onSubmit={handleSubmit} className="space-y-5">
 					<div className="flex gap-4">
 						<div className="space-y-1.5 w-1/2">
-							<label className="text-sm font-medium text-swapp-mint ml-1">
+							<label className="text-sm font-medium text-swapp-verde-agua ml-1">
 								Nombre
 							</label>
 							<input
 								type="text"
 								value={firstName}
 								onChange={(e) => setFirstName(e.target.value)}
-								className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-swapp-mint transition placeholder-gray-600"
+								className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-swapp-verde-agua transition placeholder-gray-600"
 								placeholder="Juan"
 								required
 							/>
 						</div>
 						<div className="space-y-1.5 w-1/2">
-							<label className="text-sm font-medium text-swapp-mint ml-1">
+							<label className="text-sm font-medium text-swapp-verde-agua ml-1">
 								Apellido
 							</label>
 							<input
 								type="text"
 								value={lastName}
 								onChange={(e) => setLastName(e.target.value)}
-								className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-swapp-mint transition placeholder-gray-600"
+								className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-swapp-verde-agua transition placeholder-gray-600"
 								placeholder="Pérez"
 								required
 							/>
@@ -127,28 +129,28 @@ export default function RegistroPage() {
 					</div>
 
 					<div className="space-y-1.5">
-						<label className="text-sm font-medium text-swapp-mint ml-1">
+						<label className="text-sm font-medium text-swapp-verde-agua ml-1">
 							Email de tu equipo
 						</label>
 						<input
 							type="email"
 							value={email}
 							onChange={(e) => setEmail(e.target.value)}
-							className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-swapp-mint transition placeholder-gray-600"
+							className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-swapp-verde-agua transition placeholder-gray-600"
 							placeholder="tu@swapp.com.ar"
 							required
 						/>
 					</div>
 
 					<div className="space-y-1.5">
-						<label className="text-sm font-medium text-swapp-mint ml-1">
+						<label className="text-sm font-medium text-swapp-verde-agua ml-1">
 							Contraseña
 						</label>
 						<input
 							type="password"
 							value={password}
 							onChange={(e) => setPassword(e.target.value)}
-							className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-swapp-mint transition placeholder-gray-600"
+							className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-swapp-verde-agua transition placeholder-gray-600"
 							placeholder="••••••••"
 							required
 						/>
@@ -157,7 +159,7 @@ export default function RegistroPage() {
 					<button
 						type="submit"
 						disabled={loading}
-						className="w-full mt-4 bg-gradient-to-r from-swapp-teal to-swapp-mint text-swapp-dark font-bold py-4 rounded-xl hover:scale-[1.02] transition-transform shadow-lg disabled:opacity-50 disabled:scale-100 text-lg">
+						className="w-full mt-4 bg-gradient-to-r from-swapp-turquesa-oscuro to-swapp-verde-agua text-swapp-negro-azulado font-bold py-4 rounded-xl hover:scale-[1.02] transition-transform shadow-lg disabled:opacity-50 disabled:scale-100 text-lg">
 						{loading ? "Creando cuenta..." : "Registrarme"}
 					</button>
 				</form>
@@ -167,7 +169,7 @@ export default function RegistroPage() {
 						¿Ya tienes una cuenta?{" "}
 						<Link
 							href="/login"
-							className="text-swapp-mint font-semibold hover:underline">
+							className="text-swapp-verde-agua font-semibold hover:underline">
 							Inicia sesión aquí
 						</Link>
 					</p>

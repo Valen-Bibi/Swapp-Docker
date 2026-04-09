@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, AuthProvider } from "@/context/AuthContext";
 import MainScannerApp from "@/components/swapp/MainScannerApp";
 
 export default function HubPage() {
@@ -18,7 +18,7 @@ export default function HubPage() {
 	if (isLoading) {
 		return (
 			<div className="flex-1 flex items-center justify-center">
-				<div className="w-8 h-8 border-4 border-swapp-mint border-t-transparent rounded-full animate-spin"></div>
+				<div className="w-8 h-8 border-4 border-swapp-verde-agua border-t-transparent rounded-full animate-spin"></div>
 			</div>
 		);
 	}

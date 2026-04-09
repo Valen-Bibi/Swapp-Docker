@@ -6,13 +6,12 @@ import { usePathname } from "next/navigation";
 export default function BottomNav() {
 	const pathname = usePathname();
 
-	// Ocultamos la barra en las pantallas de inicio, login y registro
 	if (pathname === "/" || pathname === "/login" || pathname === "/registro") {
 		return null;
 	}
 
 	return (
-		<div className="fixed bottom-0 left-0 w-full z-40 pointer-events-none drop-shadow-[0_-5px_15px_rgba(0,0,0,0.07)]">
+		<div className="fixed bottom-0 left-0 w-full z-40 pointer-events-none drop-shadow-[0_-1px_1px_rgba(0,0,0,0.1)]">
 			<div className="relative max-w-md mx-auto pointer-events-auto flex flex-col justify-end h-[100px]">
 				{/* 1. TU SVG PERSONALIZADO COMO FONDO */}
 				<img
@@ -26,7 +25,7 @@ export default function BottomNav() {
 					{/* BOTÓN IZQUIERDO: Inicio (Home) */}
 					<Link
 						href="/hub"
-						className="text-swapp-navy hover:text-swapp-teal transition p-2">
+						className="text-swapp-azul-petroleo hover:text-swapp-turquesa-oscuro transition p-2">
 						<svg
 							className="w-8 h-8"
 							fill="none"
@@ -44,7 +43,7 @@ export default function BottomNav() {
 					{/* BOTÓN CENTRAL FLOTANTE (El carrito) */}
 					{/* Si el botón no queda centrado exactamente en tu "montañita", ajustá el valor de '-top-8' */}
 					<div className="absolute left-1/2 -translate-x-1/2 -top-8">
-						<button className="w-16 h-16 rounded-full bg-gradient-to-tr from-swapp-teal to-swapp-navy shadow-xl flex items-center justify-center text-white hover:scale-105 transition-transform">
+						<button className="w-16 h-16 rounded-full bg-gradient-to-tr from-swapp-turquesa-oscuro to-swapp-azul-petroleo shadow-xl flex items-center justify-center text-white hover:scale-105 transition-transform">
 							<svg
 								className="w-8 h-8"
 								fill="none"
@@ -61,7 +60,7 @@ export default function BottomNav() {
 					</div>
 
 					{/* BOTÓN DERECHO: Menú */}
-					<button className="text-swapp-navy hover:text-swapp-teal transition p-2">
+					<button className="text-swapp-azul-petroleo hover:text-swapp-turquesa-oscuro transition p-2">
 						<svg
 							className="w-8 h-8"
 							fill="none"

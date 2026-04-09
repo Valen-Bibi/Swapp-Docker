@@ -22,8 +22,8 @@ export default function ActionBtn({
           rounded-full flex items-center justify-center border-2 transition hover:scale-105 shadow-md
           ${
 						active
-							? "w-20 h-20 bg-transparent border-swapp-teal text-swapp-teal"
-							: "w-14 h-14 bg-transparent border-swapp-dark/30 text-swapp-teal"
+							? "w-20 h-20 bg-transparent border-swapp-turquesa-oscuro text-swapp-turquesa-oscuro"
+							: "w-14 h-14 bg-transparent border-swapp-negro-azulado/30 text-swapp-turquesa-oscuro"
 					}
       `}>
 				<svg
@@ -34,7 +34,9 @@ export default function ActionBtn({
 					{icon}
 				</svg>
 			</button>
-			<span className="text-xs font-medium text-swapp-dark">{label}</span>
+			<span className="text-xs font-medium text-swapp-negro-azulado">
+				{label}
+			</span>
 		</div>
 	);
 }

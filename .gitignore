@@ -1,20 +1,54 @@
+# =========================
+# 1. ARCHIVOS DEL SISTEMA
+# =========================
 .DS_Store
 Thumbs.db
+ehthumbs.db
+Desktop.ini
 
-node_modules/
+# =========================
+# 2. ENTORNO BACKEND (Python / FastAPI)
+# =========================
 .venv/
+venv/
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.pytest_cache/
 
+# Base de datos (No subir DB de desarrollo a GitHub)
+*.db
+*.sqlite3
+Backups BD/
+Backups DB/
+
+# Archivos de Usuarios (¡CRUCIAL!)
+swapp-backend/uploads/*
+!swapp-backend/uploads/.gitkeep
+
+# =========================
+# 3. ENTORNO FRONTEND (Node / Next.js)
+# =========================
+node_modules/
 .next/
 dist/
 build/
-
-*.db
-*.sqlite3
-.env
-.env.local
-
 npm-debug.log*
 yarn-debug.log*
+yarn-error.log*
+.pnp.*
+
+# =========================
+# 4. VARIABLES DE ENTORNO (Seguridad)
+# =========================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# =========================
+# 5. DOCKER
+# =========================
 docker-compose.override.yml

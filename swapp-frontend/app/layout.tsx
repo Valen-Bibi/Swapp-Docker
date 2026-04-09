@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+
+// Le decimos a TypeScript que ignore esta línea, ya que Next.js la maneja por detrás
+// @ts-ignore
 import "./globals.css";
-import { AuthProvider } from "@/context/AuthContext";
+
+import { useAuth, AuthProvider } from "@/context/AuthContext";
+import { CartProvider } from "@/context/CartContext";
 import Header from "@/components/swapp/Header";
 import BottomNav from "@/components/swapp/BottomNav";
 
@@ -20,15 +25,18 @@ export default function RootLayout({
 			<body
 				className={`${inter.className} bg-gray-200 h-[100dvh] flex justify-center overflow-hidden`}>
 				<AuthProvider>
-					<div className="w-full max-w-md bg-white h-full shadow-2xl relative flex flex-col overflow-hidden">
-						<Header />
+					{/* 2. Envolvemos la app en el CartProvider */}
+					<CartProvider>
+						<div className="w-full max-w-md bg-white h-full shadow-2xl relative flex flex-col overflow-hidden">
+							<Header />
 
-						<main className="flex-1 overflow-hidden bg-swapp-gradient pb-24 relative">
-							{children}
-						</main>
+							<main className="flex-1 overflow-hidden bg-swapp-gradient pb-24 relative">
+								{children}
+							</main>
 
-						<BottomNav />
-					</div>
+							<BottomNav />
+						</div>
+					</CartProvider>
 				</AuthProvider>
 			</body>
 		</html>

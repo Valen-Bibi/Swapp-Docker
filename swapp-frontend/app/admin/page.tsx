@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, AuthProvider } from "@/context/AuthContext";
 // Iconos
 import { CheckCircle, XCircle, Clock } from "lucide-react";
 
@@ -86,7 +86,7 @@ export default function AdminPage() {
 
 	if (loading)
 		return (
-			<div className="p-10 text-center text-swapp-mint">
+			<div className="p-10 text-center text-swapp-verde-agua">
 				Verificando permisos...
 			</div>
 		);
@@ -94,7 +94,7 @@ export default function AdminPage() {
 
 	return (
 		<div className="p-6 pb-24">
-			<h1 className="text-2xl font-bold text-swapp-dark mb-6">
+			<h1 className="text-2xl font-bold text-swapp-negro-azulado mb-6">
 				Panel de Control 🛠️
 			</h1>
 
@@ -111,7 +111,7 @@ export default function AdminPage() {
 							{/* Cabecera: Producto y Estado */}
 							<div className="flex justify-between items-start">
 								<div>
-									<h3 className="font-bold text-lg text-swapp-navy">
+									<h3 className="font-bold text-lg text-swapp-azul-petroleo">
 										{sol.producto.nombre}
 									</h3>
 									<p className="text-xs text-gray-400 font-mono">

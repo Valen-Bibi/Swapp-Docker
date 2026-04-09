@@ -1,10 +1,10 @@
-"use function"; // (Por las dudas, en Next.js App Router usamos "use client")
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, AuthProvider } from "@/context/AuthContext";
 import Link from "next/link";
+import BackButton from "@/components/swapp/BackButton"; // <-- 1. Importamos el BackButton
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:7860";
 
@@ -65,8 +65,12 @@ export default function LoginPage() {
 	};
 
 	return (
-		<div className="min-h-screen bg-swapp-navy flex flex-col justify-center items-center p-4">
-			<div className="w-full max-w-md bg-white/5 border border-white/10 p-8 rounded-3xl shadow-2xl">
+		<div className="relative min-h-screen bg-swapp-azul-petroleo flex flex-col justify-center items-center p-4">
+			{/* --- NUEVO: BOTÓN DE REGRESO --- */}
+			{/* Lo posicionamos de forma absoluta en la esquina superior izquierda del contenedor principal */}
+			<BackButton className="absolute top-6 left-6" />
+
+			<div className="w-full max-w-md bg-white/5 border border-white/10 p-8 rounded-3xl shadow-2xl z-10">
 				<div className="text-center mb-8">
 					<h1 className="text-3xl font-bold text-white mb-2">Bienvenido</h1>
 					<p className="text-gray-400">
@@ -82,28 +86,28 @@ export default function LoginPage() {
 
 				<form onSubmit={handleSubmit} className="space-y-5">
 					<div className="space-y-1.5">
-						<label className="text-sm font-medium text-swapp-mint ml-1">
+						<label className="text-sm font-medium text-swapp-verde-agua ml-1">
 							Email
 						</label>
 						<input
 							type="email"
 							value={email}
 							onChange={(e) => setEmail(e.target.value)}
-							className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-swapp-mint transition placeholder-gray-600"
+							className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-swapp-verde-agua transition placeholder-gray-600"
 							placeholder="tu@swapp.com.ar"
 							required
 						/>
 					</div>
 
 					<div className="space-y-1.5">
-						<label className="text-sm font-medium text-swapp-mint ml-1">
+						<label className="text-sm font-medium text-swapp-verde-agua ml-1">
 							Contraseña
 						</label>
 						<input
 							type="password"
 							value={password}
 							onChange={(e) => setPassword(e.target.value)}
-							className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-swapp-mint transition placeholder-gray-600"
+							className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-swapp-verde-agua transition placeholder-gray-600"
 							placeholder="••••••••"
 							required
 						/>
@@ -112,7 +116,7 @@ export default function LoginPage() {
 					<button
 						type="submit"
 						disabled={loading}
-						className="w-full mt-4 bg-gradient-to-r from-swapp-teal to-swapp-mint text-swapp-dark font-bold py-4 rounded-xl hover:scale-[1.02] transition-transform shadow-lg disabled:opacity-50 disabled:scale-100 text-lg">
+						className="w-full mt-4 bg-gradient-to-r from-swapp-turquesa-oscuro to-swapp-verde-agua text-swapp-negro-azulado font-bold py-4 rounded-xl hover:scale-[1.02] transition-transform shadow-lg disabled:opacity-50 disabled:scale-100 text-lg">
 						{loading ? "Entrando..." : "Ingresar"}
 					</button>
 				</form>
@@ -122,7 +126,7 @@ export default function LoginPage() {
 						¿Aún no tienes cuenta?{" "}
 						<Link
 							href="/registro"
-							className="text-swapp-mint font-semibold hover:underline">
+							className="text-swapp-verde-agua font-semibold hover:underline">
 							Regístrate aquí
 						</Link>
 					</p>
