@@ -17,9 +17,7 @@ body {
 
 .bg-swapp-gradient {
   background: linear-gradient(to bottom,
-      theme('colors.swapp.azul-petroleo') 10%,
-      theme('colors.swapp.azul-oceano') 20%,
-      theme('colors.swapp.tiza') 80%);
+      theme('colors.swapp.tiza') 100%);
 }
 
 .hide-scrollbar::-webkit-scrollbar {
