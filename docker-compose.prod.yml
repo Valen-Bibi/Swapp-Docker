@@ -36,7 +36,7 @@ services:
       - backend
     restart: always
 
-    admin:
+  admin:
     build:
       context: ./swapp-admin-dashboard
       args:
