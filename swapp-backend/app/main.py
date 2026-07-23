@@ -12,24 +12,37 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session, joinedload 
 from sqlalchemy.exc import IntegrityError
-from .routers import products
+from ultralytics import YOLO
+from PIL import Image
+import io
 
+# Limpiamos las importaciones redundantes para mantener el orden
 from . import models, database, auth, schemas
 from .database import engine, get_db
+from .routers import products, auth as auth_router, staff 
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Swapp API")
 
+print("🧠 Cargando cerebro IA de Swapp...")
+model = YOLO("modelos_ia/best.pt")
+
 os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
-# NOTA: Quité el "*" de los orígenes porque FastAPI suele bloquearlo cuando allow_credentials es True.
+# CORRECCIÓN 1: Faltaba una coma después de localhost:3001. 
+# Además, agregamos los dominios oficiales para que no tengas problemas de CORS en producción.
 origins = [
     "http://localhost:3000",
-    "http://127.0.0.1:3000"
+    "http://localhost:3001",
+    "http://127.0.0.1:3000",
+    "https://swapp.com.ar",
+    "https://admin.swapp.com.ar"
 ]
 
+# CORRECCIÓN 2: FastAPI arroja un error fatal si usas allow_origins=["*"] junto con allow_credentials=True. 
+# Le pasamos la lista 'origins' que definimos arriba.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -39,6 +52,8 @@ app.add_middleware(
 )
 
 app.include_router(products.router)
+app.include_router(auth_router.router) 
+app.include_router(staff.router)
 
 @app.post("/register", response_model=schemas.UsuarioResponse, status_code=status.HTTP_201_CREATED)
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
@@ -73,7 +88,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     access_token = auth.create_access_token(
         data={
             "sub": user.email, 
-            "rol": user.role, 
+            "role": user.role,  
             "id": user.user_id,
             "first_name": user.first_name,
             "last_name": user.last_name
@@ -95,7 +110,6 @@ def registrar_escaneo(escaneo: EscaneoCreate, db: Session = Depends(get_db)):
     producto_db = db.query(models.Product).filter(models.Product.name == escaneo.producto_nombre).first()
     product_id = producto_db.product_id if producto_db else None
 
-
     if "," in escaneo.imagen_base64:
         img_data_str = escaneo.imagen_base64.split(",")[1]
     else:
@@ -104,16 +118,16 @@ def registrar_escaneo(escaneo: EscaneoCreate, db: Session = Depends(get_db)):
     img_bytes = base64.b64decode(img_data_str)
     
     filename = f"{uuid.uuid4().hex}.jpg"
-    filepath = os.path.join("/app/uploads", filename)
     
-    os.makedirs("/app/uploads", exist_ok=True)
+    # CORRECCIÓN 3: Estandarizamos la ruta a "uploads" (relativa) en vez de "/app/uploads" (absoluta)
+    # para evitar problemas de permisos cruzados con el montaje de archivos estáticos.
+    filepath = os.path.join("uploads", filename)
     
     with open(filepath, "wb") as f:
         f.write(img_bytes)
 
     image_url = f"/uploads/{filename}"
 
-    # 3. Guardar en la nueva tabla user_image_analyses
     nuevo_analisis = models.UserImageAnalysis(
         user_id=escaneo.user_id,
         product_id=product_id, 
@@ -133,3 +147,24 @@ def registrar_escaneo(escaneo: EscaneoCreate, db: Session = Depends(get_db)):
         "producto": escaneo.producto_nombre,
         "imagen_guardada": image_url
     }
+
+@app.post("/api/detectar-envase")
+async def detectar_envase(file: UploadFile = File(...)):
+    image_bytes = await file.read()
+    image = Image.open(io.BytesIO(image_bytes))
+    
+    results = model(image)
+    
+    envases_detectados = []
+    for r in results:
+        for box in r.boxes:
+            class_id = int(box.cls[0])
+            nombre_envase = model.names[class_id]
+            confianza = float(box.conf[0])
+            
+            envases_detectados.append({
+                "envase": nombre_envase,
+                "certeza": round(confianza * 100, 2)
+            })
+            
+    return {"productos_detectados": envases_detectados}

@@ -7,9 +7,11 @@ from sqlalchemy.orm import sessionmaker
 load_dotenv()
 
 SQLALCHEMY_DATABASE_URL = os.getenv(
-    "DATABASE_URL", 
-    "postgresql://postgres:Valentin_03@localhost:5432/swapp.db"
+    "DATABASE_URL"
 )
+
+if not SQLALCHEMY_DATABASE_URL:
+    raise ValueError("Falta la variable de entorno DATABASE_URL")
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
