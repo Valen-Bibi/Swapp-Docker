@@ -43,22 +43,25 @@ class BrandResponse(BaseModel):
         from_attributes = True
 
 class ProductoCatalogoResponse(BaseModel):
+    # --- OBLIGATORIOS (Sin valor por defecto) ---
     product_uuid: uuid.UUID
     name: str
     slug: str
-    sku: Optional[str] = None
     is_published: bool
-    cost_price: Optional[float] = None
     base_price: float
-    sale_price: Optional[float] = None
-    main_image_url: Optional[str] = None
     is_featured: bool
     sold_count: int
+    is_returnable: bool
+
+    # --- OPCIONALES (Con valor por defecto) ---
+    sku: Optional[str] = None
+    cost_price: Optional[float] = None
+    sale_price: Optional[float] = None
+    main_image_url: Optional[str] = None
     description: Optional[str] = None 
     short_description: Optional[str] = None
     stock_quantity: int = 0
     category_id: Optional[int] = None
-    is_returnable: bool
 
     class Config:
         from_attributes = True
@@ -66,11 +69,11 @@ class ProductoCatalogoResponse(BaseModel):
 class ProductCreateSchema(BaseModel):
     name: str
     slug: str
+    base_price: float
+    cost_price: Optional[float] = None
     sku: Optional[str] = None
     short_description: Optional[str] = None
     description: Optional[str] = None
-    base_price: float
-    cost_price: Optional[float] = None
     stock_quantity: int = 0
     is_returnable: bool = False
     is_published: bool = False
