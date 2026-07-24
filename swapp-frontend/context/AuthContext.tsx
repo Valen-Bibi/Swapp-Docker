@@ -14,8 +14,8 @@ interface AuthContextType {
 	logout: () => void;
 	isAuthenticated: boolean;
 	isLoading: boolean;
-	isFirstTimeUser: boolean; // <-- NUEVO: Estado para saber si es la primera vez
-	completeTutorial: () => void; // <-- NUEVO: Función para marcar el tutorial como visto
+	isFirstTimeUser: boolean; // <-- Estado para saber si es la primera vez
+	completeTutorial: () => void; // <-- Función para marcar el tutorial como visto
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);

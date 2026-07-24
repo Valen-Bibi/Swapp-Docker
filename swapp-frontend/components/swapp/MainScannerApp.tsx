@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Scanner, { ScannerHandle } from "@/components/Scanner";
 import { registrarEscaneo } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
-import { useCart } from "@/context/CartContext"; // Ajustado a la ruta nueva
+import { useCart } from "@/context/CartContext";
 import BottomNav from "@/components/swapp/BottomNav";
 import ModelViewer from "@/components/swapp/ModelViewer";
 
@@ -24,23 +24,27 @@ export default function MainScannerApp() {
 	const [appState, setAppState] = useState<ScannerAppState>("IDLE");
 	const [detectedProduct, setDetectedProduct] = useState<string | null>(null);
 	const [capturedImage, setCapturedImage] = useState<string | null>(null);
+
 	const [isCameraReady, setIsCameraReady] = useState(false);
 	const [isExpanded, setIsExpanded] = useState(false);
 	const [showFlash, setShowFlash] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
 	const [confidenceValue, setConfidenceValue] = useState<number>(0);
 
+	// --- ESTADOS DE CANTIDAD ---
 	const [returnQty, setReturnQty] = useState(1);
 	const [receiveQty, setReceiveQty] = useState(1);
-
-	// Simulación de productos recomendados traídos desde la Base de Datos
-	const [relatedProducts] = useState([
-		{ id: "rel-1", name: "Saborizante Cola", price: 4500, emoji: "🥤" },
-		{ id: "rel-2", name: "Botella Fuse 1L", price: 8900, emoji: "💧" },
-		{ id: "rel-3", name: "Saborizante Limón", price: 4500, emoji: "🍋" },
-	]);
+	const [quantity, setQuantity] = useState(1); // Para productos no retornables
+	const [isReturnable, setIsReturnable] = useState(false); // Determina qué UI mostrar
+	// ---------------------------
 
 	const scannerRef = useRef<ScannerHandle>(null);
+
+	useEffect(() => {
+		return () => {
+			scannerRef.current?.stopCamera();
+		};
+	}, []);
 
 	useEffect(() => {
 		const sincronizarEscaneoPendiente = async () => {
@@ -63,6 +67,12 @@ export default function MainScannerApp() {
 						setConfidenceValue(datos.confianza);
 						setReturnQty(1);
 						setReceiveQty(1);
+						setQuantity(1);
+
+						// TODO: Aquí deberías hacer el fetch a tu DB para ver si el producto es retornable.
+						// Ejemplo: const res = await fetch(`/api/productos?ai_label=${datos.producto}`); ...
+						setIsReturnable(datos.producto.toLowerCase().includes("cilindro"));
+
 						setAppState("QUANTITY_SELECTION");
 					} catch (error) {
 						console.error(
@@ -102,6 +112,11 @@ export default function MainScannerApp() {
 			setDetectedProduct(producto);
 			setReturnQty(1);
 			setReceiveQty(1);
+			setQuantity(1);
+
+			// TODO: Al igual que arriba, reemplazar con la validación real de la base de datos
+			setIsReturnable(producto.toLowerCase().includes("cilindro"));
+
 			if (navigator.vibrate) navigator.vibrate([80, 50, 80]);
 			setAppState("CONFIRMATION");
 		} else {
@@ -120,32 +135,6 @@ export default function MainScannerApp() {
 
 	const handleConfirmProduct = () => setAppState("QUANTITY_SELECTION");
 
-	// Función para agregar un producto recomendado rápidamente al carrito
-	const handleAddRelatedToCart = (relatedProd: any) => {
-		const mappedProduct = {
-			product_uuid: relatedProd.id,
-			name: relatedProd.name,
-			base_price: relatedProd.price,
-			sale_price: null,
-			stock_quantity: 50,
-			category_id: 2,
-			main_image_url: null,
-			is_featured: false,
-			sold_count: 0,
-			description: "Producto recomendado",
-			short_description: "Accesorio Swapp",
-		};
-
-		addToCart({
-			type: "normal",
-			product: mappedProduct,
-			quantity: 1,
-		});
-
-		// Vibración de feedback sutil
-		if (navigator.vibrate) navigator.vibrate(30);
-	};
-
 	const handleAddToCart = async () => {
 		if (!detectedProduct) return;
 		setIsSaving(true);
@@ -163,8 +152,11 @@ export default function MainScannerApp() {
 			}
 		}
 
+		// TODO: Reemplazar mockProduct con el producto real traído de la base de datos
+		const empaquetarId = `mock-${detectedProduct.toLowerCase().replace(/\s+/g, "-")}`;
+
 		const mockProduct = {
-			product_uuid: "uuid-mock-123",
+			product_uuid: empaquetarId, // <-- Ahora cada producto tiene su propio ID único
 			name: detectedProduct,
 			base_price: 15000,
 			sale_price: 12000,
@@ -173,28 +165,37 @@ export default function MainScannerApp() {
 			main_image_url: capturedImage || null,
 			is_featured: false,
 			sold_count: 0,
-			description: "Cilindro recargable detectado por IA",
+			description: "Producto detectado por IA",
 			short_description: "Insumo Swapp",
+			is_returnable: isReturnable,
 		};
 
-		addToCart({
-			type: "cylinder",
-			product: mockProduct,
-			returnQty: returnQty,
-			receiveQty: receiveQty,
-		});
+		if (isReturnable) {
+			addToCart({
+				type: "returnable",
+				product: mockProduct,
+				returnQty: returnQty,
+				receiveQty: receiveQty,
+			});
+		} else {
+			addToCart({
+				type: "normal",
+				product: mockProduct,
+				quantity: quantity,
+			});
+		}
 
 		setIsSaving(false);
 		router.push("/carrito");
 	};
 
 	return (
-		<div className="flex flex-col h-full min-h-screen bg-transparent relative">
+		<>
 			<div
-				className={`transition-all duration-500 ease-in-out shadow-2xl overflow-hidden bg-black ${
+				className={`transition-all duration-500 ease-in-out bg-black overflow-hidden ${
 					isExpanded
 						? "fixed inset-0 z-[100] w-full h-full rounded-none"
-						: "relative w-[90%] mx-auto mt-6 rounded-3xl h-[65vh] z-10 border border-white/10"
+						: "absolute inset-0 w-full h-full"
 				}`}>
 				<Scanner
 					ref={scannerRef}
@@ -284,10 +285,10 @@ export default function MainScannerApp() {
 				)}
 
 				{appState === "QUANTITY_SELECTION" && (
-					<div className="absolute bottom-0 left-0 w-full p-5 z-30 flex flex-col animate-slideUp bg-swapp-negro-azulado border-t border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+					<div className="absolute bottom-0 left-0 w-full p-6 z-30 flex flex-col animate-slideUp bg-swapp-negro-azulado border-t border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
 						<button
 							onClick={() => setAppState("CONFIRMATION")}
-							className="absolute top-4 left-4 text-white/50 hover:text-white transition-colors">
+							className="absolute top-5 left-5 text-white/50 hover:text-white transition-colors">
 							<svg
 								className="w-6 h-6"
 								fill="none"
@@ -302,86 +303,85 @@ export default function MainScannerApp() {
 							</svg>
 						</button>
 
-						<h3 className="text-white text-lg font-black mb-4 text-center mt-1">
+						<h3 className="text-white text-xl font-black mb-6 text-center mt-2">
 							{detectedProduct}
 						</h3>
 
-						<div className="flex gap-3 mb-4">
-							<div className="flex-1 bg-white/5 rounded-xl p-2 border border-white/10">
-								<p className="text-[10px] text-gray-400 font-bold mb-1 uppercase text-center tracking-wider">
-									Vacíos (Entregás)
-								</p>
-								<div className="flex items-center justify-between bg-black/40 rounded-lg p-1">
-									<button
-										onClick={() => setReturnQty(Math.max(0, returnQty - 1))}
-										className="w-6 h-6 flex items-center justify-center rounded bg-white/10 text-white font-bold hover:bg-white/20 transition-colors">
-										-
-									</button>
-									<span className="text-white font-black text-sm">
-										{returnQty}
-									</span>
-									<button
-										onClick={() => setReturnQty(returnQty + 1)}
-										className="w-6 h-6 flex items-center justify-center rounded bg-white/10 text-white font-bold hover:bg-white/20 transition-colors">
-										+
-									</button>
-								</div>
-							</div>
-
-							<div className="flex-1 bg-swapp-verde-agua/10 rounded-xl p-2 border border-swapp-verde-agua/30 shadow-[0_0_15px_rgba(1,195,142,0.1)]">
-								<p className="text-[10px] text-swapp-menta font-bold mb-1 uppercase text-center tracking-wider">
-									Llenos (Llevás)
-								</p>
-								<div className="flex items-center justify-between bg-black/40 rounded-lg p-1">
-									<button
-										onClick={() => setReceiveQty(Math.max(1, receiveQty - 1))}
-										className="w-6 h-6 flex items-center justify-center rounded bg-swapp-verde-agua/20 text-swapp-menta font-bold hover:bg-swapp-verde-agua/40 transition-colors">
-										-
-									</button>
-									<span className="text-white font-black text-sm">
-										{receiveQty}
-									</span>
-									<button
-										onClick={() => setReceiveQty(receiveQty + 1)}
-										className="w-6 h-6 flex items-center justify-center rounded bg-swapp-verde-agua/20 text-swapp-menta font-bold hover:bg-swapp-verde-agua/40 transition-colors">
-										+
-									</button>
-								</div>
-							</div>
-						</div>
-
-						{/* --- INICIO SECCIÓN CROSS-SELLING --- */}
-						<div className="mb-5">
-							<p className="text-xs text-swapp-menta font-bold mb-2 flex items-center gap-1">
-								💡 Van genial con tu producto:
-							</p>
-							<div className="flex overflow-x-auto hide-scrollbar gap-3 pb-2 -mx-5 px-5">
-								{relatedProducts.map((prod) => (
-									<div
-										key={prod.id}
-										className="min-w-[120px] bg-white/5 border border-white/10 rounded-xl p-2 flex flex-col items-center flex-shrink-0">
-										<div className="text-2xl mb-1">{prod.emoji}</div>
-										<h4 className="text-white text-[11px] font-medium text-center line-clamp-1">
-											{prod.name}
-										</h4>
-										<p className="text-swapp-tiza/70 text-[10px] mb-2">
-											${prod.price}
-										</p>
+						{/* --- LÓGICA DINÁMICA DE UI DE CANTIDADES --- */}
+						{isReturnable ? (
+							<div className="flex gap-4 mb-8">
+								<div className="flex-1 bg-white/5 rounded-2xl p-3 border border-white/10">
+									<p className="text-xs text-gray-400 font-bold mb-2 uppercase text-center tracking-wider">
+										Vacíos (Entregás)
+									</p>
+									<div className="flex items-center justify-between bg-black/40 rounded-xl p-1.5">
 										<button
-											onClick={() => handleAddRelatedToCart(prod)}
-											className="w-full bg-white/10 hover:bg-swapp-verde-agua/20 hover:text-swapp-menta text-white text-[10px] font-bold py-1.5 rounded-lg transition-colors border border-white/5">
-											+ Agregar
+											onClick={() => setReturnQty(Math.max(0, returnQty - 1))}
+											className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 text-white font-bold hover:bg-white/20 transition-colors">
+											-
+										</button>
+										<span className="text-white font-black text-lg">
+											{returnQty}
+										</span>
+										<button
+											onClick={() => setReturnQty(returnQty + 1)}
+											className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/10 text-white font-bold hover:bg-white/20 transition-colors">
+											+
 										</button>
 									</div>
-								))}
+								</div>
+
+								<div className="flex-1 bg-swapp-verde-agua/10 rounded-2xl p-3 border border-swapp-verde-agua/30 shadow-[0_0_15px_rgba(1,195,142,0.1)]">
+									<p className="text-xs text-swapp-menta font-bold mb-2 uppercase text-center tracking-wider">
+										Llenos (Llevás)
+									</p>
+									<div className="flex items-center justify-between bg-black/40 rounded-xl p-1.5">
+										<button
+											onClick={() => setReceiveQty(Math.max(1, receiveQty - 1))}
+											className="w-8 h-8 flex items-center justify-center rounded-lg bg-swapp-verde-agua/20 text-swapp-menta font-bold hover:bg-swapp-verde-agua/40 transition-colors">
+											-
+										</button>
+										<span className="text-white font-black text-lg">
+											{receiveQty}
+										</span>
+										<button
+											onClick={() => setReceiveQty(receiveQty + 1)}
+											className="w-8 h-8 flex items-center justify-center rounded-lg bg-swapp-verde-agua/20 text-swapp-menta font-bold hover:bg-swapp-verde-agua/40 transition-colors">
+											+
+										</button>
+									</div>
+								</div>
 							</div>
-						</div>
-						{/* --- FIN SECCIÓN CROSS-SELLING --- */}
+						) : (
+							<div className="flex justify-center mb-8">
+								<div className="w-full bg-white/5 rounded-2xl p-4 border border-white/10 flex items-center justify-between">
+									<p className="text-sm text-gray-300 font-bold uppercase tracking-wider">
+										Cantidad a comprar
+									</p>
+									<div className="flex items-center justify-between bg-black/40 rounded-xl p-1.5 gap-4">
+										<button
+											onClick={() => setQuantity(Math.max(1, quantity - 1))}
+											className="w-10 h-10 flex items-center justify-center rounded-lg bg-white/10 text-white font-bold hover:bg-white/20 transition-colors">
+											-
+										</button>
+										<span className="text-white font-black text-xl w-6 text-center">
+											{quantity}
+										</span>
+										<button
+											onClick={() => setQuantity(quantity + 1)}
+											className="w-10 h-10 flex items-center justify-center rounded-lg bg-swapp-verde-agua/20 text-swapp-menta font-bold hover:bg-swapp-verde-agua/40 transition-colors">
+											+
+										</button>
+									</div>
+								</div>
+							</div>
+						)}
+						{/* ------------------------------------------- */}
 
 						<button
 							onClick={handleAddToCart}
 							disabled={isSaving}
-							className="w-full bg-gradient-to-r from-swapp-turquesa-oscuro to-swapp-verde-agua text-swapp-negro-azulado py-3.5 rounded-xl font-black text-base shadow-xl hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50">
+							className="w-full bg-gradient-to-r from-swapp-turquesa-oscuro to-swapp-verde-agua text-swapp-negro-azulado py-4 rounded-xl font-black text-lg shadow-[0_0_20px_rgba(1,195,142,0.3)] hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 mt-2">
 							{isSaving ? "Procesando..." : "Ir al carrito y pagar"}
 						</button>
 					</div>
@@ -426,7 +426,7 @@ export default function MainScannerApp() {
 										strokeLinecap="round"
 										strokeLinejoin="round"
 										strokeWidth={2}
-										d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
+										d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
 									/>
 								</svg>
 							)}
@@ -436,6 +436,6 @@ export default function MainScannerApp() {
 			</div>
 
 			{!isExpanded && <BottomNav />}
-		</div>
+		</>
 	);
 }

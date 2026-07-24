@@ -6,7 +6,13 @@ import { usePathname } from "next/navigation";
 export default function BottomNav() {
 	const pathname = usePathname();
 
-	if (pathname === "/" || pathname === "/login" || pathname === "/registro") {
+	if (
+		pathname === "/" ||
+		pathname === "/login" ||
+		pathname === "/registro" ||
+		pathname === "/cross-selling" ||
+		pathname === "/carrito"
+	) {
 		return null;
 	}
 
@@ -41,7 +47,7 @@ export default function BottomNav() {
 					</Link>
 
 					{/* BOTÓN CENTRAL FLOTANTE (El carrito) */}
-					{/* Si el botón no queda centrado exactamente en tu "montañita", ajustá el valor de '-top-8' */}
+					{/* Si el botón no queda centrado exactamente en la "montañita", ajuste el valor de '-top-8' */}
 					<div className="absolute left-1/2 -translate-x-1/2 -top-8">
 						<button className="w-16 h-16 rounded-full bg-gradient-to-tr from-swapp-turquesa-oscuro to-swapp-azul-petroleo shadow-xl flex items-center justify-center text-white hover:scale-105 transition-transform">
 							<svg

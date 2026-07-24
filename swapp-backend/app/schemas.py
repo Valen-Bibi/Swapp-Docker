@@ -69,6 +69,7 @@ class ProductCreateSchema(BaseModel):
     sku: Optional[str] = None
     short_description: Optional[str] = None
     description: Optional[str] = None
+    cost_price: Optional[float] = None
     base_price: float
     stock_quantity: int = 0
     is_returnable: bool = False

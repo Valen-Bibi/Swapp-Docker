@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth, AuthProvider } from "@/context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
-import BackButton from "@/components/swapp/BackButton"; // <-- 1. Importamos el BackButton
+import BackButton from "@/components/swapp/BackButton";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:7860";
 
@@ -12,6 +12,7 @@ export default function LoginPage() {
 	const router = useRouter();
 	const { login } = useAuth();
 	const [loading, setLoading] = useState(false);
+	const [loadingText, setLoadingText] = useState("Ingresar"); // <-- Estado dinámico
 	const [errorMsg, setErrorMsg] = useState("");
 
 	const [email, setEmail] = useState("");
@@ -20,6 +21,7 @@ export default function LoginPage() {
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setLoading(true);
+		setLoadingText("Entrando...");
 		setErrorMsg("");
 
 		try {
@@ -50,15 +52,22 @@ export default function LoginPage() {
 
 			login(dataToken.access_token, {
 				email: email,
-				rol: decodedPayload.rol || "user",
+				role: decodedPayload.role || "user",
 				id: decodedPayload.id,
 				first_name: decodedPayload.first_name,
 				last_name: decodedPayload.last_name,
 			});
 
+			// --- EL PUENTE DEL ESCÁNER ---
+			if (localStorage.getItem("swapp_escaneo_pendiente")) {
+				setLoadingText("Sincronizando tu envase...");
+				await new Promise((resolve) => setTimeout(resolve, 800));
+			}
+
 			router.push("/hub");
 		} catch (err: any) {
 			setErrorMsg(err.message);
+			setLoadingText("Ingresar");
 		} finally {
 			setLoading(false);
 		}
@@ -66,8 +75,6 @@ export default function LoginPage() {
 
 	return (
 		<div className="relative min-h-screen bg-swapp-azul-petroleo flex flex-col justify-center items-center p-4">
-			{/* --- NUEVO: BOTÓN DE REGRESO --- */}
-			{/* Lo posicionamos de forma absoluta en la esquina superior izquierda del contenedor principal */}
 			<BackButton className="absolute top-6 left-6" />
 
 			<div className="w-full max-w-md bg-white/5 border border-white/10 p-8 rounded-3xl shadow-2xl z-10">
@@ -117,7 +124,7 @@ export default function LoginPage() {
 						type="submit"
 						disabled={loading}
 						className="w-full mt-4 bg-gradient-to-r from-swapp-turquesa-oscuro to-swapp-verde-agua text-swapp-negro-azulado font-bold py-4 rounded-xl hover:scale-[1.02] transition-transform shadow-lg disabled:opacity-50 disabled:scale-100 text-lg">
-						{loading ? "Entrando..." : "Ingresar"}
+						{loadingText}
 					</button>
 				</form>
 

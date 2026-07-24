@@ -1,40 +1,22 @@
 services:
-  db:
-    image: postgres:17-alpine
-    container_name: swapp-db
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: Valentin_03
-      POSTGRES_DB: swapp_db
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
   backend:
     build: ./swapp-backend
-    container_name: swapp-backend
     ports:
       - "7860:7860"
+    env_file:
+      - ./swapp-backend/.env
+    # Un solo bloque volumes para el backend
     volumes:
-      - ./swapp-backend/uploads:/app/uploads
-    depends_on:
-      - db
-    environment:
-      - DATABASE_URL=postgresql://postgres:Valentin_03@db:5432/swapp_db
-    restart: always
+      - ./swapp-backend:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 7860 --reload
 
   frontend:
     build: ./swapp-frontend
-    container_name: swapp-frontend
     ports:
       - "3000:3000"
-    environment:
-      NEXT_PUBLIC_API_URL: "http://localhost:7860"
-    depends_on:
-      - backend
-    restart: always
-
-volumes:
-  postgres_data:
+    # Un solo bloque volumes para el frontend
+    volumes:
+      - ./swapp-frontend:/app
+      - /app/node_modules
+      - /app/.next
+    command: npm run dev

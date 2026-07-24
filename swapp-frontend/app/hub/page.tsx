@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth, AuthProvider } from "@/context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 import MainScannerApp from "@/components/swapp/MainScannerApp";
 
 export default function HubPage() {
@@ -15,16 +15,20 @@ export default function HubPage() {
 		}
 	}, [isAuthenticated, isLoading, router]);
 
-	if (isLoading) {
+	if (isLoading || !isAuthenticated) {
 		return (
-			<div className="flex-1 flex items-center justify-center">
+			<div className="flex-1 flex items-center justify-center h-[calc(100vh-115px)] bg-swapp-tiza">
 				<div className="w-8 h-8 border-4 border-swapp-verde-agua border-t-transparent rounded-full animate-spin"></div>
 			</div>
 		);
 	}
 
-	// Si no está autenticado, no renderizamos nada (evita un parpadeo de la cámara antes del redireccionamiento)
-	if (!isAuthenticated) return null;
-
-	return <MainScannerApp />;
+	return (
+		<div className="flex flex-col w-full h-[calc(100vh-195px)] bg-swapp-tiza px-5 pt-4 pb-2">
+			<div className="flex-1 w-full bg-black rounded-[36px] overflow-hidden relative shadow-2xl">
+				{/* Simplemente instanciamos el componente sin pasarle propiedades */}
+				<MainScannerApp />
+			</div>
+		</div>
+	);
 }

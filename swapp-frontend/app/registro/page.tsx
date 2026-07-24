@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth, AuthProvider } from "@/context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
-import BackButton from "@/components/swapp/BackButton"; // <-- 1. Importamos el BackButton
+import BackButton from "@/components/swapp/BackButton";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:7860";
 
@@ -12,6 +12,7 @@ export default function RegistroPage() {
 	const router = useRouter();
 	const { login } = useAuth();
 	const [loading, setLoading] = useState(false);
+	const [loadingText, setLoadingText] = useState("Registrarme"); // <-- Estado dinámico para el botón
 	const [errorMsg, setErrorMsg] = useState("");
 
 	const [firstName, setFirstName] = useState("");
@@ -22,6 +23,7 @@ export default function RegistroPage() {
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setLoading(true);
+		setLoadingText("Creando cuenta...");
 		setErrorMsg("");
 
 		try {
@@ -41,6 +43,8 @@ export default function RegistroPage() {
 				const data = await resReg.json();
 				throw new Error(data.detail || "Error al registrarse");
 			}
+
+			setLoadingText("Iniciando sesión...");
 
 			const formData = new URLSearchParams();
 			formData.append("username", email);
@@ -75,9 +79,19 @@ export default function RegistroPage() {
 				last_name: lastName,
 			});
 
-			router.push("/");
+			// --- EL PUENTE DEL ESCÁNER ---
+			// Si hay un escaneo pendiente, cambiamos el texto para darle feedback al usuario
+			if (localStorage.getItem("swapp_escaneo_pendiente")) {
+				setLoadingText("Recuperando tu producto...");
+				// Un mini delay opcional para que el usuario llegue a leer el mensaje (mejora la UX)
+				await new Promise((resolve) => setTimeout(resolve, 800));
+			}
+
+			// Redirigimos siempre al HUB, donde el MainScannerApp atajará el escaneo y abrirá las opciones
+			router.push("/hub");
 		} catch (err: any) {
 			setErrorMsg(err.message);
+			setLoadingText("Registrarme");
 		} finally {
 			setLoading(false);
 		}
@@ -160,7 +174,7 @@ export default function RegistroPage() {
 						type="submit"
 						disabled={loading}
 						className="w-full mt-4 bg-gradient-to-r from-swapp-turquesa-oscuro to-swapp-verde-agua text-swapp-negro-azulado font-bold py-4 rounded-xl hover:scale-[1.02] transition-transform shadow-lg disabled:opacity-50 disabled:scale-100 text-lg">
-						{loading ? "Creando cuenta..." : "Registrarme"}
+						{loadingText}
 					</button>
 				</form>
 

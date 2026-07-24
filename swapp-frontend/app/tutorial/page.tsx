@@ -2,9 +2,10 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth, AuthProvider } from "@/context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 import Scanner, { ScannerHandle } from "@/components/Scanner";
 import BackButton from "@/components/swapp/BackButton";
+import ModelViewer from "@/components/swapp/ModelViewer"; // <-- Importamos el visor 3D
 
 type TutorialStep =
 	| "INTRO_SCAN"
@@ -51,6 +52,14 @@ const SiluetaAnimada = () => {
 export default function TutorialView() {
 	const [step, setTutorialStep] = useState<TutorialStep>("INTRO_SCAN");
 	const [failedAttempts, setFailedAttempts] = useState(0);
+
+	// --- NUEVOS ESTADOS PARA MOSTRAR EL RESULTADO ---
+	const [detectedProductName, setDetectedProductName] = useState<string | null>(
+		null,
+	);
+	const [capturedImageUrl, setCapturedImageUrl] = useState<string | null>(null);
+	// ------------------------------------------------
+
 	const scannerRef = useRef<ScannerHandle>(null);
 	const router = useRouter();
 
@@ -59,7 +68,14 @@ export default function TutorialView() {
 	useEffect(() => {
 		const pendingScan = localStorage.getItem("swapp_escaneo_pendiente");
 		if (pendingScan) {
-			setTutorialStep("SUCCESS_5000");
+			try {
+				const data = JSON.parse(pendingScan);
+				setDetectedProductName(data.producto);
+				setCapturedImageUrl(data.imagen);
+				setTutorialStep("SUCCESS_5000");
+			} catch (e) {
+				console.error("Error al leer el escaneo pendiente", e);
+			}
 		}
 	}, []);
 
@@ -76,6 +92,8 @@ export default function TutorialView() {
 
 	const handleRestartCamera = async () => {
 		localStorage.removeItem("swapp_escaneo_pendiente");
+		setDetectedProductName(null);
+		setCapturedImageUrl(null);
 		setTutorialStep("READY_TO_SCAN");
 		await scannerRef.current?.startCamera();
 	};
@@ -85,7 +103,6 @@ export default function TutorialView() {
 		router.push(path);
 	};
 
-	// --- 2. Función para volver a la pantalla inicial ---
 	const handleBackToIntro = () => {
 		scannerRef.current?.stopCamera();
 		setTutorialStep("INTRO_SCAN");
@@ -109,6 +126,9 @@ export default function TutorialView() {
 					"swapp_escaneo_pendiente",
 					JSON.stringify(escaneoPendiente),
 				);
+				// Guardamos en estado para renderizar en pantalla
+				setDetectedProductName(producto);
+				setCapturedImageUrl(imagen);
 			} catch (e) {
 				console.error("Error al guardar en localStorage", e);
 			}
@@ -124,7 +144,6 @@ export default function TutorialView() {
 	return (
 		<div className="fixed inset-0 bg-black flex items-center justify-center z-[60] overflow-hidden">
 			<div className="relative w-full h-full sm:w-[400px] sm:h-[850px] sm:max-h-[90vh] bg-swapp-negro sm:rounded-[32px] overflow-hidden sm:shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-				{/* --- 3. Renderizamos el BackButton cuando la cámara está activa --- */}
 				{step === "READY_TO_SCAN" && (
 					<BackButton
 						onClick={handleBackToIntro}
@@ -144,13 +163,16 @@ export default function TutorialView() {
 					</div>
 				)}
 
-				<div className="absolute inset-0 bg-swapp-negro-azulado z-0">
-					<Scanner
-						ref={scannerRef}
-						onScan={handleTutorialScan}
-						className="w-full h-full object-cover"
-					/>
-				</div>
+				{/* Solo montamos la cámara si NO estamos en la pantalla de éxito, para dar lugar al 3D */}
+				{step !== "SUCCESS_5000" && (
+					<div className="absolute inset-0 bg-swapp-negro-azulado z-0">
+						<Scanner
+							ref={scannerRef}
+							onScan={handleTutorialScan}
+							className="w-full h-full object-cover"
+						/>
+					</div>
+				)}
 
 				{step === "INTRO_SCAN" && (
 					<div className="absolute inset-0 bg-swapp-negro-azulado/90 backdrop-blur-sm z-40 pointer-events-none flex flex-col items-center justify-center">
@@ -179,7 +201,7 @@ export default function TutorialView() {
 							<button
 								onClick={handleMainAction}
 								className={`w-20 h-20 rounded-full border-4 flex items-center justify-center transition-all duration-200 active:scale-90 bg-transparent
-                    ${step === "INTRO_SCAN" ? "border-swapp-verde-agua shadow-[0_0_15px_rgba(1,195,142,0.6)] hover:scale-105" : "border-swapp-tiza shadow-lg"}
+                  ${step === "INTRO_SCAN" ? "border-swapp-verde-agua shadow-[0_0_15px_rgba(1,195,142,0.6)] hover:scale-105" : "border-swapp-tiza shadow-lg"}
                 `}>
 								<div
 									className={`w-16 h-16 rounded-full backdrop-blur-md ${step === "INTRO_SCAN" ? "bg-swapp-tiza" : "bg-white/60"}`}></div>
@@ -211,34 +233,43 @@ export default function TutorialView() {
 					</div>
 				)}
 
-				{step === "SUCCESS_5000" && (
-					<div className="absolute inset-0 bg-gradient-to-br from-swapp-verde-agua to-swapp-turquesa-oscuro z-50 flex flex-col items-center justify-center px-8 text-swapp-negro-azulado text-center animate-fadeIn">
-						<div className="bg-white/20 p-6 rounded-full backdrop-blur-md mb-6 shadow-2xl">
-							<span className="text-6xl drop-shadow-md">🎉</span>
+				{/* --- NUEVA VISTA DE ÉXITO CON 3D INTEGRADO --- */}
+				{step === "SUCCESS_5000" && capturedImageUrl && (
+					<div className="absolute inset-0 z-10 bg-swapp-negro-azulado flex flex-col items-center justify-start overflow-hidden pt-10 animate-fadeIn">
+						{/* Imagen de fondo desenfocada */}
+						<img
+							src={capturedImageUrl}
+							alt="Fondo"
+							className="absolute inset-0 w-full h-full object-cover opacity-20 blur-xl scale-110"
+						/>
+
+						{/* Modelo 3D */}
+						<div className="relative z-20 w-56 h-64 flex items-center justify-center mt-4">
+							<ModelViewer modelPath="/models/maquina_terra.glb" />
 						</div>
-						<h2 className="text-4xl font-black mb-3 text-white drop-shadow-md">
-							¡Detectado!
-						</h2>
-						<p className="text-xl font-medium mb-10 text-swapp-negro-azulado">
-							Tenés{" "}
-							<span className="font-black bg-white px-3 py-1.5 rounded-lg shadow-sm text-2xl">
-								$5.000 a favor
-							</span>
-							<br />
-							<span className="text-sm mt-2 block opacity-80 font-bold">
-								para tu próxima recarga.
-							</span>
-						</p>
-						<button
-							onClick={() => handleFinishTutorial("/registro")}
-							className="bg-swapp-negro-azulado text-white w-full py-4 rounded-2xl font-black text-lg shadow-2xl hover:scale-105 active:scale-95 transition-all">
-							Reclamar mis $5.000
-						</button>
-						<button
-							onClick={handleRestartCamera}
-							className="mt-6 text-sm font-bold text-swapp-negro-azulado/60 hover:text-swapp-negro-azulado transition-colors">
-							Escanear otro producto
-						</button>
+
+						{/* Panel inferior */}
+						<div className="absolute bottom-0 left-0 w-full p-6 z-30 flex flex-col animate-slideUp bg-gradient-to-t from-swapp-negro-azulado via-swapp-negro-azulado/95 to-transparent pt-12 text-center">
+							<p className="text-swapp-menta text-sm font-bold uppercase tracking-widest mb-1">
+								¡Qué buena elección!
+							</p>
+							<h3 className="text-white text-2xl font-black mb-6 drop-shadow-md">
+								{detectedProductName || "Producto Detectado"}
+							</h3>
+
+							<div className="flex flex-col gap-3 w-full">
+								<button
+									onClick={() => handleFinishTutorial("/registro")}
+									className="w-full bg-swapp-menta text-swapp-negro-azulado py-4 rounded-xl font-black text-lg shadow-[0_0_20px_rgba(128,225,199,0.3)] hover:scale-[1.02] active:scale-95 transition-all">
+									Guardar en mi cuenta
+								</button>
+								<button
+									onClick={handleRestartCamera}
+									className="w-full bg-white/10 text-white border border-white/20 py-4 rounded-xl font-medium hover:bg-white/20 active:scale-95 transition-all">
+									Escanear otro producto
+								</button>
+							</div>
+						</div>
 					</div>
 				)}
 

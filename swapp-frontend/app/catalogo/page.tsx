@@ -31,17 +31,17 @@ export default function CatalogoPage() {
 	const handleAddToCart = () => {
 		if (!selectedProduct) return;
 
-		if (isCylinder) {
+		if (isReturnable) {
 			addToCart({
-				type: "cylinder",
-				product: selectedProduct,
+				type: "returnable",
+				product: { ...selectedProduct, is_returnable: true },
 				returnQty,
 				receiveQty,
 			});
 		} else {
 			addToCart({
 				type: "normal",
-				product: selectedProduct,
+				product: { ...selectedProduct, is_returnable: false },
 				quantity,
 			});
 		}
@@ -164,11 +164,11 @@ export default function CatalogoPage() {
 	}
 
 	// --- CÁLCULO DE PRECIOS PARA EL MODAL ---
-	const isCylinder = selectedProduct?.name.toLowerCase().includes("cilindro");
+	const isReturnable = selectedProduct?.name.toLowerCase().includes("cilindro");
 	let finalPrice = 0;
 	if (selectedProduct) {
 		const baseToUse = selectedProduct.sale_price ?? selectedProduct.base_price;
-		if (isCylinder) {
+		if (isReturnable) {
 			const refills = Math.min(returnQty, receiveQty);
 			const news = Math.max(0, receiveQty - returnQty);
 			finalPrice = refills * baseToUse + news * (baseToUse * 2);
@@ -485,7 +485,7 @@ export default function CatalogoPage() {
 								className="h-40 w-auto object-contain mb-4"
 							/>
 
-							{isCylinder && selectedProduct.stock_quantity > 0 ? (
+							{isReturnable && selectedProduct.stock_quantity > 0 ? (
 								<span className="bg-swapp-verde-agua/20 text-swapp-turquesa-oscuro text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide mb-2 relative z-10">
 									Intercambio disponible
 								</span>
@@ -509,7 +509,7 @@ export default function CatalogoPage() {
 
 							{/* Controles de cantidad solo si hay stock */}
 							{selectedProduct.stock_quantity > 0 ? (
-								isCylinder ? (
+								isReturnable ? (
 									<div className="w-full flex flex-col gap-2 mb-6">
 										<div className="flex justify-between items-center bg-gray-50 p-3 rounded-xl border border-gray-100">
 											<span className="text-sm font-semibold text-swapp-azul-petroleo">

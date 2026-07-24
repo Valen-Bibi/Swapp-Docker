@@ -8,7 +8,7 @@ import React, {
 	useEffect,
 } from "react";
 
-// 1. INTERFAZ ACTUALIZADA SEGÚN TU NUEVO SCHEMA
+// --- INTERFACES ---
 export interface Product {
 	product_uuid: string;
 	name: string;
@@ -21,6 +21,7 @@ export interface Product {
 	sold_count: number;
 	description: string | null;
 	short_description: string | null;
+	is_returnable: boolean;
 }
 
 export type NormalCartItem = {
@@ -29,20 +30,26 @@ export type NormalCartItem = {
 	quantity: number;
 };
 
-export type CylinderCartItem = {
-	type: "cylinder";
+export type ReturnableCartItem = {
+	type: "returnable";
 	product: Product;
 	returnQty: number;
 	receiveQty: number;
 };
 
-export type CartItem = NormalCartItem | CylinderCartItem;
+export type CartItem = NormalCartItem | ReturnableCartItem;
 
 interface CartContextType {
 	items: CartItem[];
 	addToCart: (item: CartItem) => void;
 	removeFromCart: (product_uuid: string) => void;
 	clearCart: () => void;
+	updateQuantity: (product_uuid: string, quantity: number) => void;
+	updateReturnableQty: (
+		product_uuid: string,
+		returnQty: number,
+		receiveQty: number,
+	) => void;
 	totalAmount: number;
 	totalItems: number;
 }
@@ -51,6 +58,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 	const [items, setItems] = useState<CartItem[]>([]);
+	const [isLoaded, setIsLoaded] = useState(false);
 
 	useEffect(() => {
 		const savedCart = localStorage.getItem("swapp_cart");
@@ -61,11 +69,14 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 				console.error("Error parsing cart from local storage", error);
 			}
 		}
+		setIsLoaded(true);
 	}, []);
 
 	useEffect(() => {
-		localStorage.setItem("swapp_cart", JSON.stringify(items));
-	}, [items]);
+		if (isLoaded) {
+			localStorage.setItem("swapp_cart", JSON.stringify(items));
+		}
+	}, [items, isLoaded]);
 
 	const addToCart = (newItem: CartItem) => {
 		setItems((prevItems) => {
@@ -83,8 +94,8 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 						quantity: existing.quantity + newItem.quantity,
 					};
 				} else if (
-					existing.type === "cylinder" &&
-					newItem.type === "cylinder"
+					existing.type === "returnable" &&
+					newItem.type === "returnable"
 				) {
 					updatedItems[existingItemIndex] = {
 						...existing,
@@ -98,6 +109,34 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 		});
 	};
 
+	const updateQuantity = (product_uuid: string, quantity: number) => {
+		setItems((prev) =>
+			prev.map((item) =>
+				item.product.product_uuid === product_uuid && item.type === "normal"
+					? { ...item, quantity: Math.max(1, quantity) }
+					: item,
+			),
+		);
+	};
+
+	const updateReturnableQty = (
+		product_uuid: string,
+		returnQty: number,
+		receiveQty: number,
+	) => {
+		setItems((prev) =>
+			prev.map((item) =>
+				item.product.product_uuid === product_uuid && item.type === "returnable"
+					? {
+							...item,
+							returnQty: Math.max(0, returnQty),
+							receiveQty: Math.max(1, receiveQty),
+						}
+					: item,
+			),
+		);
+	};
+
 	const removeFromCart = (product_uuid: string) => {
 		setItems((prev) =>
 			prev.filter((item) => item.product.product_uuid !== product_uuid),
@@ -106,28 +145,33 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
 	const clearCart = () => setItems([]);
 
-	// 4. CÁLCULO ACTUALIZADO CONSIDERANDO EL SALE_PRICE
+	// Cálculos protegidos ante valores nulos
 	const totalAmount = useMemo(() => {
+		if (!items || items.length === 0) return 0;
 		return items.reduce((total, item) => {
-			// Definimos el precio real a usar (oferta o base)
-			const priceToUse = item.product.sale_price ?? item.product.base_price;
+			const product = item?.product;
+			if (!product) return total;
+
+			const priceToUse = product.sale_price ?? product.base_price ?? 0;
 
 			if (item.type === "normal") {
-				return total + item.quantity * priceToUse;
+				return total + (item.quantity || 0) * priceToUse;
 			} else {
-				const refills = Math.min(item.returnQty, item.receiveQty);
-				const extras = Math.max(0, item.receiveQty - item.returnQty);
-
-				// Los extras valen el doble del precio real a usar
+				const refills = Math.min(item.returnQty || 0, item.receiveQty || 1);
+				const extras = Math.max(
+					0,
+					(item.receiveQty || 1) - (item.returnQty || 0),
+				);
 				return total + refills * priceToUse + extras * priceToUse * 2;
 			}
 		}, 0);
 	}, [items]);
 
 	const totalItems = useMemo(() => {
+		if (!items || items.length === 0) return 0;
 		return items.reduce((total, item) => {
-			if (item.type === "normal") return total + item.quantity;
-			return total + item.receiveQty;
+			if (item.type === "normal") return total + (item.quantity || 0);
+			return total + (item.receiveQty || 0);
 		}, 0);
 	}, [items]);
 
@@ -138,6 +182,8 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 				addToCart,
 				removeFromCart,
 				clearCart,
+				updateQuantity,
+				updateReturnableQty,
 				totalAmount,
 				totalItems,
 			}}>
