@@ -71,7 +71,6 @@ def create_product_discount(
         db.rollback()
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Error al crear el descuento (verifique que end_date > start_date).")
 
-# --- CATÁLOGO CON CÁLCULO DINÁMICO ---
 @router.get("/catalog", response_model=List[schemas.ProductoCatalogoResponse])
 def get_catalog_products(db: Session = Depends(get_db)):
     """
@@ -83,6 +82,10 @@ def get_catalog_products(db: Session = Depends(get_db)):
     result = []
     for p in products:
         p_data = p.__dict__.copy()
+        
+        # Limpiamos la metadata interna de SQLAlchemy para evitar el colapso de serialización JSON
+        p_data.pop("_sa_instance_state", None) 
+        
         p_data['sale_price'] = None
         
         active_discounts = [d for d in p.discounts if d.start_date <= now <= d.end_date]
@@ -98,7 +101,7 @@ def get_catalog_products(db: Session = Depends(get_db)):
         
     return result
 
-@router.get("", status_code=status.HTTP_200_OK)
+@router.get("", response_model=List[schemas.ProductoCatalogoResponse], status_code=status.HTTP_200_OK)
 def get_all_products_admin(
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
@@ -113,6 +116,10 @@ def get_all_products_admin(
     result = []
     for p in products:
         p_data = p.__dict__.copy()
+        
+        # Limpiamos la metadata interna de SQLAlchemy
+        p_data.pop("_sa_instance_state", None) 
+        
         p_data['sale_price'] = None
         
         active_discounts = [d for d in p.discounts if d.start_date <= now <= d.end_date]
