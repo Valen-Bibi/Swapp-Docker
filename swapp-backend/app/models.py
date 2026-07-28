@@ -171,19 +171,16 @@ class Product(Base):
     inventory_movements = relationship("InventoryMovement", back_populates="product", cascade="all, delete")
 
 
-# --- HISTORIAL AUTOMÁTICO DE PRECIOS ---
 class ProductPriceHistory(Base):
     __tablename__ = "product_price_history"
     __table_args__ = {"schema": "swapp"}
 
     history_id = Column(BigInteger, primary_key=True, autoincrement=True)
-    
-    product_id = Column(BigInteger, ForeignKey("swapp.products.product_id", ondelete="CASCADE"), nullable=False)
-    old_price = Column(Numeric(10, 2), nullable=False)
-    new_price = Column(Numeric(10, 2), nullable=False)
+    product_id = Column(BigInteger, ForeignKey('swapp.products.product_id', ondelete="CASCADE"), nullable=False)
+    old_value = Column(Numeric(10, 2), nullable=False)
+    new_value = Column(Numeric(10, 2), nullable=False)
     changed_at = Column(DateTime(timezone=True), server_default=func.now())
-
-    product = relationship("Product", back_populates="price_history")
+    record_type = Column(String(20), default="base_price", nullable=False)
 
 
 # --- MOTOR DE OFERTAS ---

@@ -35,9 +35,10 @@ class TaxClassResponse(BaseModel):
 
 class PriceHistoryResponse(BaseModel):
     history_id: int
-    old_price: float
-    new_price: float
+    old_value: float
+    new_value: float
     changed_at: datetime
+    record_type: str
 
     class Config:
         from_attributes = True

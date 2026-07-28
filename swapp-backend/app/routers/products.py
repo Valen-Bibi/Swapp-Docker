@@ -40,36 +40,48 @@ def get_price_history(
     return history
 
 # --- MOTOR DE DESCUENTOS ---
-@router.post("/{product_uuid}/discounts", response_model=schemas.DiscountResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/{product_uuid}/discounts", status_code=status.HTTP_201_CREATED)
 def create_product_discount(
-    product_uuid: UUID,
-    discount: schemas.DiscountCreate,
+    product_uuid: UUID, 
+    discount_data: schemas.ProductDiscountCreate, # O el nombre de tu esquema
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
-    """
-    Crea una promoción temporal para el producto.
-    """
+
     product = db.query(models.Product).filter(models.Product.product_uuid == product_uuid).first()
     if not product:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
         
     new_discount = models.ProductDiscount(
         product_id=product.product_id,
-        discount_type=discount.discount_type,
-        value=discount.value,
-        start_date=discount.start_date,
-        end_date=discount.end_date
+        name="Oferta Temporal", # O el nombre que le pases
+        discount_type=discount_data.discount_type,
+        value=discount_data.value,
+        start_date=discount_data.start_date,
+        end_date=discount_data.end_date
     )
+    db.add(new_discount)
     
-    try:
-        db.add(new_discount)
-        db.commit()
-        db.refresh(new_discount)
-        return new_discount
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Error al crear el descuento (verifique que end_date > start_date).")
+    calculated_sale_price = 0
+    if discount_data.discount_type == 'percentage':
+        multiplier = (Decimal('100') - Decimal(str(discount_data.value))) / Decimal('100')
+        calculated_sale_price = float(round(product.base_price * multiplier, 2))
+    else:
+        calculated_sale_price = float(product.base_price - Decimal(str(discount_data.value)))
+
+    # 4. EL INSERT MANUAL PARA EL HISTORIAL (special_offer_price)
+    history_record = models.ProductPriceHistory(
+        product_id=product.product_id,
+        old_value=product.base_price, # Tomamos el precio base como referencia "anterior"
+        new_value=calculated_sale_price,
+        record_type="special_offer_price"
+    )
+    db.add(history_record)
+
+    # 5. Guardamos todo junto en la misma transacción
+    db.commit()
+    
+    return {"message": "Descuento aplicado e historial actualizado"}
 
 @router.get("/catalog", response_model=List[schemas.ProductoCatalogoResponse])
 def get_catalog_products(db: Session = Depends(get_db)):
