@@ -31,8 +31,6 @@ model = YOLO("modelos_ia/best.pt")
 os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
-# CORRECCIÓN 1: Faltaba una coma después de localhost:3001. 
-# Además, agregamos los dominios oficiales para que no tengas problemas de CORS en producción.
 origins = [
     "http://localhost:3000",
     "http://localhost:3001",

@@ -1,9 +1,8 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, model_validator
 from typing import Optional, List
 from datetime import datetime
 import uuid
 
-# --- USUARIOS ---
 class UserCreate(BaseModel):
     first_name: str
     last_name: str
@@ -25,7 +24,36 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
-# --- PRODUCTOS ---
+class TaxClassResponse(BaseModel):
+    tax_class_id: int
+    name: str
+    rate: float
+    is_active: bool
+
+    class Config:
+        from_attributes = True
+
+class PriceHistoryResponse(BaseModel):
+    history_id: int
+    old_price: float
+    new_price: float
+    changed_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class DiscountCreate(BaseModel):
+    discount_type: str
+    value: float
+    start_date: datetime
+    end_date: datetime
+
+class DiscountResponse(DiscountCreate):
+    discount_id: int
+
+    class Config:
+        from_attributes = True
+
 class ProductoResponse(BaseModel):
     product_uuid: uuid.UUID
     name: str
@@ -43,7 +71,6 @@ class BrandResponse(BaseModel):
         from_attributes = True
 
 class ProductoCatalogoResponse(BaseModel):
-    # --- OBLIGATORIOS (Sin valor por defecto) ---
     product_uuid: uuid.UUID
     name: str
     slug: str
@@ -53,7 +80,6 @@ class ProductoCatalogoResponse(BaseModel):
     sold_count: int
     is_returnable: bool
 
-    # --- OPCIONALES (Con valor por defecto) ---
     sku: Optional[str] = None
     cost_price: Optional[float] = None
     sale_price: Optional[float] = None
@@ -62,6 +88,7 @@ class ProductoCatalogoResponse(BaseModel):
     short_description: Optional[str] = None
     stock_quantity: int = 0
     category_id: Optional[int] = None
+    tax_class_id: Optional[int] = None
 
     class Config:
         from_attributes = True
@@ -79,22 +106,24 @@ class ProductCreateSchema(BaseModel):
     is_published: bool = False
     is_featured: bool = False
     brand_id: Optional[int] = None
+    tax_class_id: Optional[int] = None
 
     class Config:
         from_attributes = True
 
 class ProductUpdateSchema(BaseModel):
     name: Optional[str] = None
-    slug: Optional[str] = None             # Añadido
-    sku: Optional[str] = None              # Añadido
-    main_image_url: Optional[str] = None   # Añadido
-    is_published: Optional[bool] = None    # Añadido
+    slug: Optional[str] = None
+    sku: Optional[str] = None
+    main_image_url: Optional[str] = None
+    is_published: Optional[bool] = None
     base_price: Optional[float] = None
-    sale_price: Optional[float] = None
     cost_price: Optional[float] = None
     stock_quantity: Optional[int] = None
     is_returnable: Optional[bool] = None
     brand_id: Optional[int] = None
+    tax_class_id: Optional[int] = None
+
     
     class Config:
         from_attributes = True
@@ -109,7 +138,6 @@ class CategoriaResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# --- ESCANEOS (Analyses) ---
 class SolicitudResponse(BaseModel):
     analysis_uuid: uuid.UUID
     confidence_score: Optional[float] = None
@@ -122,8 +150,16 @@ class SolicitudResponse(BaseModel):
 
 class ProductMovementCreate(BaseModel):
     quantity: int
+    movement_type: str
     reason: str
     notes: Optional[str] = None
+    unit_cost: Optional[float] = None
+
+    @model_validator(mode='after')
+    def validate_purchase_cost(self):
+        if self.movement_type == 'purchase' and self.unit_cost is None:
+            raise ValueError("El 'unit_cost' es obligatorio cuando se registra una compra ('purchase').")
+        return self
 
 class StaffCreate(BaseModel):
     email: EmailStr
