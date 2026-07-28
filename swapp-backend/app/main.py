@@ -13,7 +13,9 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session, joinedload 
 from sqlalchemy.exc import IntegrityError
 from ultralytics import YOLO
+from .database import engine, Base
 from PIL import Image
+from . import models
 import io
 
 # Limpiamos las importaciones redundantes para mantener el orden
@@ -21,7 +23,7 @@ from . import models, database, auth, schemas
 from .database import engine, get_db
 from .routers import products, auth as auth_router, staff 
 
-models.Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Swapp API")
 
