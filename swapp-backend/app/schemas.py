@@ -43,6 +43,12 @@ class PriceHistoryResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class ProductDiscountCreate(BaseModel):
+    discount_type: str
+    value: float
+    start_date: datetime
+    end_date: datetime
+
 class DiscountCreate(BaseModel):
     discount_type: str
     value: float
