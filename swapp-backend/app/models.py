@@ -181,6 +181,7 @@ class ProductPriceHistory(Base):
     new_value = Column(Numeric(10, 2), nullable=False)
     changed_at = Column(DateTime(timezone=True), server_default=func.now())
     record_type = Column(String(20), default="base_price", nullable=False)
+    product = relationship("Product", back_populates="price_history")
 
 
 # --- MOTOR DE OFERTAS ---
