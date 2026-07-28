@@ -120,7 +120,6 @@ class TaxClass(Base):
     __table_args__ = {"schema": "swapp"}
 
     tax_class_id = Column(BigInteger, primary_key=True, autoincrement=True)
-    tax_class_uuid = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, nullable=False)
     
     name = Column(String(100), nullable=False)
     rate = Column(Numeric(5, 2), nullable=False)
@@ -178,7 +177,6 @@ class ProductPriceHistory(Base):
     __table_args__ = {"schema": "swapp"}
 
     history_id = Column(BigInteger, primary_key=True, autoincrement=True)
-    history_uuid = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, nullable=False)
     
     product_id = Column(BigInteger, ForeignKey("swapp.products.product_id", ondelete="CASCADE"), nullable=False)
     old_price = Column(Numeric(10, 2), nullable=False)
@@ -194,7 +192,6 @@ class ProductDiscount(Base):
     __table_args__ = {"schema": "swapp"}
 
     discount_id = Column(BigInteger, primary_key=True, autoincrement=True)
-    discount_uuid = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, nullable=False)
     
     product_id = Column(BigInteger, ForeignKey("swapp.products.product_id", ondelete="CASCADE"), nullable=False)
     discount_type = Column(String(50), nullable=False) 
