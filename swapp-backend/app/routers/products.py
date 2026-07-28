@@ -23,7 +23,7 @@ def get_tax_classes(db: Session = Depends(get_db)):
 def get_price_history(
     product_uuid: UUID, 
     db: Session = Depends(get_db),
-    admin_user: models.staff_users = Depends(get_current_admin_user)
+    admin_user = Depends(get_current_admin_user)
 ):
     """
     Obtiene el historial de cambios de precio base de un producto. 
@@ -45,7 +45,7 @@ def create_product_discount(
     product_uuid: UUID,
     discount: schemas.DiscountCreate,
     db: Session = Depends(get_db),
-    admin_user: models.staff_users = Depends(get_current_admin_user)
+    admin_user = Depends(get_current_admin_user)
 ):
     """
     Crea una promoción temporal para el producto.
@@ -101,7 +101,7 @@ def get_catalog_products(db: Session = Depends(get_db)):
 @router.get("", status_code=status.HTTP_200_OK)
 def get_all_products_admin(
     db: Session = Depends(get_db),
-    admin_user: models.staff_users = Depends(get_current_admin_user)
+    admin_user = Depends(get_current_admin_user)
 ):
     """
     Retorna TODOS los productos (publicados y borradores) para el Panel Administrativo.
@@ -154,7 +154,7 @@ def update_product_admin(
     product_uuid: UUID,
     product_update: schemas.ProductUpdateSchema,
     db: Session = Depends(get_db),
-    admin_user: models.staff_users = Depends(get_current_admin_user)
+    admin_user = Depends(get_current_admin_user)
 ):
     product = db.query(models.Product).filter(models.Product.product_uuid == product_uuid).first()
     
@@ -193,7 +193,7 @@ def create_product_movement(
     product_uuid: UUID,
     movement: schemas.ProductMovementCreate,
     db: Session = Depends(get_db),
-    admin_user: models.staff_users = Depends(get_current_admin_user)
+    admin_user = Depends(get_current_admin_user)
 ):
     """
     Registra un movimiento en la tabla 'inventory_movements'.
@@ -224,7 +224,7 @@ def create_product_movement(
 def create_product_admin(
     product_in: schemas.ProductCreateSchema,
     db: Session = Depends(get_db),
-    admin_user: models.staff_users = Depends(get_current_admin_user)
+    admin_user = Depends(get_current_admin_user)
 ):
     """
     Crea un producto nuevo en el catálogo maestro (esquema swapp).
