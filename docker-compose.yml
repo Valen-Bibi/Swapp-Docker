@@ -1,22 +1,57 @@
 services:
-  backend:
-    build: ./swapp-backend
-    ports:
-      - "7860:7860"
+  db:
+    image: postgres:15-alpine
+    container_name: swapp-db-local
+    restart: always
     env_file:
       - ./swapp-backend/.env
-    # Un solo bloque volumes para el backend
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_local:/var/lib/postgresql/data
+
+  backend:
+    build: ./swapp-backend
+    container_name: swapp-backend
+    ports:
+      - "7860:7860"
+    depends_on:
+      - db
+    env_file:
+      - ./swapp-backend/.env
     volumes:
       - ./swapp-backend:/app
     command: uvicorn app.main:app --host 0.0.0.0 --port 7860 --reload
 
   frontend:
-    build: ./swapp-frontend
+    build:
+      context: ./swapp-frontend
+      target: deps
+    container_name: swapp-frontend
     ports:
-      - "3000:3000"
-    # Un solo bloque volumes para el frontend
+      - "3002:3000"
     volumes:
       - ./swapp-frontend:/app
       - /app/node_modules
-      - /app/.next
-    command: npm run dev
+    environment:
+      - NODE_ENV=development
+      - WATCHPACK_POLLING=true
+    command: sh -c "npm install && npm run dev"
+
+  admin:
+    build:
+      context: ./swapp-admin-dashboard
+      target: deps
+    container_name: swapp-admin
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./swapp-admin-dashboard:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - WATCHPACK_POLLING=true
+    command: sh -c "npm install && npm run dev -- --webpack"
+
+volumes:
+  postgres_data_local:

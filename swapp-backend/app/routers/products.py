@@ -10,25 +10,17 @@ from ..auth import get_current_admin_user
 
 router = APIRouter(prefix="/api/products/admin", tags=["Admin Products"])
 
-# --- IMPUESTOS ---
 @router.get("/taxes", response_model=List[schemas.TaxClassResponse])
-def get_tax_classes(db: Session = Depends(get_db)):
-    """
-    Obtiene todas las clases de impuestos activas.
-    """
+def get_tax_classes(db: Session = Depends(get_db), admin_user = Depends(get_current_admin_user)):
     return db.query(models.TaxClass).filter(models.TaxClass.is_active == True).all()
 
-# --- HISTORIAL DE PRECIOS ---
 @router.get("/{product_uuid}/price-history", response_model=List[schemas.PriceHistoryResponse])
 def get_price_history(
     product_uuid: UUID, 
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
-    """
-    Obtiene el historial de cambios de precio base de un producto. 
-    (Solo lectura, la BD inserta automáticamente vía Trigger).
-    """
+
     product = db.query(models.Product).filter(models.Product.product_uuid == product_uuid).first()
     if not product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
@@ -43,7 +35,7 @@ def get_price_history(
 @router.post("/{product_uuid}/discounts", status_code=status.HTTP_201_CREATED)
 def create_product_discount(
     product_uuid: UUID, 
-    discount_data: schemas.ProductDiscountCreate, # O el nombre de tu esquema
+    discount_data: schemas.ProductDiscountCreate, 
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
@@ -52,9 +44,23 @@ def create_product_discount(
     if not product:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
         
+    # 1. Estandarizamos TODO a Decimal para evitar choques con float
+    precio_base = Decimal(str(product.base_price))
+    valor_descuento = Decimal(str(discount_data.value))
+    
+    calculated_sale_price = Decimal('0')
+
+    # 2. Matemática segura
+    if discount_data.discount_type == 'percentage':
+        multiplier = (Decimal('100') - valor_descuento) / Decimal('100')
+        calculated_sale_price = round(precio_base * multiplier, 2)
+    else:
+        calculated_sale_price = precio_base - valor_descuento
+
+    # 3. Guardamos el descuento
     new_discount = models.ProductDiscount(
         product_id=product.product_id,
-        name="Oferta Temporal", # O el nombre que le pases
+        name="Oferta Temporal",
         discount_type=discount_data.discount_type,
         value=discount_data.value,
         start_date=discount_data.start_date,
@@ -62,23 +68,15 @@ def create_product_discount(
     )
     db.add(new_discount)
     
-    calculated_sale_price = 0
-    if discount_data.discount_type == 'percentage':
-        multiplier = (Decimal('100') - Decimal(str(discount_data.value))) / Decimal('100')
-        calculated_sale_price = float(round(product.base_price * multiplier, 2))
-    else:
-        calculated_sale_price = float(product.base_price - Decimal(str(discount_data.value)))
-
-    # 4. EL INSERT MANUAL PARA EL HISTORIAL (special_offer_price)
+    # 4. Guardamos el historial con los valores estandarizados
     history_record = models.ProductPriceHistory(
         product_id=product.product_id,
-        old_value=product.base_price, # Tomamos el precio base como referencia "anterior"
+        old_value=precio_base, 
         new_value=calculated_sale_price,
         record_type="special_offer_price"
     )
     db.add(history_record)
 
-    # 5. Guardamos todo junto en la misma transacción
     db.commit()
     
     return {"message": "Descuento aplicado e historial actualizado"}
@@ -216,13 +214,14 @@ def create_product_movement(
 ):
     """
     Registra un movimiento en la tabla 'inventory_movements'.
-    El trigger BEFORE INSERT en BD completará stock_before, stock_after y actualizará el maestro.
+    Actualiza el costo del producto si es una compra.
     """
     product = db.query(models.Product).filter(models.Product.product_uuid == product_uuid).first()
     
     if not product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
 
+    # 1. Registramos el movimiento 
     new_movement = models.InventoryMovement(
         product_id=product.product_id,
         movement_type=movement.movement_type,
@@ -232,11 +231,16 @@ def create_product_movement(
         notes=movement.notes,
         created_by=admin_user.staff_id 
     )
-
     db.add(new_movement)
+
+    # 2. LA MAGIA: Si es una compra y el costo es distinto, actualizamos el catálogo maestro
+    if movement.movement_type == 'purchase' and movement.unit_cost is not None and movement.unit_cost > 0:
+        product.cost_price = movement.unit_cost 
+        # Al asignar este nuevo valor, SQLAlchemy ejecutará un UPDATE en swapp.products
+
     db.commit() 
     
-    return {"message": "Movimiento de inventario registrado con éxito"}
+    return {"message": "Movimiento de inventario registrado y costos actualizados con éxito"}
 
 # --- CREACIÓN DE PRODUCTOS ---
 @router.post("", status_code=status.HTTP_201_CREATED)

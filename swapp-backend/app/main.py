@@ -13,9 +13,10 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session, joinedload 
 from sqlalchemy.exc import IntegrityError
 from ultralytics import YOLO
-from .database import engine, Base
+from .database import engine, get_db, Base
 from PIL import Image
-from . import models
+from . import models, database, auth, schemas
+from .routers import products, auth as auth_router, staff
 import io
 
 # Limpiamos las importaciones redundantes para mantener el orden
@@ -24,6 +25,20 @@ from .database import engine, get_db
 from .routers import products, auth as auth_router, staff 
 
 Base.metadata.create_all(bind=engine)
+
+entorno = os.getenv("ENVIRONMENT", "development")
+
+if entorno == "production":
+    print("🔒 Iniciando en modo PRODUCCIÓN: Documentación desactivada.")
+    app = FastAPI(
+        title="Swapp API",
+        docs_url=None, 
+        redoc_url=None, 
+        openapi_url=None
+    )
+else:
+    print("🚧 Iniciando en modo DESARROLLO: Documentación activada.")
+    app = FastAPI(title="Swapp API")
 
 app = FastAPI(title="Swapp API")
 
@@ -105,8 +120,11 @@ class EscaneoCreate(BaseModel):
 
 
 @app.post("/escaneos")
-def registrar_escaneo(escaneo: EscaneoCreate, db: Session = Depends(get_db)):
-
+def registrar_escaneo(
+    escaneo: EscaneoCreate, 
+    db: Session = Depends(get_db),
+    current_user = Depends(auth.get_current_user) # <- SEGURIDAD APLICADA
+):
     producto_db = db.query(models.Product).filter(models.Product.name == escaneo.producto_nombre).first()
     product_id = producto_db.product_id if producto_db else None
 
@@ -118,9 +136,6 @@ def registrar_escaneo(escaneo: EscaneoCreate, db: Session = Depends(get_db)):
     img_bytes = base64.b64decode(img_data_str)
     
     filename = f"{uuid.uuid4().hex}.jpg"
-    
-    # CORRECCIÓN 3: Estandarizamos la ruta a "uploads" (relativa) en vez de "/app/uploads" (absoluta)
-    # para evitar problemas de permisos cruzados con el montaje de archivos estáticos.
     filepath = os.path.join("uploads", filename)
     
     with open(filepath, "wb") as f:
@@ -148,8 +163,12 @@ def registrar_escaneo(escaneo: EscaneoCreate, db: Session = Depends(get_db)):
         "imagen_guardada": image_url
     }
 
+
 @app.post("/api/detectar-envase")
-async def detectar_envase(file: UploadFile = File(...)):
+async def detectar_envase(
+    file: UploadFile = File(...),
+    current_user = Depends(auth.get_current_user) # <- SEGURIDAD APLICADA
+):
     image_bytes = await file.read()
     image = Image.open(io.BytesIO(image_bytes))
     

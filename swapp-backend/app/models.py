@@ -25,7 +25,6 @@ class User(Base):
     
     analyses = relationship("UserImageAnalysis", back_populates="user", cascade="all, delete-orphan")
 
-
 class staff_users(Base):
     __tablename__ = "staff_users"
     __table_args__ = {"schema": "swapp"}
@@ -60,7 +59,6 @@ class staff_users(Base):
 
     meta_data = Column("metadata", JSONB, default={})
 
-
 class Brand(Base):
     __tablename__ = "brands"
     __table_args__ = {"schema": "swapp"}
@@ -74,7 +72,6 @@ class Brand(Base):
     is_active = Column(Boolean, default=True)
     
     products = relationship("Product", back_populates="brand")
-
 
 class ProductCategory(Base):
     __tablename__ = "product_categories"
@@ -95,7 +92,6 @@ class ProductCategory(Base):
     parent = relationship("ProductCategory", remote_side=[category_id], backref="children")
     products = relationship("Product", back_populates="category")
 
-
 class ProductRelationship(Base):
     __tablename__ = "product_relationships"
     __table_args__ = {"schema": "swapp"}
@@ -113,8 +109,6 @@ class ProductRelationship(Base):
     source_product = relationship("Product", foreign_keys=[source_product_id], back_populates="related_to")
     target_product = relationship("Product", foreign_keys=[target_product_id], back_populates="related_from")
 
-
-# --- IMPUESTOS ---
 class TaxClass(Base):
     __tablename__ = "tax_classes"
     __table_args__ = {"schema": "swapp"}
@@ -123,12 +117,11 @@ class TaxClass(Base):
     
     name = Column(String(100), nullable=False)
     rate = Column(Numeric(5, 2), nullable=False)
+    description = Column(String(100), nullable=True)
     is_active = Column(Boolean, default=True)
 
     products = relationship("Product", back_populates="tax_class")
 
-
-# --- PRODUCTOS ACTUALIZADOS ---
 class Product(Base):
     __tablename__ = "products"
     __table_args__ = {"schema": "swapp"}
@@ -142,7 +135,6 @@ class Product(Base):
     description = Column(Text, nullable=True)
     short_description = Column(String(500), nullable=True)
     
-    # Claves Foráneas
     category_id = Column(BigInteger, ForeignKey("swapp.product_categories.category_id"), nullable=True)
     brand_id = Column(BigInteger, ForeignKey("swapp.brands.brand_id"), nullable=True)
     tax_class_id = Column(BigInteger, ForeignKey("swapp.tax_classes.tax_class_id"), nullable=True)
@@ -157,7 +149,6 @@ class Product(Base):
     sold_count = Column(Integer, default=0)
     is_returnable = Column(Boolean, default=False)
     
-    # Relaciones
     category = relationship("ProductCategory", back_populates="products")
     brand = relationship("Brand", back_populates="products")
     tax_class = relationship("TaxClass", back_populates="products")
@@ -184,14 +175,13 @@ class ProductPriceHistory(Base):
     product = relationship("Product", back_populates="price_history")
 
 
-# --- MOTOR DE OFERTAS ---
 class ProductDiscount(Base):
     __tablename__ = "product_discounts"
     __table_args__ = {"schema": "swapp"}
 
     discount_id = Column(BigInteger, primary_key=True, autoincrement=True)
-    
     product_id = Column(BigInteger, ForeignKey("swapp.products.product_id", ondelete="CASCADE"), nullable=False)
+    name = Column(String(255), nullable=False) 
     discount_type = Column(String(50), nullable=False) 
     value = Column(Numeric(10, 2), nullable=False)
     start_date = Column(DateTime(timezone=True), nullable=False)
@@ -240,10 +230,10 @@ class InventoryMovement(Base):
     reason = Column(Text)
     notes = Column(Text)
     
-    created_by = Column(BigInteger, ForeignKey("swapp.users.user_id"))
+    created_by = Column(BigInteger, ForeignKey("swapp.staff_users.staff_id"))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     movement_metadata = Column("metadata", JSONB, server_default='{}')
 
     product = relationship("Product", back_populates="inventory_movements")
-    user = relationship("User")
+    user = relationship(staff_users, foreign_keys=[created_by])
