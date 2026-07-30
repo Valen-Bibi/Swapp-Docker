@@ -41,7 +41,6 @@ services:
   admin:
     build:
       context: ./swapp-admin-dashboard
-      target: deps
     container_name: swapp-admin
     ports:
       - "3000:3000"

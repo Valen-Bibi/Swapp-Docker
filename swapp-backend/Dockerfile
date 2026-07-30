@@ -9,9 +9,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt \
+RUN pip install --default-timeout=1000 --no-cache-dir -r requirements.txt \
     && pip uninstall -y opencv-python \
-    && pip install --no-cache-dir opencv-python-headless
+    && pip install --default-timeout=1000 --no-cache-dir opencv-python-headless
 FROM python:3.10-slim as runner
 WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 \
