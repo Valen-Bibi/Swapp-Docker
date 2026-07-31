@@ -2,6 +2,7 @@ import shutil
 import base64
 import os
 import uuid
+import io
 from typing import Optional, List
 from datetime import timedelta
 
@@ -13,16 +14,14 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session, joinedload 
 from sqlalchemy.exc import IntegrityError
 from ultralytics import YOLO
-from .database import engine, get_db, Base
 from PIL import Image
-from . import models, database, auth, schemas
-from .routers import products, auth as auth_router, staff
-import io
 
-# Limpiamos las importaciones redundantes para mantener el orden
+# Importaciones de la raíz de tu proyecto
 from . import models, database, auth, schemas
-from .database import engine, get_db
-from .routers import products, auth as auth_router, staff 
+from .database import engine, get_db, Base
+
+# Importaciones de tus rutas (apuntando al archivo correcto)
+from .routers import products, auth_routes, staff 
 
 Base.metadata.create_all(bind=engine)
 
@@ -40,8 +39,6 @@ else:
     print("🚧 Iniciando en modo DESARROLLO: Documentación activada.")
     app = FastAPI(title="Swapp API")
 
-app = FastAPI(title="Swapp API")
-
 print("🧠 Cargando cerebro IA de Swapp...")
 model = YOLO("modelos_ia/best.pt")
 
@@ -56,8 +53,6 @@ origins = [
     "https://admin.swapp.com.ar"
 ]
 
-# CORRECCIÓN 2: FastAPI arroja un error fatal si usas allow_origins=["*"] junto con allow_credentials=True. 
-# Le pasamos la lista 'origins' que definimos arriba.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -66,8 +61,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Conectamos los routers al sistema
 app.include_router(products.router)
-app.include_router(auth_router.router) 
+app.include_router(auth_routes.router) # <- Conectado sin alias
 app.include_router(staff.router)
 
 @app.post("/register", response_model=schemas.UsuarioResponse, status_code=status.HTTP_201_CREATED)
@@ -123,7 +119,7 @@ class EscaneoCreate(BaseModel):
 def registrar_escaneo(
     escaneo: EscaneoCreate, 
     db: Session = Depends(get_db),
-    current_user = Depends(auth.get_current_user) # <- SEGURIDAD APLICADA
+    current_user = Depends(auth.get_current_user) 
 ):
     producto_db = db.query(models.Product).filter(models.Product.name == escaneo.producto_nombre).first()
     product_id = producto_db.product_id if producto_db else None
@@ -167,7 +163,7 @@ def registrar_escaneo(
 @app.post("/api/detectar-envase")
 async def detectar_envase(
     file: UploadFile = File(...),
-    current_user = Depends(auth.get_current_user) # <- SEGURIDAD APLICADA
+    current_user = Depends(auth.get_current_user) 
 ):
     image_bytes = await file.read()
     image = Image.open(io.BytesIO(image_bytes))
