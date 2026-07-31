@@ -1,0 +1,23 @@
+import React from "react";
+
+interface SwappTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+	label: string;
+}
+
+export function SwappTextarea({
+	label,
+	className = "",
+	...props
+}: SwappTextareaProps) {
+	return (
+		<div className={className}>
+			<label className="block text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza mb-1 transition-colors">
+				{label}
+			</label>
+			<textarea
+				{...props}
+				className="w-full rounded-md border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-negro-azulado p-2.5 text-swapp-negro-azulado dark:text-swapp-blanco placeholder:text-swapp-azul-petroleo/40 dark:placeholder:text-swapp-tiza/40 focus:outline-none focus:ring-1 focus:ring-swapp-turquesa-oscuro dark:focus:ring-swapp-menta transition-colors resize-y min-h-[80px]"
+			/>
+		</div>
+	);
+}
