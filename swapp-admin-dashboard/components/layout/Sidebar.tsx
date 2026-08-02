@@ -9,6 +9,8 @@ import {
 	Settings,
 	LogOut,
 	UserCircle,
+	ChevronDown,
+	Tag,
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -27,6 +29,11 @@ export default function Sidebar() {
 	const router = useRouter();
 	const [userData, setUserData] = useState<UserData | null>(null);
 
+	// Estado para controlar si el menú de Precios está expandido
+	const [isPricingExpanded, setIsPricingExpanded] = useState(
+		pathname.includes("/dashboard/products/pricing"),
+	);
+
 	useEffect(() => {
 		const token = Cookies.get("admin_token");
 		if (token) {
@@ -39,18 +46,30 @@ export default function Sidebar() {
 		}
 	}, []);
 
+	// Sincronizar la expansión del menú si la ruta cambia desde otro lado
+	useEffect(() => {
+		if (pathname.includes("/dashboard/products/pricing")) {
+			setIsPricingExpanded(true);
+		}
+	}, [pathname]);
+
 	const handleLogout = () => {
 		Cookies.remove("admin_token");
 		router.push("/login");
 	};
 
 	const productLinks = [
-		{ name: "Catálogo Maestro", href: "/dashboard/products", icon: Package },
-		{ name: "Control de Stock", href: "/dashboard/products/stock", icon: Box },
 		{
-			name: "Costos y Precios",
-			href: "/dashboard/products/pricing",
-			icon: DollarSign,
+			name: "Catálogo Maestro",
+			href: "/dashboard/products",
+			icon: Box,
+			exact: true,
+		},
+		{
+			name: "Inventarios",
+			href: "/dashboard/products/stock",
+			icon: Package,
+			exact: false,
 		},
 	];
 
@@ -76,8 +95,12 @@ export default function Sidebar() {
 						Productos
 					</p>
 					<div className="space-y-1">
+						{/* Enlaces simples */}
 						{productLinks.map((link) => {
-							const isActive = pathname === link.href;
+							const isActive = link.exact
+								? pathname === link.href
+								: pathname.startsWith(link.href);
+
 							return (
 								<Link
 									key={link.href}
@@ -94,6 +117,56 @@ export default function Sidebar() {
 								</Link>
 							);
 						})}
+
+						{/* Menú Expandible: Costos y Precios */}
+						<div className="flex flex-col gap-1 pt-1">
+							<button
+								onClick={() => setIsPricingExpanded(!isPricingExpanded)}
+								className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-colors ${
+									pathname.includes("/dashboard/products/pricing")
+										? "bg-swapp-turquesa-oscuro text-swapp-blanco shadow-sm"
+										: "text-swapp-azul-petroleo hover:bg-swapp-tiza dark:text-swapp-tiza dark:hover:bg-swapp-azul-petroleo dark:hover:text-swapp-blanco"
+								}`}>
+								<div className="flex items-center gap-3">
+									<DollarSign
+										className={`h-5 w-5 ${pathname.includes("/dashboard/products/pricing") ? "text-swapp-blanco" : ""}`}
+									/>
+									<span className="font-medium">Precios</span>
+								</div>
+								<ChevronDown
+									className={`h-4 w-4 transition-transform duration-200 ${isPricingExpanded ? "rotate-180" : ""}`}
+								/>
+							</button>
+
+							{/* Sub-enlaces */}
+							<div
+								className={`overflow-hidden transition-all duration-300 ease-in-out pl-9 pr-2 flex flex-col gap-1 ${
+									isPricingExpanded
+										? "max-h-24 opacity-100 mt-1"
+										: "max-h-0 opacity-0"
+								}`}>
+								<Link
+									href="/dashboard/products/pricing/costs"
+									className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+										pathname === "/dashboard/products/pricing/costs"
+											? "bg-swapp-turquesa-oscuro/10 text-swapp-turquesa-oscuro dark:bg-swapp-menta/10 dark:text-swapp-menta font-medium"
+											: "text-swapp-azul-petroleo/70 hover:bg-swapp-tiza dark:text-swapp-tiza/70 dark:hover:bg-swapp-azul-petroleo dark:hover:text-swapp-blanco"
+									}`}>
+									<DollarSign className="h-4 w-4" />
+									Costos y Precios (ABM)
+								</Link>
+								<Link
+									href="/dashboard/products/pricing/discounts"
+									className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+										pathname === "/dashboard/products/pricing/discounts"
+											? "bg-swapp-turquesa-oscuro/10 text-swapp-turquesa-oscuro dark:bg-swapp-menta/10 dark:text-swapp-menta font-medium"
+											: "text-swapp-azul-petroleo/70 hover:bg-swapp-tiza dark:text-swapp-tiza/70 dark:hover:bg-swapp-azul-petroleo dark:hover:text-swapp-blanco"
+									}`}>
+									<Tag className="h-4 w-4" />
+									Ofertas (ABM)
+								</Link>
+							</div>
+						</div>
 					</div>
 				</div>
 

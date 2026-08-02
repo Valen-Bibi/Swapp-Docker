@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProductService } from "@/services/product.service";
-import { Package, Plus, Edit, Image as ImageIcon, X } from "lucide-react";
+import { Box, Plus, Edit, Image as ImageIcon, X } from "lucide-react";
 import { toast } from "sonner";
 import TableSkeleton from "@/components/tables/TableSkeleton";
 import PageHeader from "@/components/layout/PageHeader";
@@ -14,6 +14,7 @@ import { SwappCheckbox } from "@/components/ui/SwappCheckbox";
 import { SwappTooltip } from "@/components/ui/SwappTooltip";
 import { useTableSort } from "@/hooks/useTableSort";
 import { Product } from "@/types/product";
+import { formatCurrency } from "@/lib/utils";
 
 interface Brand {
 	brand_id: number;
@@ -125,7 +126,7 @@ export default function MasterCatalogPage() {
 				<PageHeader
 					title="Catálogo Maestro"
 					description="Gestión de identidad y multimedia"
-					icon={Package}
+					icon={Box}
 				/>
 				<div className="flex items-center gap-3">
 					<SearchBar
@@ -328,7 +329,8 @@ export default function MasterCatalogPage() {
 							<div className="grid grid-cols-2 gap-4 border-t border-swapp-tiza dark:border-swapp-azul-petroleo pt-4 transition-colors">
 								<SwappInput
 									label="Costo de Adquisición ($)"
-									type="number"
+									type="text"
+									formatThousands
 									step="0.01"
 									min="0"
 									value={editingProduct.cost_price || ""}
@@ -341,7 +343,8 @@ export default function MasterCatalogPage() {
 								/>
 								<SwappInput
 									label="Precio Base ($)"
-									type="number"
+									type="text"
+									formatThousands
 									step="0.01"
 									min="0"
 									required

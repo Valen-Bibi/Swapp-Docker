@@ -17,14 +17,14 @@ export default function CommandPalette() {
 				name: "Ir al Catálogo Maestro",
 				shortcut: "C",
 				url: "/dashboard/products",
-				icon: Package,
+				icon: Box,
 			},
 			{
 				id: 2,
 				name: "Control de Inventario",
 				shortcut: "I",
 				url: "/dashboard/products/stock",
-				icon: Box,
+				icon: Package,
 			},
 			{
 				id: 3,

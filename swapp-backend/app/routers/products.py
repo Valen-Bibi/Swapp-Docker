@@ -32,43 +32,40 @@ def get_price_history(
     return history
 
 # --- MOTOR DE DESCUENTOS ---
-@router.post("/{product_uuid}/discounts", status_code=status.HTTP_201_CREATED)
+@router.post("/discounts", status_code=status.HTTP_201_CREATED)
 def create_product_discount(
-    product_uuid: UUID, 
     discount_data: schemas.ProductDiscountCreate, 
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
-
-    product = db.query(models.Product).filter(models.Product.product_uuid == product_uuid).first()
+    # 1. Buscamos el producto mediante el UUID proporcionado
+    product = db.query(models.Product).filter(models.Product.product_uuid == discount_data.product_uuid).first()
     if not product:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
         
-    # 1. Estandarizamos TODO a Decimal para evitar choques con float
     precio_base = Decimal(str(product.base_price))
     valor_descuento = Decimal(str(discount_data.value))
-    
     calculated_sale_price = Decimal('0')
 
-    # 2. Matemática segura
     if discount_data.discount_type == 'percentage':
         multiplier = (Decimal('100') - valor_descuento) / Decimal('100')
         calculated_sale_price = round(precio_base * multiplier, 2)
     else:
         calculated_sale_price = precio_base - valor_descuento
 
-    # 3. Guardamos el descuento
+    # 3. Guardamos el descuento incluyendo el nombre (Campaña)
     new_discount = models.ProductDiscount(
         product_id=product.product_id,
-        name="Oferta Temporal",
+        name=discount_data.name,
         discount_type=discount_data.discount_type,
         value=discount_data.value,
         start_date=discount_data.start_date,
-        end_date=discount_data.end_date
+        end_date=discount_data.end_date,
+        is_active=discount_data.is_active
     )
     db.add(new_discount)
     
-    # 4. Guardamos el historial con los valores estandarizados
+    # 4. Historial
     history_record = models.ProductPriceHistory(
         product_id=product.product_id,
         old_value=precio_base, 
@@ -78,37 +75,78 @@ def create_product_discount(
     db.add(history_record)
 
     db.commit()
-    
-    return {"message": "Descuento aplicado e historial actualizado"}
+    return {"message": "Descuento creado exitosamente"}
 
-@router.get("/catalog", response_model=List[schemas.ProductoCatalogoResponse])
-def get_catalog_products(db: Session = Depends(get_db)):
+
+@router.put("/discounts/{discount_id}")
+def update_product_discount(
+    discount_id: int,
+    discount_data: schemas.ProductDiscountUpdate,
+    db: Session = Depends(get_db),
+    admin_user = Depends(get_current_admin_user)
+):
+    discount = db.query(models.ProductDiscount).filter(models.ProductDiscount.discount_id == discount_id).first()
+    if not discount:
+        raise HTTPException(status_code=404, detail="Oferta no encontrada")
+
+    update_data = discount_data.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(discount, key, value)
+
+    db.commit()
+    return {"message": "Oferta actualizada correctamente"}
+
+
+@router.get("/discounts", response_model=List[schemas.DiscountResponse])
+def get_active_discounts(db: Session = Depends(get_db), admin_user = Depends(get_current_admin_user)):
     """
-    Obtiene todos los productos publicados. Calcula el sale_price al vuelo si hay descuentos.
+    Obtiene solo los descuentos vigentes o programados para el futuro (fecha de fin >= ahora).
     """
-    products = db.query(models.Product).filter(models.Product.is_published == True).all()
     now = datetime.now(timezone.utc)
+    discounts = db.query(models.ProductDiscount).join(models.Product).filter(
+        models.ProductDiscount.end_date >= now
+    ).all()
     
     result = []
-    for p in products:
-        p_data = p.__dict__.copy()
-        
-        # Limpiamos la metadata interna de SQLAlchemy para evitar el colapso de serialización JSON
-        p_data.pop("_sa_instance_state", None) 
-        
-        p_data['sale_price'] = None
-        
-        active_discounts = [d for d in p.discounts if d.start_date <= now <= d.end_date]
-        if active_discounts:
-            d = active_discounts[0]
-            if d.discount_type == 'percentage':
-                multiplier = (Decimal('100') - d.value) / Decimal('100')
-                p_data['sale_price'] = float(round(p.base_price * multiplier, 2))
-            elif d.discount_type == 'fixed':
-                p_data['sale_price'] = float(p.base_price - d.value)
-                
-        result.append(p_data)
-        
+    for d in discounts:
+        result.append({
+            "discount_id": d.discount_id,
+            "product_id": d.product_id,
+            "product_uuid": d.product.product_uuid,
+            "product_name": d.product.name,
+            "name": d.name,
+            "discount_type": d.discount_type,
+            "value": float(d.value),
+            "start_date": d.start_date,
+            "end_date": d.end_date,
+            "is_active": d.is_active
+        })
+    return result
+
+@router.get("/discounts/history", response_model=List[schemas.DiscountResponse])
+def get_historical_discounts(db: Session = Depends(get_db), admin_user = Depends(get_current_admin_user)):
+    """
+    Obtiene el historial de descuentos vencidos (fecha de fin < ahora).
+    """
+    now = datetime.now(timezone.utc)
+    discounts = db.query(models.ProductDiscount).join(models.Product).filter(
+        models.ProductDiscount.end_date < now
+    ).all()
+    
+    result = []
+    for d in discounts:
+        result.append({
+            "discount_id": d.discount_id,
+            "product_id": d.product_id,
+            "product_uuid": d.product.product_uuid,
+            "product_name": d.product.name,
+            "name": d.name,
+            "discount_type": d.discount_type,
+            "value": float(d.value),
+            "start_date": d.start_date,
+            "end_date": d.end_date,
+            "is_active": d.is_active
+        })
     return result
 
 @router.get("", response_model=List[schemas.ProductoCatalogoResponse], status_code=status.HTTP_200_OK)

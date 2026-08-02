@@ -44,10 +44,24 @@ class PriceHistoryResponse(BaseModel):
         from_attributes = True
 
 class ProductDiscountCreate(BaseModel):
+    product_uuid: uuid.UUID
+    name: str
     discount_type: str
     value: float
     start_date: datetime
     end_date: datetime
+    is_active: bool = True
+
+class ProductDiscountUpdate(BaseModel):
+    name: Optional[str] = None
+    discount_type: Optional[str] = None
+    value: Optional[float] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    is_active: Optional[bool] = None
+
+class ProductDiscountToggle(BaseModel):
+    is_active: bool
 
 class DiscountCreate(BaseModel):
     discount_type: str
@@ -55,8 +69,17 @@ class DiscountCreate(BaseModel):
     start_date: datetime
     end_date: datetime
 
-class DiscountResponse(DiscountCreate):
+class DiscountResponse(BaseModel):
     discount_id: int
+    product_id: int
+    product_uuid: uuid.UUID
+    product_name: str
+    name: str
+    discount_type: str
+    value: float
+    start_date: datetime
+    end_date: datetime
+    is_active: bool
 
     class Config:
         from_attributes = True

@@ -243,7 +243,8 @@ export default function NewProductPage() {
 					<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 border-t border-swapp-tiza dark:border-swapp-azul-petroleo pt-6 transition-colors">
 						<SwappInput
 							label="Costo de Adquisición ($)"
-							type="number"
+							type="text"
+							formatThousands
 							step="0.01"
 							min="0"
 							value={formData.cost_price || ""}
@@ -257,7 +258,8 @@ export default function NewProductPage() {
 
 						<SwappInput
 							label="Precio Base Inicial ($)"
-							type="number"
+							type="text"
+							formatThousands
 							step="0.01"
 							min="0"
 							required
@@ -297,7 +299,8 @@ export default function NewProductPage() {
 
 						<SwappInput
 							label="Stock Inicial de Depósito"
-							type="number"
+							type="text"
+							formatThousands
 							min="0"
 							required
 							value={formData.stock_quantity || ""}

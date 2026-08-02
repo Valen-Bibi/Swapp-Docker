@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { X, Lock, Unlock } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { SwappInput } from "@/components/ui/SwappInput";
 import { SwappSelect } from "@/components/ui/SwappSelect";
 import { SwappTextarea } from "@/components/ui/SwappTextarea";
+import { SwappToggle } from "@/components/ui/SwappToggle";
 import { Product } from "@/types/product";
 
 interface StockMovementModalProps {
@@ -27,6 +28,7 @@ export default function StockMovementModal({
 	const [notes, setNotes] = useState("");
 	const [unitCost, setUnitCost] = useState<number | "">("");
 	const [isSaving, setIsSaving] = useState(false);
+	const [isCostEditable, setIsCostEditable] = useState(false);
 
 	// Reiniciamos el formulario y cargamos el costo histórico al abrir
 	useEffect(() => {
@@ -38,6 +40,8 @@ export default function StockMovementModal({
 			setNotes("");
 			// Autocompletamos con el último valor registrado en el catálogo
 			setUnitCost(product.cost_price || 0);
+			// Por defecto la edición del costo está bloqueada
+			setIsCostEditable(false);
 		}
 	}, [isOpen, movementType, product]);
 
@@ -134,7 +138,8 @@ export default function StockMovementModal({
 				<form onSubmit={handleSaveMovement} className="space-y-4">
 					<SwappInput
 						label="Cantidad de unidades"
-						type="number"
+						type="text"
+						formatThousands
 						min="1"
 						placeholder="Ej: 50"
 						required
@@ -153,29 +158,56 @@ export default function StockMovementModal({
 					{/* Bloque Condicional para Actualizar Costo */}
 					{reason === "Compra a proveedor" && (
 						<div className="bg-swapp-tiza/30 dark:bg-swapp-azul-petroleo/20 p-4 rounded-lg border border-swapp-tiza dark:border-swapp-azul-petroleo/50 animate-in fade-in slide-in-from-top-2">
-							<p className="text-sm font-semibold text-swapp-azul-petroleo dark:text-swapp-tiza mb-3">
-								Actualizar costo de producto
-							</p>
-							<SwappInput
-								label="Costo Unitario Pagado ($)"
-								type="number"
-								step="any"
-								min="0"
-								required={reason === "Compra a proveedor"}
-								value={unitCost}
-								onChange={(e) =>
-									setUnitCost(
-										e.target.value === "" ? "" : parseFloat(e.target.value),
-									)
-								}
-								helpText="Se autocompleta con el último costo registrado. Modificalo si el proveedor cambió el precio."
-							/>
+							<div className="flex items-center justify-between mb-4">
+								<div className="flex items-center gap-2">
+									{isCostEditable ? (
+										<Unlock className="h-4 w-4 text-swapp-turquesa-oscuro dark:text-swapp-menta" />
+									) : (
+										<Lock className="h-4 w-4 text-swapp-azul-petroleo/50 dark:text-swapp-tiza/50" />
+									)}
+									<p className="text-sm font-semibold text-swapp-azul-petroleo dark:text-swapp-tiza">
+										Actualizar costo de producto
+									</p>
+								</div>
+
+								{/* Nuevo componente SwappToggle */}
+								<SwappToggle
+									checked={isCostEditable}
+									onChange={setIsCostEditable}
+								/>
+							</div>
+
+							<div
+								className={`transition-all duration-200 ${
+									!isCostEditable
+										? "opacity-60 grayscale pointer-events-none"
+										: ""
+								}`}>
+								<SwappInput
+									label="Costo Unitario Pagado ($)"
+									type="text"
+									formatThousands
+									required={reason === "Compra a proveedor" && isCostEditable}
+									disabled={!isCostEditable}
+									value={unitCost}
+									onChange={(e) =>
+										setUnitCost(
+											e.target.value === "" ? "" : parseFloat(e.target.value),
+										)
+									}
+									helpText={
+										isCostEditable
+											? "Modificalo si el proveedor cambió el precio."
+											: "Habilitá la edición desde el switch para actualizar el costo."
+									}
+								/>
+							</div>
 						</div>
 					)}
 
 					<SwappTextarea
 						label="Notas / Comentarios adicionales"
-						placeholder="Escribe detalles que sirvan para auditorías futuras..."
+						placeholder="Escribí detalles que sirvan para auditorías futuras..."
 						rows={3}
 						value={notes}
 						onChange={(e) => setNotes(e.target.value)}

@@ -3,10 +3,8 @@ services:
     image: postgres:15-alpine
     container_name: swapp-db
     restart: always
-    environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASS}
-      POSTGRES_DB: swapp_db
+    env_file:
+      - ./swapp-backend/.env
     ports:
       - "5432:5432"
     volumes:
@@ -19,37 +17,38 @@ services:
       - ./swapp-backend/uploads:/app/uploads
     depends_on:
       - db
-    environment:
-      DATABASE_URL: postgresql://${DB_USER}:${DB_PASS}@db:5432/swapp_db
-      SECRET_KEY: ${SECRET_KEY}
+    env_file:
+      - ./swapp-backend/.env
+    ports:
+      - "7860:7860"
     restart: always
 
   frontend:
     build:
-      context: ./swapp-frontend
+      context: ./swapp-admin-dashboard
       args:
-        NEXT_PUBLIC_API_URL: ${API_URL}
+        NEXT_PUBLIC_API_URL: "https://api.swapp.com.ar"
     container_name: swapp-frontend
-    environment:
-      NEXT_PUBLIC_API_URL: ${API_URL}
     depends_on:
       - backend
+    env_file:
+      - ./swapp-frontend/.env
+    ports:
+      - "3000:3000"
     restart: always
 
   admin:
     build:
       context: ./swapp-admin-dashboard
       args:
-        NEXT_PUBLIC_API_URL: ${API_URL}
+        NEXT_PUBLIC_API_URL: "https://api.swapp.com.ar"
     container_name: swapp-admin
-    ports:
-      - "3001:3000"
-    environment:
-      NEXT_PUBLIC_API_URL: ${API_URL}
-      BASIC_AUTH_USER: ${BASIC_AUTH_USER}
-      BASIC_AUTH_PASSWORD: ${BASIC_AUTH_PASSWORD}
     depends_on:
       - backend
+    env_file:
+      - ./swapp-admin-dashboard/.env
+    ports:
+      - "3001:3000"
     restart: always
 
   npm:
@@ -58,11 +57,11 @@ services:
     restart: always
     ports:
       - "80:80"
-      - "443:443"
       - "81:81"
+      - "443:443"
     volumes:
-      - ./data/npm:/data
-      - ./data/letsencrypt:/etc/letsencrypt
+      - ./data:/data
+      - ./letsencrypt:/etc/letsencrypt
 
 volumes:
   postgres_data:

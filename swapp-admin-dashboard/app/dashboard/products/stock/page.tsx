@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ProductService } from "@/services/product.service";
-import { Box, Plus, Minus, AlertTriangle } from "lucide-react";
+import { Package, Plus, Minus, AlertTriangle } from "lucide-react";
 import TableSkeleton from "@/components/tables/TableSkeleton";
 import PageHeader from "@/components/layout/PageHeader";
 import SearchBar from "@/components/ui/SearchBar";
@@ -83,7 +83,7 @@ export default function StockPage() {
 				<PageHeader
 					title="Control de Inventario"
 					description="Gestión de ingresos y descartes físicos"
-					icon={Box}
+					icon={Package}
 				/>
 
 				<div className="flex flex-col sm:flex-row items-center gap-3">

@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
-import { X, Tag, CalendarClock, Landmark } from "lucide-react";
+import { X, Landmark } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { ProductService } from "@/services/product.service";
 import { SwappInput } from "@/components/ui/SwappInput";
-import { SwappCheckbox } from "@/components/ui/SwappCheckbox";
 import { Product, TaxClass } from "@/types/product";
 
 interface EditPricingModalProps {
@@ -20,22 +19,12 @@ export default function EditPricingModal({
 	product,
 	onSuccess,
 }: EditPricingModalProps) {
-	// Estados para precios base e impuestos
 	const [basePrice, setBasePrice] = useState<number>(0);
 	const [costPrice, setCostPrice] = useState<number | "">("");
 	const [taxClassId, setTaxClassId] = useState<number | "">("");
 	const [taxClasses, setTaxClasses] = useState<TaxClass[]>([]);
-
-	// Estados para el motor de ofertas
-	const [discountEnabled, setDiscountEnabled] = useState(false);
-	const [discountType, setDiscountType] = useState("percentage");
-	const [discountValue, setDiscountValue] = useState<string>("");
-	const [startDate, setStartDate] = useState<string>("");
-	const [endDate, setEndDate] = useState<string>("");
-
 	const [isSaving, setIsSaving] = useState(false);
 
-	// Cargar las clases de impuestos una sola vez al montar el componente
 	useEffect(() => {
 		const fetchTaxes = async () => {
 			try {
@@ -48,19 +37,11 @@ export default function EditPricingModal({
 		fetchTaxes();
 	}, []);
 
-	// Cuando el modal se abre, copiamos los datos del producto al estado local
 	useEffect(() => {
 		if (isOpen && product) {
 			setBasePrice(product.base_price || 0);
 			setCostPrice(product.cost_price || "");
 			setTaxClassId(product.tax_class_id || "");
-
-			// Reseteamos el formulario de descuentos
-			setDiscountEnabled(false);
-			setDiscountType("percentage");
-			setDiscountValue("");
-			setStartDate("");
-			setEndDate("");
 		}
 	}, [isOpen, product]);
 
@@ -68,51 +49,17 @@ export default function EditPricingModal({
 
 	const handleSaveChanges = async (e: React.FormEvent) => {
 		e.preventDefault();
-
-		// 1. Validación de fechas en el frontend
-		if (discountEnabled) {
-			if (!discountValue || !startDate || !endDate) {
-				toast.error("Complete todos los campos de la oferta temporal.");
-				return;
-			}
-			if (new Date(endDate) <= new Date(startDate)) {
-				toast.error(
-					"La fecha de finalización debe ser posterior a la de inicio.",
-				);
-				return;
-			}
-		}
-
 		setIsSaving(true);
 		const toastId = toast.loading("Guardando configuración...");
 
 		try {
-			// 2. Actualizamos los precios e impuestos mediante PUT
 			await api.put(`/api/products/admin/${product.product_uuid}`, {
 				base_price: basePrice,
 				cost_price: costPrice === "" ? null : costPrice,
 				tax_class_id: taxClassId === "" ? null : taxClassId,
 			});
 
-			// 3. Si se configuró un descuento, disparamos el POST a la tabla hija
-			if (discountEnabled) {
-				await api.post(
-					`/api/products/admin/${product.product_uuid}/discounts`,
-					{
-						discount_type: discountType,
-						value: parseFloat(discountValue),
-						start_date: new Date(startDate).toISOString(),
-						end_date: new Date(endDate).toISOString(),
-					},
-				);
-			}
-
-			toast.success(
-				discountEnabled
-					? "Precios y ofertas actualizados"
-					: "Precios actualizados",
-				{ id: toastId },
-			);
+			toast.success("Precios actualizados", { id: toastId });
 			onSuccess();
 			onClose();
 		} catch (error: any) {
@@ -144,7 +91,6 @@ export default function EditPricingModal({
 				</p>
 
 				<form onSubmit={handleSaveChanges} className="space-y-6">
-					{/* SECCIÓN 1: PRECIOS REGULARES E IMPUESTOS */}
 					<div className="space-y-4">
 						<h3 className="text-sm font-bold uppercase tracking-wider text-swapp-azul-petroleo dark:text-swapp-tiza flex items-center gap-2">
 							<Landmark className="h-4 w-4" /> Valores Base e Impuestos
@@ -154,7 +100,8 @@ export default function EditPricingModal({
 							<SwappInput
 								label="Costo Interno ($)"
 								helpText="- Opcional"
-								type="number"
+								type="text"
+								formatThousands
 								step="0.01"
 								placeholder="Ej: 500.00"
 								value={costPrice}
@@ -167,7 +114,8 @@ export default function EditPricingModal({
 
 							<SwappInput
 								label="Precio Base ($)"
-								type="number"
+								type="text"
+								formatThousands
 								step="0.01"
 								required
 								value={basePrice === 0 ? "" : basePrice}
@@ -203,72 +151,6 @@ export default function EditPricingModal({
 						</div>
 					</div>
 
-					{/* SECCIÓN 2: MOTOR DE DESCUENTOS */}
-					<div className="border-t border-swapp-tiza dark:border-swapp-azul-petroleo pt-6 transition-colors space-y-4">
-						<SwappCheckbox
-							id="toggle-discount"
-							label="Programar nueva oferta temporal"
-							checked={discountEnabled}
-							onChange={(e) => setDiscountEnabled(e.target.checked)}
-						/>
-
-						{discountEnabled && (
-							<div className="bg-swapp-tiza/30 dark:bg-swapp-azul-petroleo/20 p-4 rounded-lg space-y-4 animate-in fade-in slide-in-from-top-2">
-								<div className="grid grid-cols-2 gap-4">
-									<div className="space-y-1">
-										<label className="block text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza">
-											Tipo de Rebaja
-										</label>
-										<select
-											className="w-full rounded-md border border-swapp-tiza dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-negro-azulado px-3 py-2 text-sm text-swapp-negro-azulado dark:text-swapp-blanco outline-none transition-colors focus:border-swapp-turquesa-oscuro dark:focus:border-swapp-menta focus:ring-1 focus:ring-swapp-turquesa-oscuro dark:focus:ring-swapp-menta"
-											value={discountType}
-											onChange={(e) => setDiscountType(e.target.value)}>
-											<option value="percentage">Porcentaje (%)</option>
-											<option value="fixed_amount">Monto Fijo ($)</option>
-										</select>
-									</div>
-
-									<SwappInput
-										label="Valor a descontar"
-										type="number"
-										step="any"
-										min="0"
-										max={discountType === "percentage" ? "100" : undefined}
-										required={discountEnabled}
-										placeholder={
-											discountType === "percentage" ? "Ej: 15" : "Ej: 200.00"
-										}
-										value={discountValue}
-										onChange={(e) => setDiscountValue(e.target.value)}
-									/>
-								</div>
-
-								<div className="grid grid-cols-2 gap-4">
-									<SwappInput
-										label="Fecha de Inicio"
-										type="datetime-local"
-										required={discountEnabled}
-										value={startDate}
-										onChange={(e) => setStartDate(e.target.value)}
-									/>
-									<SwappInput
-										label="Fecha de Finalización"
-										type="datetime-local"
-										required={discountEnabled}
-										value={endDate}
-										onChange={(e) => setEndDate(e.target.value)}
-									/>
-								</div>
-								<p className="text-xs text-swapp-azul-petroleo/60 dark:text-swapp-tiza/60 flex items-center gap-1 mt-2">
-									<CalendarClock className="h-3 w-3" />
-									El precio de oferta se calculará automáticamente durante este
-									período.
-								</p>
-							</div>
-						)}
-					</div>
-
-					{/* BOTONES DE ACCIÓN */}
 					<div className="mt-6 flex justify-end gap-3 pt-4 border-t border-swapp-tiza dark:border-swapp-azul-petroleo transition-colors">
 						<button
 							type="button"
