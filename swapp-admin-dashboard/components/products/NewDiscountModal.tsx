@@ -176,11 +176,10 @@ export default function NewDiscountModal({
 		}
 	};
 
-	// --- VISTA ALTERNATIVA: ADVERTENCIA DE SOLAPAMIENTO ---
 	if (overlapWarning?.show && overlapWarning.existing) {
 		const oldStart = new Date(overlapWarning.existing.start_date);
 		const newStart = new Date(formData.start_date);
-		const canTrim = oldStart < newStart; // La opción 3 solo es válida si la vieja empezó antes que la nueva
+		const canTrim = oldStart < newStart;
 
 		return (
 			<div className="fixed inset-0 z-50 flex items-center justify-center bg-swapp-negro/50 dark:bg-swapp-negro/70 backdrop-blur-sm p-4">
@@ -243,7 +242,6 @@ export default function NewDiscountModal({
 		);
 	}
 
-	// --- VISTA NORMAL: FORMULARIO ---
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-swapp-negro/50 dark:bg-swapp-negro/70 backdrop-blur-sm p-4">
 			<div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-xl bg-swapp-blanco dark:bg-swapp-negro-azulado p-6 shadow-2xl border-t-4 border-swapp-turquesa-oscuro dark:border-swapp-menta custom-scrollbar">
@@ -282,7 +280,7 @@ export default function NewDiscountModal({
 					</div>
 
 					<SwappInput
-						label="Nombre de la Campaña (Ej: Hot Sale 2024)"
+						label="Nombre de la Campaña (Ej: Oferta Mensual)"
 						type="text"
 						required
 						value={formData.name}

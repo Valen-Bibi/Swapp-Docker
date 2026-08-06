@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-	title: "Swapp | Panel de Administración",
+	title: "Swapp | Panel Administrativo",
 	description: "Sistema inteligente de gestión de envases y catálogo maestro",
 };
 

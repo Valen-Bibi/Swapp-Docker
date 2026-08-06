@@ -116,8 +116,8 @@ class Brand(Base):
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-    created_by = Column(BigInteger, ForeignKey("swapp.users.user_id"))
-    updated_by = Column(BigInteger, ForeignKey("swapp.users.user_id"))
+    created_by = Column(BigInteger, ForeignKey("swapp.staff_users.staff_id"))
+    updated_by = Column(BigInteger, ForeignKey("swapp.staff_users.staff_id"))
     meta_data = Column("metadata", JSONB, default={})
     
     products = relationship("Product", back_populates="brand")
@@ -212,7 +212,7 @@ class Product(Base):
     tags = Column(ARRAY(Text))
     
     base_price = Column(Numeric(10,2), default=0.0, nullable=False)
-    cost_price = Column(Numeric(10,2))
+    cost_price = Column(Numeric(10,2), default =0.0, nullable=False)
     currency = Column(String(3), default='ARS')
     stock_quantity = Column(Integer, default=0)
     low_stock_threshold = Column(Integer, default=5)
@@ -227,10 +227,6 @@ class Product(Base):
     download_url = Column(Text)
     file_size = Column(BigInteger)
     file_extension = Column(String(10))
-    
-    main_image_url = Column(Text, nullable=True)
-    gallery_images = Column(ARRAY(Text))
-    video_url = Column(Text)
     
     meta_title = Column(String(70))
     meta_description = Column(String(160))
@@ -251,8 +247,8 @@ class Product(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     deleted_at = Column(DateTime(timezone=True))
-    created_by = Column(BigInteger, ForeignKey("swapp.users.user_id"))
-    updated_by = Column(BigInteger, ForeignKey("swapp.users.user_id"))
+    created_by = Column(BigInteger, ForeignKey("swapp.staff_users.staff_id"))
+    updated_by = Column(BigInteger, ForeignKey("swapp.staff_users.staff_id"))
     
     meta_data = Column("metadata", JSONB, default={})
     custom_attributes = Column(JSONB, default={})

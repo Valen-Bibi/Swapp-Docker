@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
+from sqlalchemy.orm import Session, joinedload
 from typing import List
 from uuid import UUID
 from datetime import datetime, timezone
@@ -7,6 +7,7 @@ from decimal import Decimal
 from .. import models, schemas
 from ..database import get_db
 from ..auth import get_current_admin_user
+from ..services.obs_service import process_and_upload_image
 
 router = APIRouter(prefix="/api/products/admin", tags=["Admin Products"])
 
@@ -38,7 +39,6 @@ def create_product_discount(
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
-    # 1. Buscamos el producto mediante el UUID proporcionado
     product = db.query(models.Product).filter(models.Product.product_uuid == discount_data.product_uuid).first()
     if not product:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
@@ -53,7 +53,6 @@ def create_product_discount(
     else:
         calculated_sale_price = precio_base - valor_descuento
 
-    # 3. Guardamos el descuento incluyendo el nombre (Campaña)
     new_discount = models.ProductDiscount(
         product_id=product.product_id,
         name=discount_data.name,
@@ -65,7 +64,6 @@ def create_product_discount(
     )
     db.add(new_discount)
     
-    # 4. Historial
     history_record = models.ProductPriceHistory(
         product_id=product.product_id,
         old_value=precio_base, 
@@ -99,9 +97,6 @@ def update_product_discount(
 
 @router.get("/discounts", response_model=List[schemas.DiscountResponse])
 def get_active_discounts(db: Session = Depends(get_db), admin_user = Depends(get_current_admin_user)):
-    """
-    Obtiene solo los descuentos vigentes o programados para el futuro (fecha de fin >= ahora).
-    """
     now = datetime.now(timezone.utc)
     discounts = db.query(models.ProductDiscount).join(models.Product).filter(
         models.ProductDiscount.end_date >= now
@@ -125,9 +120,6 @@ def get_active_discounts(db: Session = Depends(get_db), admin_user = Depends(get
 
 @router.get("/discounts/history", response_model=List[schemas.DiscountResponse])
 def get_historical_discounts(db: Session = Depends(get_db), admin_user = Depends(get_current_admin_user)):
-    """
-    Obtiene el historial de descuentos vencidos (fecha de fin < ahora).
-    """
     now = datetime.now(timezone.utc)
     discounts = db.query(models.ProductDiscount).join(models.Product).filter(
         models.ProductDiscount.end_date < now
@@ -154,20 +146,20 @@ def get_all_products_admin(
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
-    """
-    Retorna TODOS los productos (publicados y borradores) para el Panel Administrativo.
-    Calcula el precio dinámico de oferta para mostrarlo en las tablas.
-    """
-    products = db.query(models.Product).order_by(models.Product.name).all()
+    # Usamos joinedload para traer los descuentos y la media en la misma consulta a la DB
+    products = db.query(models.Product)\
+                 .options(joinedload(models.Product.discounts), joinedload(models.Product.media))\
+                 .order_by(models.Product.name)\
+                 .all()
     now = datetime.now(timezone.utc)
     
     result = []
     for p in products:
         p_data = p.__dict__.copy()
-        
-        # Limpiamos la metadata interna de SQLAlchemy
         p_data.pop("_sa_instance_state", None) 
         
+        # Inyectamos manualmente la relación al diccionario para que Pydantic la serialice
+        p_data['media'] = p.media
         p_data['sale_price'] = None
         
         active_discounts = [d for d in p.discounts if d.start_date <= now <= d.end_date]
@@ -186,9 +178,6 @@ def get_all_products_admin(
 # --- CATEGORÍAS Y MARCAS ---
 @router.get("/categories", response_model=List[schemas.CategoriaResponse])
 def get_categories(db: Session = Depends(get_db)):
-    """
-    Obtiene todas las categorías activas ordenadas por su display_order.
-    """
     categories = db.query(models.ProductCategory)\
                    .filter(models.ProductCategory.is_active == True)\
                    .order_by(models.ProductCategory.display_order)\
@@ -199,7 +188,7 @@ def get_categories(db: Session = Depends(get_db)):
 def get_brands(db: Session = Depends(get_db)):
     brands = db.query(models.Brand)\
                .filter(models.Brand.is_active == True)\
-               .order_by(models.Brand.name)\
+               .order_by(models.Brand.display_order)\
                .all()
     return brands
 
@@ -250,16 +239,11 @@ def create_product_movement(
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
-    """
-    Registra un movimiento en la tabla 'inventory_movements'.
-    Actualiza el costo del producto si es una compra.
-    """
     product = db.query(models.Product).filter(models.Product.product_uuid == product_uuid).first()
     
     if not product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
 
-    # 1. Registramos el movimiento 
     new_movement = models.InventoryMovement(
         product_id=product.product_id,
         movement_type=movement.movement_type,
@@ -271,10 +255,8 @@ def create_product_movement(
     )
     db.add(new_movement)
 
-    # 2. LA MAGIA: Si es una compra y el costo es distinto, actualizamos el catálogo maestro
     if movement.movement_type == 'purchase' and movement.unit_cost is not None and movement.unit_cost > 0:
         product.cost_price = movement.unit_cost 
-        # Al asignar este nuevo valor, SQLAlchemy ejecutará un UPDATE en swapp.products
 
     db.commit() 
     
@@ -287,10 +269,6 @@ def create_product_admin(
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
-    """
-    Crea un producto nuevo en el catálogo maestro (esquema swapp).
-    Valida unicidad de SKU y Slug antes de persistir.
-    """
     if product_in.sku:
         existing_sku = db.query(models.Product).filter(models.Product.sku == product_in.sku).first()
         if existing_sku:
@@ -334,3 +312,207 @@ def create_product_admin(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Fallo crítico en la persistencia de base de datos: {str(e)}"
         )
+
+
+@router.post("/brands", status_code=status.HTTP_201_CREATED)
+def create_brand(
+    brand_in: schemas.BrandCreate,
+    db: Session = Depends(get_db),
+    admin_user = Depends(get_current_admin_user)
+):
+    if db.query(models.Brand).filter(models.Brand.name == brand_in.name).first():
+        raise HTTPException(status_code=400, detail="Ya existe una marca con este nombre.")
+    if db.query(models.Brand).filter(models.Brand.slug == brand_in.slug).first():
+        raise HTTPException(status_code=400, detail="El slug ya está en uso.")
+        
+    new_brand = models.Brand(
+        name=brand_in.name,
+        slug=brand_in.slug,
+        logo_url=brand_in.logo_url,
+        display_order=brand_in.display_order,
+        is_active=brand_in.is_active,
+        featured=brand_in.featured
+    )
+    db.add(new_brand)
+    db.commit()
+    return {"message": "Marca creada exitosamente"}
+
+@router.put("/brands/{brand_id}")
+def update_brand(
+    brand_id: int,
+    brand_in: schemas.BrandUpdate,
+    db: Session = Depends(get_db),
+    admin_user = Depends(get_current_admin_user)
+):
+    brand = db.query(models.Brand).filter(models.Brand.brand_id == brand_id).first()
+    if not brand:
+        raise HTTPException(status_code=404, detail="Marca no encontrada.")
+        
+    update_data = brand_in.model_dump(exclude_unset=True)
+    
+    if 'name' in update_data and update_data['name'] != brand.name:
+        if db.query(models.Brand).filter(models.Brand.name == update_data['name']).first():
+            raise HTTPException(status_code=400, detail="El nombre de marca ya existe.")
+    if 'slug' in update_data and update_data['slug'] != brand.slug:
+        if db.query(models.Brand).filter(models.Brand.slug == update_data['slug']).first():
+            raise HTTPException(status_code=400, detail="El slug ya está en uso.")
+
+    for key, value in update_data.items():
+        setattr(brand, key, value)
+        
+    db.commit()
+    return {"message": "Marca actualizada correctamente"}
+
+
+@router.post("/categories", status_code=status.HTTP_201_CREATED)
+def create_category(
+    cat_in: schemas.CategoryCreate,
+    db: Session = Depends(get_db),
+    admin_user = Depends(get_current_admin_user)
+):
+    if db.query(models.ProductCategory).filter(models.ProductCategory.slug == cat_in.slug).first():
+        raise HTTPException(status_code=400, detail="El slug ya está en uso por otra categoría.")
+        
+    new_category = models.ProductCategory(
+        name=cat_in.name,
+        slug=cat_in.slug,
+        parent_id=cat_in.parent_id,
+        image_url=cat_in.image_url,
+        display_order=cat_in.display_order,
+        is_active=cat_in.is_active
+    )
+    db.add(new_category)
+    db.commit()
+    return {"message": "Categoría creada exitosamente"}
+
+@router.put("/categories/{category_id}")
+def update_category(
+    category_id: int,
+    cat_in: schemas.CategoryUpdate,
+    db: Session = Depends(get_db),
+    admin_user = Depends(get_current_admin_user)
+):
+    category = db.query(models.ProductCategory).filter(models.ProductCategory.category_id == category_id).first()
+    if not category:
+        raise HTTPException(status_code=404, detail="Categoría no encontrada.")
+        
+    update_data = cat_in.model_dump(exclude_unset=True)
+    
+    if 'slug' in update_data and update_data['slug'] != category.slug:
+        if db.query(models.ProductCategory).filter(models.ProductCategory.slug == update_data['slug']).first():
+            raise HTTPException(status_code=400, detail="El slug ya está en uso.")
+            
+    if 'parent_id' in update_data and update_data['parent_id'] == category_id:
+        raise HTTPException(status_code=400, detail="Una categoría no puede ser su propia categoría padre.")
+
+    for key, value in update_data.items():
+        setattr(category, key, value)
+        
+    db.commit()
+    return {"message": "Categoría actualizada correctamente"}
+
+# --- GESTOR MULTIMEDIA REFACTORIZADO ---
+@router.post("/{product_uuid}/main-image")
+async def upload_main_image(
+    product_uuid: UUID,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    admin_user = Depends(get_current_admin_user)
+):
+    product = db.query(models.Product).filter(models.Product.product_uuid == product_uuid).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+        
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="El archivo debe ser una imagen válida.")
+
+    folder_prefix = f"products/{product.slug}"
+    
+    # Este método de obs_service comprime la imagen y la sube al bucket de Huawei Cloud
+    image_url = await process_and_upload_image(file, prefix=folder_prefix)
+    
+    # CORRECCIÓN 1: Buscamos filtrando por tipo principal 'image' y subtipo 'main_image'
+    main_image = db.query(models.ProductMedia).filter(
+        models.ProductMedia.product_id == product.product_id,
+        models.ProductMedia.media_type == 'image',          # <--- Tipo permitido por la DB
+        models.ProductMedia.media_subtype == 'main'   # <--- Tu clasificación
+    ).first()
+
+    if main_image:
+        # Si ya existe, actualizamos los datos apuntando a la nueva URL
+        main_image.file_url = image_url
+        if file.size:
+            main_image.file_size = file.size
+        main_image.mime_type = "image/webp"
+    else:
+        # CORRECCIÓN 2: Creamos el registro respetando la nomenclatura
+        new_media = models.ProductMedia(
+            product_id=product.product_id,
+            media_type='image',
+            media_subtype='main',
+            file_url=image_url,
+            display_order=0,
+            is_active=True,
+            file_size=file.size if file.size else None,
+            mime_type="image/webp"
+        )
+        db.add(new_media)
+    
+    product.updated_by = admin_user.staff_id
+    db.commit()
+    
+    return {"message": "Imagen subida y enlazada exitosamente", "url": image_url}
+
+
+@router.post("/{product_uuid}/gallery-images")
+async def upload_gallery_images(
+    product_uuid: UUID,
+    files: List[UploadFile] = File(...),
+    db: Session = Depends(get_db),
+    admin_user = Depends(get_current_admin_user)
+):
+    product = db.query(models.Product).filter(models.Product.product_uuid == product_uuid).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+
+    folder_prefix = f"products/{product.slug}/gallery"
+    
+    current_gallery_count = db.query(models.ProductMedia).filter(
+        models.ProductMedia.product_id == product.product_id,
+        models.ProductMedia.media_type == 'image',
+        models.ProductMedia.media_subtype == 'gallery'
+    ).count()
+    
+    next_order = current_gallery_count + 1
+    uploaded_urls = []
+
+    # 3. Iterar sobre la lista de archivos (Array de UploadFile)
+    for file in files:
+        if not file.content_type.startswith("image/"):
+            continue # Omitimos archivos que no sean imágenes para que no rompa el bucle
+            
+        # Procesar y subir al bucket
+        image_url = await process_and_upload_image(file, prefix=folder_prefix)
+        
+        # CORRECCIÓN 4: Creamos los registros de galería
+        new_media = models.ProductMedia(
+            product_id=product.product_id,
+            media_type='image',
+            media_subtype='gallery',
+            file_url=image_url,
+            display_order=next_order,
+            is_active=True,
+            file_size=file.size if file.size else None,
+            mime_type="image/webp"
+        )
+        db.add(new_media)
+        uploaded_urls.append(image_url)
+        next_order += 1
+
+    product.updated_by = admin_user.staff_id
+    db.commit()
+
+    return {
+        "message": f"{len(uploaded_urls)} imágenes de galería subidas exitosamente",
+        "urls": uploaded_urls
+    }

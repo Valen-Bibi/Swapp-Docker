@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, model_validator
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 import uuid
 
@@ -93,12 +93,48 @@ class ProductoResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class BrandCreate(BaseModel):
+    name: str
+    slug: str
+    logo_url: Optional[str] = None
+    display_order: int = 0
+    is_active: bool = True
+    featured: bool = False
+
+class BrandUpdate(BaseModel):
+    name: Optional[str] = None
+    slug: Optional[str] = None
+    logo_url: Optional[str] = None
+    display_order: Optional[int] = None
+    is_active: Optional[bool] = None
+    featured: Optional[bool] = None
+
 class BrandResponse(BaseModel):
     brand_id: int
     name: str
+    slug: str
+    logo_url: Optional[str] = None
+    display_order: int
+    is_active: bool
+    featured: bool
 
     class Config:
         from_attributes = True
+
+# --- NUEVO ESQUEMA MULTIMEDIA ---
+class ProductMediaResponse(BaseModel):
+    media_uuid: uuid.UUID
+    media_type: str
+    media_subtype: str
+    file_url: str
+    thumbnail_url: Optional[str] = None
+    alt_text: Optional[str] = None
+    display_order: int
+    is_active: bool
+
+    class Config:
+        from_attributes = True
+# --------------------------------
 
 class ProductoCatalogoResponse(BaseModel):
     product_uuid: uuid.UUID
@@ -113,12 +149,15 @@ class ProductoCatalogoResponse(BaseModel):
     sku: Optional[str] = None
     cost_price: Optional[float] = None
     sale_price: Optional[float] = None
-    main_image_url: Optional[str] = None
+    
     description: Optional[str] = None 
     short_description: Optional[str] = None
     stock_quantity: int = 0
     category_id: Optional[int] = None
     tax_class_id: Optional[int] = None
+    
+    # RELACIÓN AGREGADA
+    media: List[ProductMediaResponse] = []
 
     class Config:
         from_attributes = True
@@ -127,16 +166,32 @@ class ProductCreateSchema(BaseModel):
     name: str
     slug: str
     base_price: float
-    cost_price: Optional[float] = None
-    sku: Optional[str] = None
+    cost_price: float
+    sku: str
+    category_id: int
+    brand_id: int
+    tax_class_id: int
+
     short_description: Optional[str] = None
     description: Optional[str] = None
     stock_quantity: int = 0
     is_returnable: bool = False
     is_published: bool = False
     is_featured: bool = False
-    brand_id: Optional[int] = None
-    tax_class_id: Optional[int] = None
+
+    meta_title: Optional[str] = None
+    meta_description: Optional[str] = None
+    meta_keywords: Optional[str] = None
+
+    max_order_quantity: Optional[int] = None
+    weight: Optional[float] = None
+    weight_unit: Optional[str] = "kg"
+    dimensions: Optional[Dict[str, float]] = None
+
+    download_url: Optional[str] = None
+    file_size: Optional[int] = None
+    file_extension: Optional[str] = None
+    variant_attributes: Optional[Dict[str, Any]] = None
 
     class Config:
         from_attributes = True
@@ -145,7 +200,6 @@ class ProductUpdateSchema(BaseModel):
     name: Optional[str] = None
     slug: Optional[str] = None
     sku: Optional[str] = None
-    main_image_url: Optional[str] = None
     is_published: Optional[bool] = None
     base_price: Optional[float] = None
     cost_price: Optional[float] = None
@@ -153,17 +207,32 @@ class ProductUpdateSchema(BaseModel):
     is_returnable: Optional[bool] = None
     brand_id: Optional[int] = None
     tax_class_id: Optional[int] = None
-
     
     class Config:
         from_attributes = True
+
+class CategoryCreate(BaseModel):
+    name: str
+    slug: str
+    parent_id: Optional[int] = None
+    display_order: int = 0
+    is_active: bool = True
+
+class CategoryUpdate(BaseModel):
+    name: Optional[str] = None
+    slug: Optional[str] = None
+    parent_id: Optional[int] = None
+    display_order: Optional[int] = None
+    is_active: Optional[bool] = None
 
 class CategoriaResponse(BaseModel):
     category_id: int
     category_uuid: uuid.UUID
     name: str
-    image_url: Optional[str] = None
+    slug: str
     parent_id: Optional[int] = None
+    display_order: int
+    is_active: bool
 
     class Config:
         from_attributes = True

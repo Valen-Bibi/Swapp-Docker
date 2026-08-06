@@ -14,7 +14,6 @@ import PriceHistoryModal from "@/components/products/PriceHistoryModal";
 import { Product } from "@/types/product";
 import { formatCurrency } from "@/lib/utils";
 
-// Extendemos el tipo localmente para incluir el nombre de la campaña si hay oferta activa
 type ProductWithOffer = Product & { active_campaign_name?: string };
 
 export default function PricingPage() {

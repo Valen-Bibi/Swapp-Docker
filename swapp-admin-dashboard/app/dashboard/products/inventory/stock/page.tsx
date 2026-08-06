@@ -26,7 +26,6 @@ export default function StockPage() {
 
 	const fetchProducts = async () => {
 		try {
-			// Reemplazado por el servicio
 			const data = await ProductService.getAll();
 			setProducts(data);
 		} catch (error) {
@@ -59,8 +58,9 @@ export default function StockPage() {
 		const matchesSearch = product.name
 			.toLowerCase()
 			.includes(searchTerm.toLowerCase());
+		const threshold = product.low_stock_threshold ?? 5;
 		const matchesLowStock = showLowStockOnly
-			? product.stock_quantity <= 10
+			? product.stock_quantity <= threshold
 			: true;
 		return matchesSearch && matchesLowStock;
 	});
@@ -134,39 +134,45 @@ export default function StockPage() {
 						</tr>
 					</thead>
 					<tbody className="divide-y divide-swapp-tiza dark:divide-swapp-azul-petroleo">
-						{processedProducts.map((product) => (
-							<tr
-								key={product.product_uuid}
-								className="transition-colors hover:bg-swapp-tiza/30 dark:hover:bg-swapp-azul-petroleo/30">
-								<td className="px-6 py-4 font-medium text-swapp-negro-azulado dark:text-swapp-blanco">
-									{product.name}
-								</td>
-								<td className="px-6 py-4">
-									<span
-										className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${product.is_returnable ? "bg-swapp-azul-oceano/10 dark:bg-swapp-menta/10 text-swapp-azul-oceano dark:text-swapp-menta" : "bg-swapp-tiza dark:bg-swapp-azul-petroleo text-swapp-azul-petroleo dark:text-swapp-tiza"}`}>
-										{product.is_returnable ? "Retornable" : "Estándar"}
-									</span>
-								</td>
-								<td className="px-6 py-4">
-									<span
-										className={`inline-flex items-center rounded-full px-2.5 py-1 text-sm font-semibold ${product.stock_quantity > 10 ? "bg-swapp-verde-agua/10 dark:bg-swapp-menta/10 text-swapp-turquesa-oscuro dark:text-swapp-menta" : "bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400"}`}>
-										{product.stock_quantity} unidades
-									</span>
-								</td>
-								<td className="px-6 py-4 text-right flex justify-end gap-2">
-									<button
-										onClick={() => handleMovementClick(product, "ingreso")}
-										className="p-2 text-swapp-turquesa-oscuro dark:text-swapp-menta bg-swapp-verde-agua/10 dark:bg-swapp-menta/10 rounded-lg hover:bg-swapp-verde-agua/20 dark:hover:bg-swapp-menta/20 transition-colors">
-										<Plus className="h-4 w-4" />
-									</button>
-									<button
-										onClick={() => handleMovementClick(product, "egreso")}
-										className="p-2 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 rounded-lg hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors">
-										<Minus className="h-4 w-4" />
-									</button>
-								</td>
-							</tr>
-						))}
+						{processedProducts.map((product) => {
+							// Calculamos el threshold para cada producto individualmente en el renderizado
+							const threshold = product.low_stock_threshold ?? 5;
+							const isLowStock = product.stock_quantity <= threshold;
+
+							return (
+								<tr
+									key={product.product_uuid}
+									className="transition-colors hover:bg-swapp-tiza/30 dark:hover:bg-swapp-azul-petroleo/30">
+									<td className="px-6 py-4 font-medium text-swapp-negro-azulado dark:text-swapp-blanco">
+										{product.name}
+									</td>
+									<td className="px-6 py-4">
+										<span
+											className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${product.is_returnable ? "bg-swapp-azul-oceano/10 dark:bg-swapp-menta/10 text-swapp-azul-oceano dark:text-swapp-menta" : "bg-swapp-tiza dark:bg-swapp-azul-petroleo text-swapp-azul-petroleo dark:text-swapp-tiza"}`}>
+											{product.is_returnable ? "Retornable" : "Estándar"}
+										</span>
+									</td>
+									<td className="px-6 py-4">
+										<span
+											className={`inline-flex items-center rounded-full px-2.5 py-1 text-sm font-semibold ${!isLowStock ? "bg-swapp-verde-agua/10 dark:bg-swapp-menta/10 text-swapp-turquesa-oscuro dark:text-swapp-menta" : "bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400"}`}>
+											{product.stock_quantity} unidades
+										</span>
+									</td>
+									<td className="px-6 py-4 text-right flex justify-end gap-2">
+										<button
+											onClick={() => handleMovementClick(product, "ingreso")}
+											className="p-2 text-swapp-turquesa-oscuro dark:text-swapp-menta bg-swapp-verde-agua/10 dark:bg-swapp-menta/10 rounded-lg hover:bg-swapp-verde-agua/20 dark:hover:bg-swapp-menta/20 transition-colors">
+											<Plus className="h-4 w-4" />
+										</button>
+										<button
+											onClick={() => handleMovementClick(product, "egreso")}
+											className="p-2 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 rounded-lg hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors">
+											<Minus className="h-4 w-4" />
+										</button>
+									</td>
+								</tr>
+							);
+						})}
 					</tbody>
 				</table>
 			</div>

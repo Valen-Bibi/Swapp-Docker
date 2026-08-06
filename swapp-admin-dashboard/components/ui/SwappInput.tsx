@@ -118,7 +118,7 @@ export function SwappInput({
 				<input
 					{...props}
 					type={type}
-					value={value}
+					value={value ?? ""} /* <-- SOLUCIÓN: Agregamos ?? "" */
 					onChange={onChange}
 					className={inputClasses}
 				/>

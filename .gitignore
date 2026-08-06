@@ -17,6 +17,7 @@ Backups BD/
 Backups DB/
 
 swapp-backend/uploads/*
+swapp-backend/scripts/*
 !swapp-backend/uploads/.gitkeep
 
 node_modules/

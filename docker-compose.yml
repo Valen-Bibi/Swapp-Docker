@@ -33,6 +33,7 @@ services:
     volumes:
       - ./swapp-frontend:/app
       - /app/node_modules
+      - /app/.next
     environment:
       - NODE_ENV=development
       - WATCHPACK_POLLING=true
@@ -47,9 +48,11 @@ services:
     volumes:
       - ./swapp-admin-dashboard:/app
       - /app/node_modules
+      - /app/.next
     environment:
       - NODE_ENV=development
       - WATCHPACK_POLLING=true
+      - npm_config_cache=/tmp
     command: sh -c "npm install && npm run dev -- --webpack"
 
 volumes:
