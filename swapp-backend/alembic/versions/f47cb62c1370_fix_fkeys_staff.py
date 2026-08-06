@@ -1,22 +1,12 @@
-"""fix_fkeys_staff
-
-Revision ID: f47cb62c1370
-Revises: adcaf3ca6dfe
-Create Date: 2026-08-06 16:02:49.583905
-
-"""
-from typing import Sequence, Union
-
+"""fix_fkeys_staff"""
 from alembic import op
 import sqlalchemy as sa
 
-
 # revision identifiers, used by Alembic.
-revision: str = 'f47cb62c1370'
-down_revision: Union[str, None] = 'adcaf3ca6dfe'
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
-
+revision = 'f47cb62c1370'
+down_revision = '6b8b7fd5e94b'
+branch_labels = None
+depends_on = None
 
 def upgrade():
     # 1. Eliminar llaves foráneas viejas y crear nuevas en 'products'
