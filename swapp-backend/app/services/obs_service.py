@@ -1,6 +1,7 @@
 import io
 import os
 import uuid
+import requests
 from PIL import Image
 from fastapi import UploadFile, HTTPException
 from obs import ObsClient
@@ -15,16 +16,42 @@ ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 
 def get_obs_client() -> ObsClient:
     """
-    Fábrica de cliente OBS. Detecta dinámicamente el entorno para aplicar
-    el Principio de Mínimo Privilegio usando Agencias en Producción o AK/SK en Local.
+    Fábrica de cliente OBS.
+    Detecta el entorno:
+    - Producción: Obtiene credenciales temporales y rotativas desde la Agency del ECS (Metadata API).
+    - Local: Utiliza las llaves estáticas (AK/SK) inyectadas desde el .env.
     """
-    if ENVIRONMENT == "production" or not OBS_ACCESS_KEY:
-        print("Inicializando OBS_Client en Modo Producción (ECS Agency)")
-        return ObsClient(
-            server=OBS_ENDPOINT
-        )
+    if ENVIRONMENT == "production" or not OBS_ACCESS_KEY.strip():
+        print("🔐 Inicializando OBS_Client en Modo Producción (Credenciales Rotativas de Agencia)")
+        try:
+            # 1. Consultar el servicio interno de metadatos del ECS para obtener el token temporal
+            metadata_url = "http://169.254.169.254/openstack/latest/securitykey"
+            response = requests.get(metadata_url, timeout=3)
+            
+            if response.status_code == 200:
+                data = response.json()
+                credential = data.get("credential", {})
+                
+                tmp_access_key = credential.get("access")
+                tmp_secret_key = credential.get("secret")
+                security_token = credential.get("securitytoken")
+                
+                # 2. Inicializar el cliente OBS con las credenciales dinámicas de la Agency
+                return ObsClient(
+                    access_key_id=tmp_access_key,
+                    secret_access_key=tmp_secret_key,
+                    security_token=security_token,
+                    server=OBS_ENDPOINT
+                )
+            else:
+                print(f"⚠️ No se pudo obtener credenciales de la Agency (HTTP {response.status_code}). Cayendo a cliente básico.")
+                return ObsClient(server=OBS_ENDPOINT)
+                
+        except Exception as e:
+            print(f"❌ Error al conectar con la API de Metadata del ECS: {e}")
+            return ObsClient(server=OBS_ENDPOINT)
     else:
-        print("Inicializando OBS_Client en Modo Local (AK/SK Estáticas)")
+        print("💻 Inicializando OBS_Client en Modo Local (AK/SK Estáticas)")
         return ObsClient(
             access_key_id=OBS_ACCESS_KEY,
             secret_access_key=OBS_SECRET_KEY,
