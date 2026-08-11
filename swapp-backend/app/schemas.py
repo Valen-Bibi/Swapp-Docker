@@ -16,7 +16,7 @@ class UsuarioResponse(BaseModel):
     last_name: str
     email: str
     role: str
-    
+
     class Config:
         from_attributes = True
 
@@ -89,7 +89,7 @@ class ProductoResponse(BaseModel):
     name: str
     sku: Optional[str] = None
     is_returnable: bool
-    
+
     class Config:
         from_attributes = True
 
@@ -149,13 +149,13 @@ class ProductoCatalogoResponse(BaseModel):
     sku: Optional[str] = None
     cost_price: Optional[float] = None
     sale_price: Optional[float] = None
-    
-    description: Optional[str] = None 
+
+    description: Optional[str] = None
     short_description: Optional[str] = None
     stock_quantity: int = 0
     category_id: Optional[int] = None
     tax_class_id: Optional[int] = None
-    
+
     # RELACIÓN AGREGADA
     media: List[ProductMediaResponse] = []
 
@@ -207,7 +207,7 @@ class ProductUpdateSchema(BaseModel):
     is_returnable: Optional[bool] = None
     brand_id: Optional[int] = None
     tax_class_id: Optional[int] = None
-    
+
     class Config:
         from_attributes = True
 
@@ -244,7 +244,7 @@ class SolicitudResponse(BaseModel):
     status: str
     created_at: datetime
     product: ProductoResponse
-    
+
     class Config:
         from_attributes = True
 
