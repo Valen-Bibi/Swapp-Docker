@@ -154,12 +154,12 @@ def get_all_products_admin(
     now = datetime.now(timezone.utc)
     
     result = []
+    result = []
     for p in products:
         p_data = p.__dict__.copy()
         p_data.pop("_sa_instance_state", None) 
         
-        # Inyectamos manualmente la relación al diccionario para que Pydantic la serialice
-        p_data['media'] = p.media
+        p_data['media'] = [m for m in p.media if m.is_active] 
         p_data['sale_price'] = None
         
         active_discounts = [d for d in p.discounts if d.start_date <= now <= d.end_date]
@@ -428,24 +428,21 @@ async def upload_main_image(
 
     folder_prefix = f"products/{product.slug}"
     
-    # Este método de obs_service comprime la imagen y la sube al bucket de Huawei Cloud
     image_url = await process_and_upload_image(file, prefix=folder_prefix)
     
-    # CORRECCIÓN 1: Buscamos filtrando por tipo principal 'image' y subtipo 'main_image'
     main_image = db.query(models.ProductMedia).filter(
         models.ProductMedia.product_id == product.product_id,
-        models.ProductMedia.media_type == 'image',          # <--- Tipo permitido por la DB
-        models.ProductMedia.media_subtype == 'main'   # <--- Tu clasificación
+        models.ProductMedia.media_type == 'image',
+        models.ProductMedia.media_subtype == 'main'
     ).first()
 
     if main_image:
-        # Si ya existe, actualizamos los datos apuntando a la nueva URL
         main_image.file_url = image_url
+        main_image.is_active = True
         if file.size:
             main_image.file_size = file.size
         main_image.mime_type = "image/webp"
     else:
-        # CORRECCIÓN 2: Creamos el registro respetando la nomenclatura
         new_media = models.ProductMedia(
             product_id=product.product_id,
             media_type='image',
@@ -486,15 +483,13 @@ async def upload_gallery_images(
     next_order = current_gallery_count + 1
     uploaded_urls = []
 
-    # 3. Iterar sobre la lista de archivos (Array de UploadFile)
     for file in files:
         if not file.content_type.startswith("image/"):
-            continue # Omitimos archivos que no sean imágenes para que no rompa el bucle
+            continue
             
         # Procesar y subir al bucket
         image_url = await process_and_upload_image(file, prefix=folder_prefix)
-        
-        # CORRECCIÓN 4: Creamos los registros de galería
+
         new_media = models.ProductMedia(
             product_id=product.product_id,
             media_type='image',
@@ -516,3 +511,33 @@ async def upload_gallery_images(
         "message": f"{len(uploaded_urls)} imágenes de galería subidas exitosamente",
         "urls": uploaded_urls
     }
+
+@router.delete("/{product_uuid}/media/{media_uuid}")
+def delete_product_media(
+    product_uuid: UUID,
+    media_uuid: UUID,
+    db: Session = Depends(get_db),
+    admin_user = Depends(get_current_admin_user)
+):
+    product = db.query(models.Product).filter(models.Product.product_uuid == product_uuid).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+        
+    media_record = db.query(models.ProductMedia).filter(
+        models.ProductMedia.media_uuid == media_uuid,
+        models.ProductMedia.product_id == product.product_id
+    ).first()
+    
+    if not media_record:
+        raise HTTPException(status_code=404, detail="Imagen no encontrada")
+        
+    if not media_record.is_active:
+        return {"message": "La imagen ya se encontraba eliminada (inactiva)"}
+
+    media_record.is_active = False
+    
+    product.updated_by = admin_user.staff_id 
+    
+    db.commit()
+    
+    return {"message": "Imagen eliminada correctamente del catálogo"}

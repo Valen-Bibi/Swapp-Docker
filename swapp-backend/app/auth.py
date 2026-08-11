@@ -16,7 +16,7 @@ load_dotenv()
 
 SECRET_KEY = os.getenv("SECRET_KEY", "supersecreto_bucle_app_local_key")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 300 
+ACCESS_TOKEN_EXPIRE_MINUTES = 300
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -31,7 +31,10 @@ def get_password_hash(password):
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None, user_type: str = "customer"):
     to_encode = data.copy()
-    if expires_delta:
+    
+    if user_type == "staff":
+        expire = datetime.utcnow() + timedelta(minutes=5)
+    elif expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -56,7 +59,6 @@ async def get_current_user(token: str = Depends(oauth2_scheme_app), db: Session 
     except JWTError:
         raise credentials_exception
     
-    # FIX: Cambiado models.users por models.User para coincidir con la base de datos
     user = db.query(models.User).filter(models.User.user_uuid == user_uuid).first()
     if user is None:
         raise credentials_exception

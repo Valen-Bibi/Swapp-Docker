@@ -27,33 +27,38 @@ export default function EditStructureModal({
 	const [editingProduct, setEditingProduct] = useState<Partial<Product>>({});
 	const [isSaving, setIsSaving] = useState(false);
 
-	// Estados para la Imagen Principal
 	const [newImageFile, setNewImageFile] = useState<File | null>(null);
 	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+	const [mainMediaUuid, setMainMediaUuid] = useState<string | null>(null);
 
-	// Estados para la Galería
 	const [existingGallery, setExistingGallery] = useState<any[]>([]);
 	const [newGalleryFiles, setNewGalleryFiles] = useState<File[]>([]);
 	const [newGalleryPreviews, setNewGalleryPreviews] = useState<string[]>([]);
+
+	// NUEVO ESTADO: Cola de imágenes para borrar solo si se guarda
+	const [mediaToDelete, setMediaToDelete] = useState<string[]>([]);
 
 	useEffect(() => {
 		if (isOpen && product) {
 			setEditingProduct(product);
 
-			// Reset de estados de archivos nuevos
 			setNewImageFile(null);
 			setNewGalleryFiles([]);
 			setNewGalleryPreviews([]);
+			setMediaToDelete([]); // Reiniciamos la cola al abrir el modal
 
-			// 1. Precargar Imagen Principal
 			const mainMedia = product.media?.find(
-				(m: any) => m.media_type === "image" && m.media_subtype === "main",
+				(m: any) =>
+					m.media_type === "image" && m.media_subtype === "main" && m.is_active,
 			);
 			setPreviewUrl(mainMedia ? mainMedia.file_url : null);
+			setMainMediaUuid(mainMedia ? mainMedia.media_uuid : null);
 
-			// 2. Precargar Galería Existente
 			const galleryMedia = product.media?.filter(
-				(m: any) => m.media_type === "image" && m.media_subtype === "gallery",
+				(m: any) =>
+					m.media_type === "image" &&
+					m.media_subtype === "gallery" &&
+					m.is_active,
 			);
 			setExistingGallery(galleryMedia || []);
 		}
@@ -61,7 +66,6 @@ export default function EditStructureModal({
 
 	if (!isOpen || !product) return null;
 
-	// --- HANDLERS: IMAGEN PRINCIPAL ---
 	const handleImageDrop = (acceptedFiles: File[]) => {
 		const file = acceptedFiles[0];
 		if (!file) return;
@@ -71,24 +75,32 @@ export default function EditStructureModal({
 				"Esta nueva imagen reemplazará a la actual como imagen principal del producto en la tienda. ¿Deseas continuar?",
 			);
 			if (!userConfirmed) return;
+
+			// Si el usuario sube una foto nueva, mandamos la vieja a la cola de borrado
+			if (mainMediaUuid && !mediaToDelete.includes(mainMediaUuid)) {
+				setMediaToDelete((prev) => [...prev, mainMediaUuid]);
+			}
 		}
 
 		setNewImageFile(file);
 		setPreviewUrl(URL.createObjectURL(file));
 	};
 
+	// AHORA ES SÍNCRONO: Solo oculta y encola
 	const handleRemoveImage = () => {
 		const userConfirmed = window.confirm(
 			"¿Estás seguro de que querés eliminar la imagen principal? El producto quedará sin foto en la tienda.",
 		);
 		if (!userConfirmed) return;
 
+		if (mainMediaUuid && !mediaToDelete.includes(mainMediaUuid)) {
+			setMediaToDelete((prev) => [...prev, mainMediaUuid]);
+		}
+
 		setNewImageFile(null);
 		setPreviewUrl(null);
-		// TODO: En el futuro, llamar al backend para hacer un DELETE real del registro.
 	};
 
-	// --- HANDLERS: GALERÍA ---
 	const handleGalleryDrop = (acceptedFiles: File[]) => {
 		if (acceptedFiles.length === 0) return;
 
@@ -102,14 +114,22 @@ export default function EditStructureModal({
 		setNewGalleryPreviews((prev) => prev.filter((_, i) => i !== indexToRemove));
 	};
 
+	// AHORA ES SÍNCRONO: Solo oculta y encola
 	const removeExistingGalleryImage = (media_uuid: string) => {
-		// Por ahora solo mostramos un aviso, ya que FastAPI no tiene endpoint DELETE aún.
-		toast.info(
-			"Para eliminar imágenes ya guardadas, se requiere un endpoint de borrado en el servidor.",
+		const userConfirmed = window.confirm(
+			"¿Seguro que querés eliminar esta imagen de la galería?",
+		);
+		if (!userConfirmed) return;
+
+		if (!mediaToDelete.includes(media_uuid)) {
+			setMediaToDelete((prev) => [...prev, media_uuid]);
+		}
+
+		setExistingGallery((prev) =>
+			prev.filter((m) => m.media_uuid !== media_uuid),
 		);
 	};
 
-	// --- SUBMIT ---
 	const handleEditSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		if (!editingProduct || !editingProduct.product_uuid) return;
@@ -118,7 +138,17 @@ export default function EditStructureModal({
 		const toastId = toast.loading("Procesando actualización...");
 
 		try {
-			// 1. SUBIR IMAGEN PRINCIPAL NUEVA
+			// 1. EJECUTAR LOS BORRADOS ENCOLADOS PRIMERO
+			if (mediaToDelete.length > 0) {
+				toast.loading("Limpiando imágenes eliminadas...", { id: toastId });
+				// Usamos Promise.all para que todas las peticiones DELETE se hagan en paralelo
+				await Promise.all(
+					mediaToDelete.map((uuid) =>
+						ProductService.deleteMedia(editingProduct.product_uuid!, uuid),
+					),
+				);
+			}
+
 			if (newImageFile) {
 				toast.loading("Actualizando imagen principal...", { id: toastId });
 				await ProductService.uploadMainImage(
@@ -127,7 +157,6 @@ export default function EditStructureModal({
 				);
 			}
 
-			// 2. SUBIR NUEVAS IMÁGENES DE GALERÍA
 			if (newGalleryFiles.length > 0) {
 				toast.loading(
 					`Subiendo ${newGalleryFiles.length} imágenes a la galería...`,
@@ -139,7 +168,6 @@ export default function EditStructureModal({
 				);
 			}
 
-			// 3. ACTUALIZAR DATOS ESTRUCTURALES
 			toast.loading("Guardando información general...", { id: toastId });
 			const { media, ...safeUpdateData } = editingProduct as any;
 

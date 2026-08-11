@@ -15,17 +15,12 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Interceptor para atrapar los 401 de forma global
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      // Si el token expiró o es inválido, limpiamos la sesión
-      Cookies.remove("admin_token");
-      
-      // Solo redirigimos si estamos en el entorno del navegador
       if (typeof window !== "undefined") {
-        window.location.href = "/login";
+        window.dispatchEvent(new Event("session_expired"));
       }
     }
     return Promise.reject(error);

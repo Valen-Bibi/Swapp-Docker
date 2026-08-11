@@ -16,6 +16,10 @@ __pycache__/
 Backups BD/
 Backups DB/
 
+# Infraestructura, Volúmenes y Seguridad
+data/
+letsencrypt/
+
 swapp-backend/uploads/*
 swapp-backend/scripts/*
 !swapp-backend/uploads/.gitkeep

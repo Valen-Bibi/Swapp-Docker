@@ -65,7 +65,13 @@ export interface Product {
   is_featured?: boolean;
 
   media?: {
-    file_url: string;
+    media_uuid: string;
     media_type: string;
+    media_subtype: string;
+    file_url: string;
+    thumbnail_url?: string | null;
+    alt_text?: string | null;
+    display_order: number;
+    is_active: boolean;
   }[];
 }

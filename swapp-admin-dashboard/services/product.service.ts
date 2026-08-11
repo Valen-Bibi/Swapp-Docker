@@ -52,7 +52,6 @@ export const ProductService = {
     const formData = new FormData();
     formData.append("file", file);
 
-    // Eliminamos el header manual para no romper el boundary
     const response = await api.post(
       `/api/products/admin/${product_uuid}/main-image`,
       formData
@@ -67,11 +66,15 @@ export const ProductService = {
       formData.append("files", file); 
     });
 
-    // Eliminamos el header manual para no romper el boundary
     const response = await api.post(
       `/api/products/admin/${product_uuid}/gallery-images`,
       formData
     );
     return response.data;
+  },
+
+  deleteMedia: async (product_uuid: string, media_uuid: string) => {
+    const { data } = await api.delete(`/api/products/admin/${product_uuid}/media/${media_uuid}`);
+    return data;
   },
 };
