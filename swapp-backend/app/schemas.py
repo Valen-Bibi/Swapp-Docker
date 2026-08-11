@@ -215,6 +215,7 @@ class CategoryCreate(BaseModel):
     name: str
     slug: str
     parent_id: Optional[int] = None
+    image_url: Optional[str] = None
     display_order: int = 0
     is_active: bool = True
 

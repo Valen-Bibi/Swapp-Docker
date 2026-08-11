@@ -44,8 +44,8 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     deleted_at = Column(DateTime(timezone=True))
     
-    created_by = Column(BigInteger, ForeignKey("swapp.users.user_id"))
-    updated_by = Column(BigInteger, ForeignKey("swapp.users.user_id"))
+    created_by = Column(BigInteger, ForeignKey("swapp.staff_users.staff_id"))
+    updated_by = Column(BigInteger, ForeignKey("swapp.staff_users.staff_id"))
     
     accepted_terms_at = Column(DateTime(timezone=True))
     accepted_privacy_at = Column(DateTime(timezone=True))
@@ -174,8 +174,8 @@ class ProductRelationship(Base):
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-    created_by = Column(BigInteger, ForeignKey("swapp.users.user_id"))
-    updated_by = Column(BigInteger, ForeignKey("swapp.users.user_id"))
+    created_by = Column(BigInteger, ForeignKey("swapp.staff_users.staff_id"))
+    updated_by = Column(BigInteger, ForeignKey("swapp.staff_users.staff_id"))
     meta_data = Column("metadata", JSONB, default={})
 
     source_product = relationship("Product", foreign_keys=[source_product_id], back_populates="related_to")

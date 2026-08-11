@@ -50,7 +50,8 @@ origins = [
     "http://localhost:3001",
     "http://127.0.0.1:3000",
     "https://swapp.com.ar",
-    "https://admin.swapp.com.ar"
+    "https://admin.swapp.com.ar",
+    "https://test.admin.swapp.com.ar"
 ]
 
 app.add_middleware(

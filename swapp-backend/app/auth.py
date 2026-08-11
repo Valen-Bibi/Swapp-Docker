@@ -33,7 +33,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None, u
     to_encode = data.copy()
     
     if user_type == "staff":
-        expire = datetime.utcnow() + timedelta(minutes=5)
+        expire = datetime.utcnow() + timedelta(minutes=10)
     elif expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
