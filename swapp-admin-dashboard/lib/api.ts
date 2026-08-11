@@ -5,6 +5,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:7860";
 
 export const api = axios.create({
   baseURL: API_URL,
+  headers: {
+    "ngrok-skip-browser-warning": "true"
+  }
 });
 
 api.interceptors.request.use((config) => {

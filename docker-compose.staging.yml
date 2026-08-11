@@ -1,0 +1,44 @@
+services:
+  db-staging:
+    image: postgres:15-alpine
+    container_name: swapp-db-staging
+    restart: always
+    env_file:
+      - ./swapp-backend/.env.staging
+    ports:
+      - "5433:5432"
+    volumes:
+      - data-staging:/var/lib/postgresql/data
+
+  backend-staging:
+    build:
+      context: ./swapp-backend
+      dockerfile: Dockerfile
+    container_name: swapp-backend-staging
+    volumes:
+      - ./swapp-backend/uploads:/app/uploads
+    depends_on:
+      - db-staging
+    env_file:
+      - ./swapp-backend/.env.staging
+    ports:
+      - "7861:7860"
+    restart: always
+
+  admin-staging:
+    build:
+      context: ./swapp-admin-dashboard
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: "https://test.api.swapp.com.ar"
+    container_name: swapp-admin-staging
+    depends_on:
+      - backend-staging
+    env_file:
+      - ./swapp-admin-dashboard/.env.staging
+    ports:
+      - "3002:3000"
+    restart: always
+
+volumes:
+  data-staging:
