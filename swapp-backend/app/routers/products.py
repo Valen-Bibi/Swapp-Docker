@@ -156,22 +156,18 @@ def get_all_products_admin(
     result = []
     result = []
     for p in products:
-        p_data = p.__dict__.copy()
-        p_data.pop("_sa_instance_state", None) 
-        
-        p_data['media'] = [m for m in p.media if m.is_active] 
-        p_data['sale_price'] = None
-        
+        prod_schema = schemas.ProductoCatalogoResponse.model_validate(p)
+        prod_schema.media = [m for m in p.media if m.is_active] 
         active_discounts = [d for d in p.discounts if d.start_date <= now <= d.end_date]
         if active_discounts:
             d = active_discounts[0]
             if d.discount_type == 'percentage':
                 multiplier = (Decimal('100') - d.value) / Decimal('100')
-                p_data['sale_price'] = float(round(p.base_price * multiplier, 2))
+                prod_schema.sale_price = float(round(p.base_price * multiplier, 2))
             elif d.discount_type == 'fixed':
-                p_data['sale_price'] = float(p.base_price - d.value)
+                prod_schema.sale_price = float(p.base_price - d.value)
                 
-        result.append(p_data)
+        result.append(prod_schema)
         
     return result
 

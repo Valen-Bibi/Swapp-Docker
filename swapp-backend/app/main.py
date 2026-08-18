@@ -5,6 +5,7 @@ import uuid
 import io
 from typing import Optional, List
 from datetime import timedelta
+from contextlib import asynccontextmanager # <-- Importación necesaria para el lifespan
 
 from pydantic import BaseModel
 from fastapi import FastAPI, Depends, HTTPException, status, File, UploadFile, Form
@@ -18,27 +19,40 @@ from PIL import Image
 
 from . import models, database, auth, schemas
 from .database import engine, get_db, Base
-
 from .routers import products, auth_routes, staff
 
 Base.metadata.create_all(bind=engine)
 
+ml_models = {}
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("Servidor FastAPI encendido.")
+    print("Cargando cerebro IA de Swapp en segundo plano...")
+    
+    ml_models["yolo_detector"] = YOLO("modelos_ia/best.pt")
+    print("IA cargada y lista para detectar envases.")
+    
+    yield
+    
+    print("Apagando servidor, limpiando memoria de IA...")
+    ml_models.clear()
+
 entorno = os.getenv("ENVIRONMENT", "development")
 
+# 3. Inicializamos FastAPI pasándole el lifespan
 if entorno == "production":
     print("🔒 Iniciando en modo PRODUCCIÓN: Documentación desactivada.")
     app = FastAPI(
         title="Swapp API",
         docs_url=None,
         redoc_url=None,
-        openapi_url=None
+        openapi_url=None,
+        lifespan=lifespan
     )
 else:
     print("🚧 Iniciando en modo DESARROLLO: Documentación activada.")
-    app = FastAPI(title="Swapp API")
-
-print("🧠 Cargando cerebro IA de Swapp...")
-model = YOLO("modelos_ia/best.pt")
+    app = FastAPI(title="Swapp API", lifespan=lifespan)
 
 os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
@@ -62,7 +76,7 @@ app.add_middleware(
 
 # Conectamos los routers al sistema
 app.include_router(products.router)
-app.include_router(auth_routes.router) # <- Conectado sin alias
+app.include_router(auth_routes.router)
 app.include_router(staff.router)
 
 @app.post("/register", response_model=schemas.UsuarioResponse, status_code=status.HTTP_201_CREATED)
@@ -167,6 +181,7 @@ async def detectar_envase(
     image_bytes = await file.read()
     image = Image.open(io.BytesIO(image_bytes))
 
+    model = ml_models["yolo_detector"]
     results = model(image)
 
     envases_detectados = []
