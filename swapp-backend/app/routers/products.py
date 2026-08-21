@@ -348,12 +348,10 @@ def create_product_movement(
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
-    # 1. Validar Producto Padre
     product = db.query(models.Product).filter(models.Product.product_uuid == product_uuid).first()
     if not product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto padre no encontrado")
 
-    # 2. Validar Variante Hija
     variant = db.query(models.ProductVariant).filter(
         models.ProductVariant.variant_uuid == variant_uuid,
         models.ProductVariant.product_id == product.product_id
@@ -361,24 +359,27 @@ def create_product_movement(
     if not variant:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Variante física no encontrada")
 
-    # 3. Registrar el Movimiento (Atómico)
+    stock_before = variant.stock_quantity or 0
+    stock_after = stock_before + movement.quantity
+
     new_movement = models.InventoryMovement(
         product_id=product.product_id,
         variant_id=variant.variant_id,
         movement_type=movement.movement_type,
         quantity=movement.quantity,
         unit_cost=movement.unit_cost,
+        stock_before=stock_before,
+        stock_after=stock_after,
         reason=movement.reason,
         notes=movement.notes,
         created_by=admin_user.staff_id 
     )
     db.add(new_movement)
 
-    # 4. Actualizar Costo de la Variante (Adiós parche temporal)
+    variant.stock_quantity = stock_after
+
     if movement.movement_type == 'purchase' and movement.unit_cost is not None and movement.unit_cost > 0:
-        variant.cost_price = movement.unit_cost 
-        
-        # Registrar historial de cambio de costo para la variante
+        # Guardamos historial de costos
         hist_cost = models.ProductPriceHistory(
             product_id=product.product_id,
             variant_id=variant.variant_id,
@@ -387,9 +388,10 @@ def create_product_movement(
             record_type="cost_price"
         )
         db.add(hist_cost)
+        variant.cost_price = movement.unit_cost 
 
     db.commit() 
-    return {"message": "Movimiento de inventario registrado con éxito sobre la variante"}
+    return {"message": "Movimiento registrado y stock actualizado con éxito"}
 
 # --- CREACIÓN DE MARCAS / CATEGORÍAS ---
 @router.post("/brands", status_code=status.HTTP_201_CREATED)
