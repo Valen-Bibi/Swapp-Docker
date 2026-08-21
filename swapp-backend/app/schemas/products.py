@@ -133,6 +133,9 @@ class ProductoCatalogoResponse(BaseModel):
     category_id: Optional[int] = None
     tax_class_id: Optional[int] = None
 
+    brand_id: Optional[int] = None
+    brand: Optional[BrandResponse] = None
+
     variants: List[ProductVariantResponse] = []
     media: List[ProductMediaResponse] = []
 
