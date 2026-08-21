@@ -17,7 +17,8 @@ from .products import (
     ProductoResponse,
     ProductoCatalogoResponse,
     ProductCreateSchema,
-    ProductUpdateSchema
+    ProductUpdateSchema,
+    ProductVariantUpdate,
 )
 
 from .inventory import (

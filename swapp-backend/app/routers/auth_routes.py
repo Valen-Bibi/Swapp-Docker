@@ -24,7 +24,7 @@ def login_staff(
     if not staff.is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, 
-            detail="Usuario inactivo. Contacte al administrador del sistema."
+            detail=". Contacte al administrador del sistema."
         )
 
     staff.last_login_at = func.now()
@@ -43,3 +43,20 @@ def login_staff(
     )
     
     return {"access_token": access_token, "token_type": "bearer"}
+
+@router.post("/staff/heartbeat")
+def heartbeat_staff(
+    current_staff=Depends(auth.get_current_admin_user)
+):
+    new_access_token = auth.create_access_token(
+        data={
+            "sub": str(current_staff.staff_uuid),
+            "first_name": current_staff.first_name,
+            "last_name": current_staff.last_name,
+            "role": current_staff.role,
+            "email": current_staff.email
+        },
+        user_type="staff"
+    )
+    
+    return {"access_token": new_access_token, "token_type": "bearer"}

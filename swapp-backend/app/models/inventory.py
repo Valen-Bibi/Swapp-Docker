@@ -1,6 +1,6 @@
 import uuid
 from sqlalchemy import Column, String, Integer, ForeignKey, DateTime, Boolean, Text, BigInteger, Numeric
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from ..database import Base
@@ -11,12 +11,14 @@ class ProductPriceHistory(Base):
 
     history_id = Column(BigInteger, primary_key=True, autoincrement=True)
     product_id = Column(BigInteger, ForeignKey('swapp.products.product_id', ondelete="CASCADE"), nullable=False)
+    variant_id = Column(BigInteger, ForeignKey('swapp.product_variants.variant_id', ondelete="CASCADE"), nullable=True)
     old_value = Column(Numeric(10, 2), nullable=False)
     new_value = Column(Numeric(10, 2), nullable=False)
     changed_at = Column(DateTime(timezone=True), server_default=func.now())
     record_type = Column(String(20), default="base_price", nullable=False)
     
     product = relationship("Product", back_populates="price_history")
+    variant = relationship("ProductVariant", backref="price_history")
 
 
 class ProductDiscount(Base):
@@ -25,6 +27,10 @@ class ProductDiscount(Base):
 
     discount_id = Column(BigInteger, primary_key=True, autoincrement=True)
     product_id = Column(BigInteger, ForeignKey("swapp.products.product_id", ondelete="CASCADE"), nullable=False)
+    
+    # --- MODIFICADO: Ahora es un ARRAY para múltiples variantes ---
+    variant_ids = Column(ARRAY(BigInteger), nullable=True)
+    
     name = Column(String(255), nullable=False) 
     discount_type = Column(String(20), nullable=False) 
     value = Column(Numeric(10, 2), nullable=False)
@@ -45,6 +51,7 @@ class InventoryMovement(Base):
     movement_id = Column(BigInteger, primary_key=True, index=True)
     movement_uuid = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True)
     product_id = Column(BigInteger, ForeignKey("swapp.products.product_id", ondelete="CASCADE"), nullable=False)
+    variant_id = Column(BigInteger, ForeignKey("swapp.product_variants.variant_id", ondelete="CASCADE"), nullable=False)
     
     movement_type = Column(String(20), nullable=False)
     quantity = Column(Integer, nullable=False)
@@ -64,4 +71,5 @@ class InventoryMovement(Base):
     movement_metadata = Column("metadata", JSONB, server_default='{}')
 
     product = relationship("Product", back_populates="inventory_movements")
+    variant = relationship("ProductVariant")
     user = relationship("staff_users", foreign_keys=[created_by])

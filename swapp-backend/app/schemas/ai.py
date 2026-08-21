@@ -3,7 +3,6 @@ from typing import Optional
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
-# Importamos el esquema del producto desde el archivo de al lado
 from .products import ProductoResponse
 
 class SolicitudResponse(BaseModel):

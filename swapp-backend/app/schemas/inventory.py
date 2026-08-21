@@ -1,19 +1,22 @@
 import uuid
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, model_validator
 
 class PriceHistoryResponse(BaseModel):
     history_id: int
+    product_id: int
     old_value: float
     new_value: float
     changed_at: datetime
     record_type: str
+    variant_id: int
 
     model_config = ConfigDict(from_attributes=True)
 
 class ProductDiscountCreate(BaseModel):
     product_uuid: uuid.UUID
+    variant_uuids: Optional[List[uuid.UUID]] = []
     name: str
     discount_type: str
     value: float
@@ -28,6 +31,7 @@ class ProductDiscountUpdate(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     is_active: Optional[bool] = None
+    variant_uuids: Optional[List[uuid.UUID]] = None
 
 class ProductDiscountToggle(BaseModel):
     is_active: bool
@@ -43,6 +47,7 @@ class DiscountResponse(BaseModel):
     product_id: int
     product_uuid: uuid.UUID
     product_name: str
+    variant_uuids: Optional[List[uuid.UUID]] = []
     name: str
     discount_type: str
     value: float

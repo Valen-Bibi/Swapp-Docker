@@ -11,7 +11,8 @@ from .users import (
 
 from .products import (
     Brand, 
-    ProductCategory, 
+    ProductCategory,
+    ProductVariant,
     ProductRelationship, 
     TaxClass, 
     Product, 

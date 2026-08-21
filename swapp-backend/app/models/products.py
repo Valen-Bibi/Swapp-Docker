@@ -113,7 +113,8 @@ class Product(Base):
 
     product_id = Column(BigInteger, primary_key=True, autoincrement=True)
     product_uuid = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, nullable=False)
-    sku = Column(String(50), unique=True, index=True)
+    
+    # Datos Estructurales (Sin SKU ni atributos de variante)
     name = Column(String(255), nullable=False)
     slug = Column(String(255), unique=True, nullable=False)
     description = Column(Text, nullable=True)
@@ -121,15 +122,14 @@ class Product(Base):
     category_id = Column(BigInteger, ForeignKey("swapp.product_categories.category_id"), nullable=True)
     tags = Column(ARRAY(Text))
     
-    base_price = Column(Numeric(10,2), default=0.0, nullable=False)
-    cost_price = Column(Numeric(10,2), default =0.0, nullable=False)
     currency = Column(String(3), default='ARS')
-    stock_quantity = Column(Integer, default=0)
-    low_stock_threshold = Column(Integer, default=5)
+    reference_price = Column(Numeric(10, 2), nullable=True)
+    reference_cost = Column(Numeric(10, 2), nullable=True)
     track_inventory = Column(Boolean, default=True)
     allow_backorder = Column(Boolean, default=False)
     max_order_quantity = Column(Integer)
     
+    # Logística
     product_type = Column(String(50), default='physical')
     weight = Column(Numeric(10,2))
     weight_unit = Column(String(10), default='kg')
@@ -138,17 +138,19 @@ class Product(Base):
     file_size = Column(BigInteger)
     file_extension = Column(String(10))
     
+    # SEO
     meta_title = Column(String(70))
     meta_description = Column(String(160))
     meta_keywords = Column(Text)
     
+    # Estados
     is_featured = Column(Boolean, default=False)
     is_published = Column(Boolean, default=False)
     published_at = Column(DateTime(timezone=True))
     visibility = Column(String(20), default='catalog')
     has_variants = Column(Boolean, default=False)
-    variant_attributes = Column(JSONB)
     
+    # Métricas
     view_count = Column(Integer, default=0)
     sold_count = Column(Integer, default=0)
     rating_avg = Column(Numeric(3,2), default=0)
@@ -168,10 +170,12 @@ class Product(Base):
     is_returnable = Column(Boolean, default=False, nullable=False)
     tax_class_id = Column(BigInteger, ForeignKey("swapp.tax_classes.tax_class_id"), nullable=True)
     
+    # --- RELACIONES ---
     category = relationship("ProductCategory", back_populates="products")
     brand = relationship("Brand", back_populates="products")
     tax_class = relationship("TaxClass", back_populates="products")
     
+    variants = relationship("ProductVariant", back_populates="product", cascade="all, delete-orphan")
     discounts = relationship("ProductDiscount", back_populates="product", cascade="all, delete-orphan")
     price_history = relationship("ProductPriceHistory", back_populates="product", cascade="all, delete-orphan")
     media = relationship("ProductMedia", back_populates="product", cascade="all, delete-orphan")
@@ -180,6 +184,31 @@ class Product(Base):
     related_to = relationship("ProductRelationship", foreign_keys="[ProductRelationship.source_product_id]", back_populates="source_product")
     related_from = relationship("ProductRelationship", foreign_keys="[ProductRelationship.target_product_id]", back_populates="target_product")
     inventory_movements = relationship("InventoryMovement", back_populates="product", cascade="all, delete")
+
+
+# --- NUEVA TABLA HIJO: VARIANTE FÍSICA ---
+class ProductVariant(Base):
+    __tablename__ = "product_variants"
+    __table_args__ = {"schema": "swapp"}
+
+    variant_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    variant_uuid = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, nullable=False)
+    product_id = Column(BigInteger, ForeignKey("swapp.products.product_id", ondelete="CASCADE"), nullable=False)
+    
+    sku = Column(String(50), unique=True, index=True)
+    price = Column(Numeric(10,2), default=0.0, nullable=False)
+    cost_price = Column(Numeric(10,2), default=0.0, nullable=False)
+    stock_quantity = Column(Integer, default=0)
+    
+    low_stock_threshold = Column(Integer, default=5, nullable=False)
+    
+    variant_attributes = Column(JSONB, default={})
+    
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    product = relationship("Product", back_populates="variants")
 
 
 class ProductMedia(Base):

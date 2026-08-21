@@ -7,7 +7,7 @@ app = FastAPI(title="Swapp AI - Escáner de Envases")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # En producción pondrás la URL real, por ahora "*" permite todo
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

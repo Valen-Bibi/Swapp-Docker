@@ -79,11 +79,38 @@ class ProductMediaResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-# --- PRODUCTO NÚCLEO ---
+class ProductVariantCreate(BaseModel):
+    sku: str
+    price: float
+    cost_price: float
+    stock_quantity: int = 0
+    variant_attributes: Optional[Dict[str, Any]] = {}
+    low_stock_threshold: Optional[int] = None
+
+class ProductVariantUpdate(BaseModel):
+    sku: Optional[str] = None
+    price: Optional[float] = None
+    cost_price: Optional[float] = None
+    stock_quantity: Optional[int] = None
+    variant_attributes: Optional[Dict[str, Any]] = None
+    low_stock_threshold: Optional[int] = None
+
+class ProductVariantResponse(BaseModel):
+    variant_id: int
+    variant_uuid: uuid.UUID
+    sku: str
+    price: float
+    cost_price: float
+    stock_quantity: int
+    low_stock_threshold: int
+    variant_attributes: Optional[Dict[str, Any]] = None
+    is_active: bool
+
+    model_config = ConfigDict(from_attributes=True)
+
 class ProductoResponse(BaseModel):
     product_uuid: uuid.UUID
     name: str
-    sku: Optional[str] = None
     is_returnable: bool
     
     model_config = ConfigDict(from_attributes=True)
@@ -93,21 +120,18 @@ class ProductoCatalogoResponse(BaseModel):
     name: str
     slug: str
     is_published: bool
-    base_price: float
     is_featured: bool
     sold_count: int
     is_returnable: bool
-
-    sku: Optional[str] = None
-    cost_price: Optional[float] = None
-    sale_price: Optional[float] = None
+    reference_price: Optional[float] = None
+    reference_cost: Optional[float] = None
 
     description: Optional[str] = None
     short_description: Optional[str] = None
-    stock_quantity: int = 0
     category_id: Optional[int] = None
     tax_class_id: Optional[int] = None
 
+    variants: List[ProductVariantResponse] = []
     media: List[ProductMediaResponse] = []
 
     model_config = ConfigDict(from_attributes=True)
@@ -115,16 +139,14 @@ class ProductoCatalogoResponse(BaseModel):
 class ProductCreateSchema(BaseModel):
     name: str
     slug: str
-    base_price: float
-    cost_price: float
-    sku: str
     category_id: int
     brand_id: int
     tax_class_id: int
+    base_price: Optional[float] = 0.0
+    cost_price: Optional[float] = 0.0
 
     short_description: Optional[str] = None
     description: Optional[str] = None
-    stock_quantity: int = 0
     is_returnable: bool = False
     is_published: bool = False
     is_featured: bool = False
@@ -141,20 +163,37 @@ class ProductCreateSchema(BaseModel):
     download_url: Optional[str] = None
     file_size: Optional[int] = None
     file_extension: Optional[str] = None
-    variant_attributes: Optional[Dict[str, Any]] = None
 
     model_config = ConfigDict(from_attributes=True)
 
 class ProductUpdateSchema(BaseModel):
     name: Optional[str] = None
     slug: Optional[str] = None
-    sku: Optional[str] = None
-    is_published: Optional[bool] = None
-    base_price: Optional[float] = None
-    cost_price: Optional[float] = None
-    stock_quantity: Optional[int] = None
-    is_returnable: Optional[bool] = None
+    
+    category_id: Optional[int] = None
     brand_id: Optional[int] = None
     tax_class_id: Optional[int] = None
+    reference_price: Optional[float] = None
+    reference_cost: Optional[float] = None
+    
+    short_description: Optional[str] = None
+    description: Optional[str] = None
+
+    meta_title: Optional[str] = None
+    meta_description: Optional[str] = None
+    meta_keywords: Optional[str] = None
+    
+    max_order_quantity: Optional[int] = None
+    weight: Optional[float] = None
+    weight_unit: Optional[str] = None
+    dimensions: Optional[Dict[str, float]] = None
+    
+    download_url: Optional[str] = None
+    file_size: Optional[int] = None
+    file_extension: Optional[str] = None
+
+    is_published: Optional[bool] = None
+    is_featured: Optional[bool] = None
+    is_returnable: Optional[bool] = None
 
     model_config = ConfigDict(from_attributes=True)
