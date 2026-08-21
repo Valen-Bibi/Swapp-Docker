@@ -32,11 +32,11 @@ export default function EditPricingModal({
 				setCostPrice(variant.cost_price || "");
 			} else {
 				// Modo: Producto Padre (Valores de Referencia)
-				// Usamos as any temporalmente por si no has actualizado types/product.ts
-				const refPrice =
-					(product as any).reference_price ?? product.base_price ?? 0;
-				const refCost =
-					(product as any).reference_cost ?? product.cost_price ?? "";
+				// Envolvemos el producto en 'any' de una vez para evitar que TypeScript aborte el build
+				const p = product as any;
+				const refPrice = p.reference_price ?? p.base_price ?? 0;
+				const refCost = p.reference_cost ?? p.cost_price ?? "";
+
 				setBasePrice(refPrice);
 				setCostPrice(refCost);
 			}
