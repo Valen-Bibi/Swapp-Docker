@@ -19,6 +19,7 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    op.execute("DROP TRIGGER IF EXISTS trg_log_price_change ON swapp.products CASCADE")
     # Eliminamos las columnas obsoletas de la carcasa
     op.drop_column('products', 'base_price', schema='swapp')
     op.drop_column('products', 'cost_price', schema='swapp')
