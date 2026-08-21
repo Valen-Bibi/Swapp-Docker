@@ -1,32 +1,57 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProductService } from "@/services/product.service";
-import { Box, Plus, Edit, Image as ImageIcon, X } from "lucide-react";
+import {
+	Box,
+	Plus,
+	Edit,
+	Image as ImageIcon,
+	ChevronDown,
+	ChevronRight,
+	Layers,
+	PlusSquare,
+	Check,
+	X,
+} from "lucide-react";
 import { toast } from "sonner";
 import TableSkeleton from "@/components/tables/TableSkeleton";
 import PageHeader from "@/components/layout/PageHeader";
 import SearchBar from "@/components/ui/SearchBar";
 import SortableHeader from "@/components/tables/SortableHeader";
-import { SwappInput } from "@/components/ui/SwappInput";
-import { SwappCheckbox } from "@/components/ui/SwappCheckbox";
 import { SwappTooltip } from "@/components/ui/SwappTooltip";
 import EditStructureModal from "@/components/products/EditStructureModal";
+import NewVariantModal from "@/components/products/NewVariantModal";
+import {
+	SwappAttributeBuilder,
+	AttributePair,
+} from "@/components/ui/SwappAttributeBuilder";
 import { useTableSort } from "@/hooks/useTableSort";
-import { Product, Brand } from "@/types/product";
-import { formatCurrency } from "@/lib/utils";
+import { Product, Brand, Category, TaxClass } from "@/types/product";
 
 export default function MasterCatalogPage() {
 	const router = useRouter();
 	const [products, setProducts] = useState<Product[]>([]);
 	const [brands, setBrands] = useState<Brand[]>([]);
+	const [categories, setCategories] = useState<Category[]>([]);
+	const [taxClasses, setTaxClasses] = useState<TaxClass[]>([]);
 	const [loading, setLoading] = useState(true);
 
 	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 	const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-	const [isSaving, setIsSaving] = useState(false);
 	const [searchTerm, setSearchTerm] = useState("");
+	const [isNewVariantModalOpen, setIsNewVariantModalOpen] = useState(false);
+	const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+	// Estado para manejar las filas expandidas (Acordeón)
+	const [expandedRows, setExpandedRows] = useState<string[]>([]);
+
+	// --- ESTADOS PARA LA EDICIÓN INLINE DE VARIANTES ---
+	const [editingVariantId, setEditingVariantId] = useState<string | null>(null);
+	const [draftSku, setDraftSku] = useState("");
+	const [draftAttributes, setDraftAttributes] = useState<AttributePair[]>([]);
+	const [isSavingVariant, setIsSavingVariant] = useState(false);
 
 	const fetchProducts = async () => {
 		try {
@@ -39,18 +64,25 @@ export default function MasterCatalogPage() {
 		}
 	};
 
-	const fetchBrands = async () => {
+	const fetchInitialData = async () => {
 		try {
-			const data = await ProductService.getBrands();
-			setBrands(data);
+			const [brandsData, categoriesData, taxesData] = await Promise.all([
+				ProductService.getBrands(),
+				ProductService.getCategories(),
+				ProductService.getTaxes(),
+			]);
+			setBrands(brandsData);
+			setCategories(categoriesData);
+			setTaxClasses(taxesData);
 		} catch (error) {
-			console.error("Error obteniendo las marcas:", error);
+			console.error("Error obteniendo datos iniciales:", error);
+			toast.error("Error al cargar marcas, categorías o impuestos.");
 		}
 	};
 
 	useEffect(() => {
 		fetchProducts();
-		fetchBrands();
+		fetchInitialData();
 	}, []);
 
 	useEffect(() => {
@@ -74,38 +106,82 @@ export default function MasterCatalogPage() {
 		return () => window.removeEventListener("keydown", handleKeyDown);
 	}, [router]);
 
-	const handleEditSubmit = async (e: React.FormEvent) => {
-		e.preventDefault();
-		if (!editingProduct) return;
-		setIsSaving(true);
-		const toastId = toast.loading("Actualizando...");
+	const toggleRow = (uuid: string) => {
+		setExpandedRows((prev) =>
+			prev.includes(uuid) ? prev.filter((id) => id !== uuid) : [...prev, uuid],
+		);
+	};
+
+	// --- LÓGICA DE EDICIÓN INLINE ---
+	const startEditingVariant = (variant: any) => {
+		setEditingVariantId(variant.variant_uuid);
+		setDraftSku(variant.sku || "");
+		if (variant.variant_attributes) {
+			const attrArray = Object.entries(variant.variant_attributes).map(
+				([key, value]) => ({
+					key,
+					value: String(value),
+				}),
+			);
+			setDraftAttributes(attrArray);
+		} else {
+			setDraftAttributes([]);
+		}
+	};
+
+	const cancelEditingVariant = () => {
+		setEditingVariantId(null);
+		setDraftSku("");
+		setDraftAttributes([]);
+	};
+
+	const saveVariant = async (productUuid: string, variantUuid: string) => {
+		if (!draftSku.trim()) {
+			toast.error("El SKU es obligatorio.");
+			return;
+		}
+
+		const parsedVariants = draftAttributes.reduce(
+			(acc: Record<string, string>, curr) => {
+				if (curr.key.trim() !== "") {
+					acc[curr.key.trim()] = curr.value.trim();
+				}
+				return acc;
+			},
+			{},
+		);
+
+		const finalAttributes =
+			Object.keys(parsedVariants).length > 0 ? parsedVariants : null;
+
+		setIsSavingVariant(true);
+		const toastId = toast.loading("Actualizando variante...");
 
 		try {
-			// Separamos la media para que no viaje en el payload de actualización y rompa el esquema de Pydantic
-			const { media, ...safeUpdateData } = editingProduct as any;
-
-			await ProductService.update(editingProduct.product_uuid, {
-				...safeUpdateData,
-				brand_id: safeUpdateData.brand_id || null,
+			await ProductService.updateVariant(productUuid, variantUuid, {
+				sku: draftSku,
+				variant_attributes: finalAttributes,
 			});
-
-			setIsEditModalOpen(false);
-			await fetchProducts();
-			toast.success("Actualizado correctamente", { id: toastId });
+			toast.success("Variante actualizada exitosamente", { id: toastId });
+			setEditingVariantId(null);
+			fetchProducts();
 		} catch (error: any) {
 			toast.error(error.response?.data?.detail || "Error al actualizar.", {
 				id: toastId,
 			});
 		} finally {
-			setIsSaving(false);
+			setIsSavingVariant(false);
 		}
 	};
 
-	const filteredProducts = products.filter(
-		(p) =>
-			p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			p.sku?.toLowerCase().includes(searchTerm.toLowerCase()),
-	);
+	const filteredProducts = products.filter((p) => {
+		const searchLower = searchTerm.toLowerCase();
+		const matchName = p.name.toLowerCase().includes(searchLower);
+		const matchAnySku = p.variants?.some((v) =>
+			v.sku?.toLowerCase().includes(searchLower),
+		);
+		return matchName || matchAnySku;
+	});
 
 	const {
 		sortedData: processedProducts,
@@ -115,7 +191,7 @@ export default function MasterCatalogPage() {
 	} = useTableSort(filteredProducts, {
 		returnable: (p) => (p.is_returnable ? 1 : 0),
 		status: (p) => (p.is_published ? 1 : 0),
-		sku: (p) => p.sku || "",
+		sku: (p) => p.variants?.[0]?.sku || "",
 	});
 
 	if (loading) return <TableSkeleton />;
@@ -159,7 +235,7 @@ export default function MasterCatalogPage() {
 								onSort={handleSort}
 							/>
 							<SortableHeader
-								label="SKU"
+								label="SKU / Variantes"
 								columnKey="sku"
 								currentSortKey={sortKey}
 								currentDirection={sortDirection}
@@ -189,65 +265,227 @@ export default function MasterCatalogPage() {
 									m.media_type === "image" && m.media_subtype === "main",
 							)?.file_url;
 
+							const variantsCount = p.variants?.length || 0;
+							const isExpanded = expandedRows.includes(p.product_uuid);
+
 							return (
-								<tr
-									key={p.product_uuid}
-									className="transition-colors hover:bg-swapp-tiza/30 dark:hover:bg-swapp-azul-petroleo/30">
-									<td className="px-6 py-4">
-										{mainImageUrl ? (
-											<img
-												src={mainImageUrl}
-												alt={`Imagen principal de ${p.name}`}
-												className="h-12 w-12 rounded-md object-cover border border-swapp-tiza dark:border-swapp-azul-petroleo"
-											/>
-										) : (
-											<div className="h-12 w-12 rounded-md bg-swapp-tiza dark:bg-swapp-azul-petroleo flex items-center justify-center text-swapp-azul-petroleo/30 dark:text-swapp-tiza/30 transition-colors">
-												<ImageIcon className="h-6 w-6" />
-											</div>
-										)}
-									</td>
-									<td className="px-6 py-4">
-										<div className="font-medium text-swapp-negro-azulado dark:text-swapp-blanco">
-											{p.name}
-										</div>
-										<div className="text-xs text-swapp-azul-petroleo/50 dark:text-swapp-tiza/50 flex items-center gap-1 mt-0.5">
-											{p.brand?.name && (
-												<>
-													<span className="font-semibold text-swapp-turquesa-oscuro dark:text-swapp-menta">
-														{p.brand.name}
-													</span>
-													<span>•</span>
-												</>
+								<React.Fragment key={p.product_uuid}>
+									{/* Fila Principal (Padre) */}
+									<tr
+										className={`transition-colors hover:bg-swapp-tiza/30 dark:hover:bg-swapp-azul-petroleo/30 ${isExpanded ? "bg-swapp-tiza/10 dark:bg-swapp-azul-petroleo/10" : ""}`}>
+										<td className="px-6 py-4">
+											{mainImageUrl ? (
+												<img
+													src={mainImageUrl}
+													alt={`Imagen de ${p.name}`}
+													className="h-12 w-12 rounded-md object-cover border border-swapp-tiza dark:border-swapp-azul-petroleo"
+												/>
+											) : (
+												<div className="h-12 w-12 rounded-md bg-swapp-tiza dark:bg-swapp-azul-petroleo flex items-center justify-center text-swapp-azul-petroleo/30 dark:text-swapp-tiza/30 transition-colors">
+													<ImageIcon className="h-6 w-6" />
+												</div>
 											)}
-											<span>/{p.slug}</span>
-										</div>
-									</td>
-									<td className="px-6 py-4 font-mono text-xs text-swapp-azul-petroleo dark:text-swapp-tiza">
-										{p.sku || "-"}
-									</td>
-									<td className="px-6 py-4">
-										<span
-											className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${p.is_returnable ? "bg-swapp-azul-oceano/10 dark:bg-swapp-menta/10 text-swapp-azul-oceano dark:text-swapp-menta" : "bg-swapp-tiza dark:bg-swapp-azul-petroleo text-swapp-azul-petroleo dark:text-swapp-tiza"}`}>
-											{p.is_returnable ? "Retornable" : "Estándar"}
-										</span>
-									</td>
-									<td className="px-6 py-4">
-										<span
-											className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${p.is_published ? "bg-swapp-verde-agua/10 dark:bg-swapp-menta/10 text-swapp-turquesa-oscuro dark:text-swapp-menta" : "bg-swapp-tiza dark:bg-swapp-azul-petroleo text-swapp-azul-petroleo dark:text-swapp-tiza"}`}>
-											{p.is_published ? "Publicado" : "Borrador"}
-										</span>
-									</td>
-									<td className="px-6 py-4 text-right">
-										<button
-											onClick={() => {
-												setEditingProduct(p);
-												setIsEditModalOpen(true);
-											}}
-											className="p-2 text-swapp-azul-petroleo/40 dark:text-swapp-tiza/40 hover:text-swapp-turquesa-oscuro dark:hover:text-swapp-menta transition-colors">
-											<Edit className="h-4 w-4" />
-										</button>
-									</td>
-								</tr>
+										</td>
+										<td className="px-6 py-4">
+											<div className="font-medium text-swapp-negro-azulado dark:text-swapp-blanco">
+												{p.name}
+											</div>
+											<div className="text-xs text-swapp-azul-petroleo/50 dark:text-swapp-tiza/50 flex items-center gap-1 mt-0.5">
+												{p.brand?.name && (
+													<>
+														<span className="font-semibold text-swapp-turquesa-oscuro dark:text-swapp-menta">
+															{p.brand.name}
+														</span>
+														<span>•</span>
+													</>
+												)}
+												<span>/{p.slug}</span>
+											</div>
+										</td>
+										<td className="px-6 py-4 font-mono text-xs text-swapp-azul-petroleo dark:text-swapp-tiza">
+											{/* Ahora siempre mostramos el botón si hay al menos 1 variante */}
+											{variantsCount > 0 ? (
+												<button
+													onClick={() => toggleRow(p.product_uuid)}
+													className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-swapp-tiza dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-negro-azulado hover:bg-swapp-tiza dark:hover:bg-swapp-azul-petroleo transition-colors text-swapp-turquesa-oscuro dark:text-swapp-menta font-sans font-medium">
+													<Layers className="h-3.5 w-3.5" />
+													{variantsCount === 1
+														? "1 Variante"
+														: `${variantsCount} Variantes`}
+													{isExpanded ? (
+														<ChevronDown className="h-4 w-4" />
+													) : (
+														<ChevronRight className="h-4 w-4" />
+													)}
+												</button>
+											) : (
+												"-"
+											)}
+										</td>
+										<td className="px-6 py-4">
+											<span
+												className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${p.is_returnable ? "bg-swapp-azul-oceano/10 dark:bg-swapp-menta/10 text-swapp-azul-oceano dark:text-swapp-menta" : "bg-swapp-tiza dark:bg-swapp-azul-petroleo text-swapp-azul-petroleo dark:text-swapp-tiza"}`}>
+												{p.is_returnable ? "Retornable" : "Estándar"}
+											</span>
+										</td>
+										<td className="px-6 py-4">
+											<span
+												className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${p.is_published ? "bg-swapp-verde-agua/10 dark:bg-swapp-menta/10 text-swapp-turquesa-oscuro dark:text-swapp-menta" : "bg-swapp-tiza dark:bg-swapp-azul-petroleo text-swapp-azul-petroleo dark:text-swapp-tiza"}`}>
+												{p.is_published ? "Publicado" : "Borrador"}
+											</span>
+										</td>
+										<td className="px-6 py-4 text-right">
+											<div className="flex items-center justify-end gap-2">
+												<SwappTooltip text="Añadir Variante Física">
+													<button
+														onClick={() => {
+															setSelectedProduct(p);
+															setIsNewVariantModalOpen(true);
+														}}
+														className="p-2 text-swapp-azul-petroleo/40 dark:text-swapp-tiza/40 hover:text-swapp-turquesa-oscuro dark:hover:text-swapp-menta transition-colors">
+														<PlusSquare className="h-4 w-4" />
+													</button>
+												</SwappTooltip>
+												<SwappTooltip text="Editar Estructura General">
+													<button
+														onClick={() => {
+															setEditingProduct(p);
+															setIsEditModalOpen(true);
+														}}
+														className="p-2 text-swapp-azul-petroleo/40 dark:text-swapp-tiza/40 hover:text-swapp-azul-oceano dark:hover:text-swapp-verde-agua transition-colors">
+														<Edit className="h-4 w-4" />
+													</button>
+												</SwappTooltip>
+											</div>
+										</td>
+									</tr>
+
+									{/* Fila Desplegable (Hijos / Variantes) */}
+									{isExpanded && variantsCount > 0 && (
+										<tr className="bg-swapp-tiza/10 dark:bg-swapp-negro-azulado border-b border-swapp-tiza dark:border-swapp-azul-petroleo">
+											<td colSpan={6} className="px-6 py-4">
+												<div className="rounded-lg border border-swapp-tiza/50 dark:border-swapp-azul-petroleo/50 overflow-hidden bg-swapp-blanco dark:bg-swapp-negro-azulado/50">
+													<table className="w-full text-xs text-left">
+														<thead className="bg-swapp-tiza/30 dark:bg-swapp-azul-petroleo/20 text-swapp-azul-petroleo/70 dark:text-swapp-tiza/70">
+															<tr>
+																<th className="px-4 py-2 font-medium w-1/4">
+																	SKU Específico
+																</th>
+																<th className="px-4 py-2 font-medium w-2/4">
+																	Atributos
+																</th>
+																<th className="px-4 py-2 font-medium">
+																	Precio
+																</th>
+																<th className="px-4 py-2 font-medium">
+																	Stock Físico
+																</th>
+																<th className="px-4 py-2 font-medium text-right">
+																	Acciones
+																</th>
+															</tr>
+														</thead>
+														<tbody className="divide-y divide-swapp-tiza/30 dark:divide-swapp-azul-petroleo/30">
+															{p.variants?.map((v) => {
+																const isEditing =
+																	editingVariantId === v.variant_uuid;
+
+																return (
+																	<tr
+																		key={v.variant_uuid}
+																		className="hover:bg-swapp-tiza/20 dark:hover:bg-swapp-azul-petroleo/20">
+																		<td className="px-4 py-2.5 font-mono text-swapp-negro-azulado dark:text-swapp-blanco align-top">
+																			{isEditing ? (
+																				<input
+																					type="text"
+																					className="w-full rounded-md border border-swapp-turquesa-oscuro dark:border-swapp-menta bg-swapp-blanco dark:bg-swapp-negro-azulado px-2 py-1 text-xs text-swapp-negro-azulado dark:text-swapp-blanco outline-none shadow-sm focus:ring-1 focus:ring-swapp-turquesa-oscuro dark:focus:ring-swapp-menta transition-all"
+																					value={draftSku}
+																					onChange={(e) =>
+																						setDraftSku(e.target.value)
+																					}
+																					placeholder="Ej: SKU-123"
+																				/>
+																			) : (
+																				v.sku
+																			)}
+																		</td>
+																		<td className="px-4 py-2.5 align-top">
+																			{isEditing ? (
+																				<div className="min-w-[250px] -mt-1 -mb-3 scale-[0.90] origin-top-left">
+																					<SwappAttributeBuilder
+																						attributes={draftAttributes}
+																						onChange={setDraftAttributes}
+																					/>
+																				</div>
+																			) : v.variant_attributes ? (
+																				<div className="flex flex-wrap gap-1">
+																					{Object.entries(
+																						v.variant_attributes,
+																					).map(([key, val]) => (
+																						<span
+																							key={key}
+																							className="inline-block bg-swapp-tiza dark:bg-swapp-azul-petroleo text-swapp-azul-petroleo dark:text-swapp-tiza px-1.5 py-0.5 rounded text-[10px] font-medium border border-swapp-tiza/50 dark:border-swapp-azul-petroleo/50">
+																							{key}: {String(val)}
+																						</span>
+																					))}
+																				</div>
+																			) : (
+																				<span className="text-swapp-azul-petroleo/40 dark:text-swapp-tiza/40 italic">
+																					Sin atributos
+																				</span>
+																			)}
+																		</td>
+																		<td className="px-4 py-2.5 font-medium text-swapp-turquesa-oscuro dark:text-swapp-menta align-top pt-3">
+																			${Number(v.price).toLocaleString("es-AR")}
+																		</td>
+																		<td className="px-4 py-2.5 align-top pt-3">
+																			<span
+																				className={`font-medium ${v.stock_quantity > 0 ? "text-swapp-verde-agua dark:text-swapp-menta" : "text-red-500"}`}>
+																				{v.stock_quantity} un.
+																			</span>
+																		</td>
+																		<td className="px-4 py-2.5 text-right align-top pt-2">
+																			{isEditing ? (
+																				<div className="flex items-center justify-end gap-1.5">
+																					<button
+																						onClick={() =>
+																							saveVariant(
+																								p.product_uuid!,
+																								v.variant_uuid!,
+																							)
+																						}
+																						disabled={isSavingVariant}
+																						className="p-1.5 rounded-md bg-swapp-verde-agua/20 text-swapp-turquesa-oscuro dark:bg-swapp-menta/20 dark:text-swapp-menta hover:bg-swapp-verde-agua/40 transition-colors"
+																						title="Guardar">
+																						<Check className="h-4 w-4" />
+																					</button>
+																					<button
+																						onClick={cancelEditingVariant}
+																						disabled={isSavingVariant}
+																						className="p-1.5 rounded-md bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
+																						title="Cancelar">
+																						<X className="h-4 w-4" />
+																					</button>
+																				</div>
+																			) : (
+																				<button
+																					onClick={() => startEditingVariant(v)}
+																					className="p-1.5 text-swapp-azul-petroleo/50 hover:text-swapp-turquesa-oscuro dark:text-swapp-tiza/50 dark:hover:text-swapp-menta transition-colors"
+																					title="Editar variante">
+																					<Edit className="h-3.5 w-3.5" />
+																				</button>
+																			)}
+																		</td>
+																	</tr>
+																);
+															})}
+														</tbody>
+													</table>
+												</div>
+											</td>
+										</tr>
+									)}
+								</React.Fragment>
 							);
 						})}
 					</tbody>
@@ -259,6 +497,15 @@ export default function MasterCatalogPage() {
 				onClose={() => setIsEditModalOpen(false)}
 				product={editingProduct}
 				brands={brands}
+				categories={categories}
+				taxClasses={taxClasses}
+				onSuccess={fetchProducts}
+			/>
+
+			<NewVariantModal
+				isOpen={isNewVariantModalOpen}
+				onClose={() => setIsNewVariantModalOpen(false)}
+				product={selectedProduct}
 				onSuccess={fetchProducts}
 			/>
 		</div>

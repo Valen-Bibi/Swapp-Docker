@@ -3,7 +3,8 @@ import { Product, Brand, Category, TaxClass } from "@/types/product";
 
 export const ProductService = {
   getAll: async (): Promise<Product[]> => {
-    const { data } = await api.get("/api/products/admin");
+    const timestamp = new Date().getTime();
+    const { data } = await api.get(`/api/products/admin?t=${timestamp}`);
     return data;
   },
 
@@ -32,22 +33,35 @@ export const ProductService = {
     return data;
   },
 
+  createVariant: async (productUuid: string, payload: any) => {
+    const { data } = await api.post(`/api/products/admin/${productUuid}/variants`, payload);
+    return data;
+  },
+
+  updateVariant: async (productUuid: string, variantUuid: string, updateData: any) => {
+    const { data } = await api.put(`/api/products/admin/${productUuid}/variants/${variantUuid}`, updateData);
+    return data;
+  },
+
+  // --- LOGÍSTICA E HISTORIAL ---
   addMovement: async (
-    id: string,
+    productUuid: string,
+    variantUuid: string, // NUEVO PARÁMETRO
     payload: { quantity: number; movement_type: string; reason: string; notes?: string; unit_cost?: number },
   ) => {
     const { data } = await api.post(
-      `/api/products/admin/${id}/movements`,
+      `/api/products/admin/${productUuid}/variants/${variantUuid}/movements`,
       payload,
     );
     return data;
   },
 
-  getPriceHistory: async (id: string): Promise<any[]> => {
-    const { data } = await api.get(`/api/products/admin/${id}/price-history`);
-    return data;
-  },
+ getPriceHistory: async (productUuid: string, variantUuid: string): Promise<any[]> => {
+		const { data } = await api.get(`/api/products/admin/${productUuid}/variants/${variantUuid}/price-history`);
+		return data;
+	},
 
+  // --- MULTIMEDIA ---
   uploadMainImage: async (product_uuid: string, file: File) => {
     const formData = new FormData();
     formData.append("file", file);

@@ -1,6 +1,5 @@
 import { Toaster } from "sonner";
 import Sidebar from "@/components/layout/Sidebar";
-import CommandPalette from "@/components/layout/CommandPalette";
 
 export default function DashboardLayout({
 	children,
@@ -9,7 +8,6 @@ export default function DashboardLayout({
 }) {
 	return (
 		<div className="flex h-screen w-full bg-swapp-tiza dark:bg-swapp-azul-petroleo overflow-hidden transition-colors duration-300">
-			<CommandPalette />
 			{/* Sidebar Modularizado */}
 			<Sidebar />
 

@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Tag, CalendarClock, X, AlertTriangle } from "lucide-react";
+import {
+	Tag,
+	CalendarClock,
+	X,
+	AlertTriangle,
+	CheckSquare,
+} from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { SwappInput } from "@/components/ui/SwappInput";
@@ -12,6 +18,7 @@ export interface ProductDiscount {
 	product_id: number;
 	product_uuid?: string;
 	product_name?: string;
+	variant_uuids?: string[]; // Modificado para el modelo de selección múltiple
 	name: string;
 	discount_type: string;
 	value: number;
@@ -39,7 +46,6 @@ export default function NewDiscountModal({
 }: NewDiscountModalProps) {
 	const [isSaving, setIsSaving] = useState(false);
 
-	// Estado para controlar la advertencia de solapamiento
 	const [overlapWarning, setOverlapWarning] = useState<{
 		show: boolean;
 		existing?: ProductDiscount;
@@ -47,6 +53,7 @@ export default function NewDiscountModal({
 
 	const [formData, setFormData] = useState({
 		product_uuid: "",
+		variant_uuids: [] as string[], // Ahora es un array
 		name: "",
 		discount_type: "percentage",
 		value: "",
@@ -57,10 +64,11 @@ export default function NewDiscountModal({
 
 	useEffect(() => {
 		if (isOpen) {
-			setOverlapWarning(null); // Resetear advertencia al abrir
+			setOverlapWarning(null);
 			if (editingDiscount) {
 				setFormData({
 					product_uuid: editingDiscount.product_uuid || "",
+					variant_uuids: editingDiscount.variant_uuids || [],
 					name: editingDiscount.name,
 					discount_type: editingDiscount.discount_type,
 					value: editingDiscount.value.toString(),
@@ -75,6 +83,7 @@ export default function NewDiscountModal({
 			} else {
 				setFormData({
 					product_uuid: "",
+					variant_uuids: [],
 					name: "",
 					discount_type: "percentage",
 					value: "",
@@ -88,6 +97,23 @@ export default function NewDiscountModal({
 
 	if (!isOpen) return null;
 
+	const handleVariantToggle = (uuid: string) => {
+		setFormData((prev) => {
+			if (prev.variant_uuids.includes(uuid)) {
+				return {
+					...prev,
+					variant_uuids: prev.variant_uuids.filter((id) => id !== uuid),
+				};
+			} else {
+				return { ...prev, variant_uuids: [...prev.variant_uuids, uuid] };
+			}
+		});
+	};
+
+	const setGlobalScope = () => {
+		setFormData((prev) => ({ ...prev, variant_uuids: [] }));
+	};
+
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
 		const newStart = new Date(formData.start_date);
@@ -100,7 +126,7 @@ export default function NewDiscountModal({
 			return;
 		}
 
-		// VALIDACIÓN DE SOLAPAMIENTO (Solo para ofertas activas del mismo producto)
+		// VALIDACIÓN DE SOLAPAMIENTO INTELIGENTE (Arrays)
 		const overlapping = allDiscounts.find((d) => {
 			if (editingDiscount && d.discount_id === editingDiscount.discount_id)
 				return false;
@@ -109,17 +135,29 @@ export default function NewDiscountModal({
 
 			const oldStart = new Date(d.start_date);
 			const oldEnd = new Date(d.end_date);
+			const datesOverlap = newStart < oldEnd && newEnd > oldStart;
 
-			// Verifica si el rango de fechas se choca
-			return newStart < oldEnd && newEnd > oldStart;
+			if (!datesOverlap) return false;
+
+			// Choque de alcance:
+			// 1. Si alguna de las dos es global (array vacío), se pisan en todo el producto.
+			// 2. Si ambas son específicas, revisamos si comparten algún variant_uuid.
+			const dIsGlobal = !d.variant_uuids || d.variant_uuids.length === 0;
+			const formIsGlobal = formData.variant_uuids.length === 0;
+
+			if (dIsGlobal || formIsGlobal) return true;
+
+			return d.variant_uuids!.some((uuid) =>
+				formData.variant_uuids.includes(uuid),
+			);
 		});
 
 		if (overlapping) {
 			setOverlapWarning({ show: true, existing: overlapping });
-			return; // Frenamos el guardado hasta que el usuario decida
+			return;
 		}
 
-		executeSave(); // Si no hay choque, guardamos normal
+		executeSave();
 	};
 
 	const executeSave = async (resolution?: "replace" | "trim") => {
@@ -129,30 +167,30 @@ export default function NewDiscountModal({
 		);
 
 		try {
-			// Manejar las resoluciones elegidas por el usuario
 			if (overlapWarning?.existing) {
 				const existingId = overlapWarning.existing.discount_id;
 
 				if (resolution === "replace") {
-					// 1. Desactivamos la oferta vieja
 					await api.patch(
 						`/api/products/admin/discounts/${existingId}/toggle`,
 						{ is_active: false },
 					);
 				} else if (resolution === "trim") {
-					// 3. Acortamos la oferta vieja hasta que empieza la nueva
 					await api.put(`/api/products/admin/discounts/${existingId}`, {
 						end_date: new Date(formData.start_date).toISOString(),
 					});
 				}
 			}
 
-			// Proceso de guardado habitual (Nueva o Edición)
 			const payload = {
-				...formData,
+				product_uuid: formData.product_uuid,
+				variant_uuids: formData.variant_uuids, // Enviamos el array tal cual
+				name: formData.name,
+				discount_type: formData.discount_type,
 				value: parseFloat(formData.value),
 				start_date: new Date(formData.start_date).toISOString(),
 				end_date: new Date(formData.end_date).toISOString(),
+				is_active: formData.is_active,
 			};
 
 			if (editingDiscount) {
@@ -176,17 +214,26 @@ export default function NewDiscountModal({
 		}
 	};
 
+	const selectedProductObj = products.find(
+		(p) => p.product_uuid === formData.product_uuid,
+	);
+	const isGlobalScope = formData.variant_uuids.length === 0;
+
 	if (overlapWarning?.show && overlapWarning.existing) {
 		const oldStart = new Date(overlapWarning.existing.start_date);
 		const newStart = new Date(formData.start_date);
 		const canTrim = oldStart < newStart;
+
+		const existingIsGlobal =
+			!overlapWarning.existing.variant_uuids ||
+			overlapWarning.existing.variant_uuids.length === 0;
 
 		return (
 			<div className="fixed inset-0 z-50 flex items-center justify-center bg-swapp-negro/50 dark:bg-swapp-negro/70 backdrop-blur-sm p-4">
 				<div className="w-full max-w-md rounded-xl bg-swapp-blanco dark:bg-swapp-negro-azulado p-6 shadow-2xl border-t-4 border-amber-500 animate-in fade-in zoom-in-95">
 					<div className="flex items-center gap-3 mb-4 text-amber-600 dark:text-amber-500">
 						<AlertTriangle className="h-6 w-6" />
-						<h2 className="text-xl font-bold">Conflicto de Fechas</h2>
+						<h2 className="text-xl font-bold">Conflicto de Fechas y Alcance</h2>
 					</div>
 
 					<p className="text-sm text-swapp-azul-petroleo dark:text-swapp-tiza mb-6">
@@ -194,7 +241,11 @@ export default function NewDiscountModal({
 						<strong className="text-swapp-turquesa-oscuro dark:text-swapp-menta">
 							"{overlapWarning.existing.name}"
 						</strong>{" "}
-						activa en las fechas que seleccionaste. ¿Qué deseas hacer?
+						activa que afecta a{" "}
+						{existingIsGlobal
+							? "todo el catálogo del producto"
+							: "algunas de las variantes seleccionadas"}{" "}
+						en estas fechas. ¿Qué deseas hacer?
 					</p>
 
 					<div className="space-y-3">
@@ -218,7 +269,7 @@ export default function NewDiscountModal({
 								2. Conservar oferta antigua
 							</span>
 							<span className="text-xs text-swapp-azul-petroleo/70 dark:text-swapp-tiza/70">
-								Cancela este guardado para ajustar tus fechas.
+								Cancela este guardado para ajustar tus fechas o alcance.
 							</span>
 						</button>
 
@@ -268,16 +319,72 @@ export default function NewDiscountModal({
 							className="w-full rounded-md border border-swapp-tiza dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-negro-azulado px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-swapp-turquesa-oscuro disabled:opacity-50"
 							value={formData.product_uuid}
 							onChange={(e) =>
-								setFormData({ ...formData, product_uuid: e.target.value })
+								setFormData({
+									...formData,
+									product_uuid: e.target.value,
+									variant_uuids: [], // Reseteamos al cambiar de producto
+								})
 							}>
 							<option value="">Seleccione un producto...</option>
 							{products.map((p) => (
-								<option key={p.product_uuid} value={p.product_uuid}>
+								<option
+									key={p.product_uuid}
+									value={p.product_uuid}
+									className="bg-swapp-blanco dark:bg-swapp-negro-azulado">
 									{p.name}
 								</option>
 							))}
 						</select>
 					</div>
+
+					{/* NUEVO CAMPO: Selector Múltiple Estilizado */}
+					{formData.product_uuid &&
+						selectedProductObj?.variants &&
+						selectedProductObj.variants.length > 0 && (
+							<div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+								<label className="flex items-center gap-2 text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza">
+									<CheckSquare className="h-4 w-4" /> Alcance de la Oferta
+								</label>
+
+								<div
+									className={`flex flex-col gap-1 max-h-48 overflow-y-auto rounded-md border border-swapp-tiza dark:border-swapp-azul-petroleo bg-swapp-tiza/10 dark:bg-swapp-azul-petroleo/10 p-2 custom-scrollbar ${!!editingDiscount ? "opacity-60 pointer-events-none" : ""}`}>
+									{/* Opción Global */}
+									<label className="flex items-center gap-3 p-2 rounded cursor-pointer hover:bg-swapp-tiza/50 dark:hover:bg-swapp-azul-petroleo/50 transition-colors">
+										<input
+											type="checkbox"
+											className="h-4 w-4 rounded border-swapp-tiza text-swapp-turquesa-oscuro focus:ring-swapp-turquesa-oscuro dark:bg-swapp-negro-azulado dark:border-swapp-azul-petroleo"
+											checked={isGlobalScope}
+											onChange={setGlobalScope}
+										/>
+										<span
+											className={`text-sm ${isGlobalScope ? "font-bold text-swapp-turquesa-oscuro dark:text-swapp-menta" : "text-swapp-negro-azulado dark:text-swapp-blanco"}`}>
+											Aplicar a todas las variantes (Global)
+										</span>
+									</label>
+
+									<div className="my-1 border-t border-swapp-tiza dark:border-swapp-azul-petroleo/50"></div>
+
+									{/* Opciones Específicas */}
+									{selectedProductObj.variants.map((v) => (
+										<label
+											key={v.variant_uuid}
+											className="flex items-center gap-3 p-2 rounded cursor-pointer hover:bg-swapp-tiza/50 dark:hover:bg-swapp-azul-petroleo/50 transition-colors">
+											<input
+												type="checkbox"
+												className="h-4 w-4 rounded border-swapp-tiza text-swapp-turquesa-oscuro focus:ring-swapp-turquesa-oscuro dark:bg-swapp-negro-azulado dark:border-swapp-azul-petroleo"
+												checked={formData.variant_uuids.includes(
+													v.variant_uuid!,
+												)}
+												onChange={() => handleVariantToggle(v.variant_uuid!)}
+											/>
+											<span className="text-sm text-swapp-azul-petroleo dark:text-swapp-tiza">
+												SKU: {v.sku}
+											</span>
+										</label>
+									))}
+								</div>
+							</div>
+						)}
 
 					<SwappInput
 						label="Nombre de la Campaña (Ej: Oferta Mensual)"
@@ -296,13 +403,18 @@ export default function NewDiscountModal({
 								className="w-full rounded-md border border-swapp-tiza dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-negro-azulado px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-swapp-turquesa-oscuro"
 								value={formData.discount_type}
 								onChange={(e) =>
-									setFormData({
-										...formData,
-										discount_type: e.target.value,
-									})
+									setFormData({ ...formData, discount_type: e.target.value })
 								}>
-								<option value="percentage">Porcentaje (%)</option>
-								<option value="fixed_amount">Monto Fijo ($)</option>
+								<option
+									value="percentage"
+									className="bg-swapp-blanco dark:bg-swapp-negro-azulado">
+									Porcentaje (%)
+								</option>
+								<option
+									value="fixed_amount"
+									className="bg-swapp-blanco dark:bg-swapp-negro-azulado">
+									Monto Fijo ($)
+								</option>
 							</select>
 						</div>
 						<SwappInput

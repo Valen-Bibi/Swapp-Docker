@@ -26,11 +26,25 @@ export interface TaxClass {
   is_active: boolean;
 }
 
+// --- NUEVA INTERFAZ: LA VARIANTE FÍSICA ---
+export interface ProductVariant {
+  variant_id?: number;
+  variant_uuid?: string;
+  sku: string;
+  price: number;
+  cost_price: number;
+  sale_price?: number | null;
+  stock_quantity: number;
+  low_stock_threshold?: number;
+  variant_attributes?: Record<string, any> | null;
+  is_active?: boolean;
+}
+
+// --- INTERFAZ ACTUALIZADA: LA PLANTILLA (PADRE) ---
 export interface Product {
   product_uuid: string;
   name: string;
   slug: string;
-  sku: string | null;
   
   category_id?: number | null;
   brand_id?: number | null;
@@ -40,15 +54,10 @@ export interface Product {
   short_description?: string | null;
   description?: string | null;
 
-  base_price: number;
-  cost_price: number | null;
-  sale_price?: number | null;
-  
   meta_title?: string | null;
   meta_description?: string | null;
   meta_keywords?: string | null;
   
-  stock_quantity: number;
   low_stock_threshold?: number;
   max_order_quantity?: number | null;
   weight?: number | null;
@@ -59,11 +68,11 @@ export interface Product {
   file_size?: number | null;
   file_extension?: string | null;
   
-  variant_attributes?: Record<string, any> | null;
   is_published: boolean;
   is_returnable: boolean;
   is_featured?: boolean;
 
+  variants?: ProductVariant[];
   media?: {
     media_uuid: string;
     media_type: string;

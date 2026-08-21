@@ -2,14 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { Tag, Plus, Edit, Power } from "lucide-react";
+import { Tag, Plus, Edit, Power, Layers } from "lucide-react";
 import TableSkeleton from "@/components/tables/TableSkeleton";
 import PageHeader from "@/components/layout/PageHeader";
 import SearchBar from "@/components/ui/SearchBar";
-import { SwappToggle } from "@/components/ui/SwappToggle"; // Importamos tu nuevo componente
+import { SwappToggle } from "@/components/ui/SwappToggle";
 import { toast } from "sonner";
 import { Product } from "@/types/product";
 import { formatCurrency } from "@/lib/utils";
+import { ProductService } from "@/services/product.service";
 import NewDiscountModal, {
 	ProductDiscount,
 } from "@/components/products/NewDiscountModal";
@@ -20,7 +21,6 @@ export default function OffersPage() {
 	const [loading, setLoading] = useState(true);
 	const [searchTerm, setSearchTerm] = useState("");
 
-	// Estado para controlar el switch del historial
 	const [showHistory, setShowHistory] = useState(false);
 
 	const [isModalOpen, setIsModalOpen] = useState(false);
@@ -30,50 +30,51 @@ export default function OffersPage() {
 	const fetchData = async () => {
 		setLoading(true);
 		try {
-			// Preparamos el array de promesas. Por defecto pedimos activas y catálogo.
-			const endpoints = [
-				api.get("/api/products/admin/discounts"),
-				api.get("/api/products/admin"),
-			];
+			let fetchedDiscounts: ProductDiscount[] = [];
+			let fetchedProducts: Product[] = [];
 
-			// Si el switch está encendido, sumamos el endpoint del historial a la cola
-			if (showHistory) {
-				endpoints.push(api.get("/api/products/admin/discounts/history"));
+			// 1. Intentamos cargar los descuentos de forma aislada
+			try {
+				const discountsRes = await api.get("/api/products/admin/discounts");
+				fetchedDiscounts = [...discountsRes.data];
+
+				// Si el switch está encendido, buscamos el historial y lo sumamos
+				if (showHistory) {
+					const historyRes = await api.get(
+						"/api/products/admin/discounts/history",
+					);
+					fetchedDiscounts = [...fetchedDiscounts, ...historyRes.data];
+				}
+			} catch (err) {
+				console.error("Error cargando descuentos:", err);
+				toast.error("Error al cargar la tabla de ofertas.");
 			}
 
-			const responses = await Promise.all(endpoints);
-			const activeDiscountsRes = responses[0];
-			const productsRes = responses[1];
-			const historyDiscountsRes = showHistory ? responses[2] : { data: [] };
+			// 2. Intentamos cargar los productos de forma aislada
+			try {
+				// ProductService ya devuelve Product[], por lo que no lleva .data
+				fetchedProducts = await ProductService.getAll();
+			} catch (err) {
+				console.error("Error cargando catálogo de productos:", err);
+				toast.error("Error al cargar los productos para el selector.");
+			}
 
-			// Combinamos los resultados
-			const combinedDiscounts = [
-				...activeDiscountsRes.data,
-				...historyDiscountsRes.data,
-			];
-
-			// ORDENAMIENTO: Activas primero, y luego por fecha más nueva
-			const sortedDiscounts = combinedDiscounts.sort(
-				(a: ProductDiscount, b: ProductDiscount) => {
-					if (a.is_active && !b.is_active) return -1;
-					if (!a.is_active && b.is_active) return 1;
-					return (
-						new Date(b.start_date).getTime() - new Date(a.start_date).getTime()
-					);
-				},
-			);
+			// 3. Procesamos y guardamos lo que haya sobrevivido
+			const sortedDiscounts = fetchedDiscounts.sort((a, b) => {
+				if (a.is_active && !b.is_active) return -1;
+				if (!a.is_active && b.is_active) return 1;
+				return (
+					new Date(b.start_date).getTime() - new Date(a.start_date).getTime()
+				);
+			});
 
 			setDiscounts(sortedDiscounts);
-			setProducts(productsRes.data);
-		} catch (error) {
-			console.error("Error obteniendo datos:", error);
-			toast.error("Error al cargar las ofertas.");
+			setProducts(fetchedProducts);
 		} finally {
 			setLoading(false);
 		}
 	};
 
-	// Agregamos showHistory como dependencia. Cada vez que toques el toggle, se vuelve a ejecutar fetchData.
 	useEffect(() => {
 		fetchData();
 	}, [showHistory]);
@@ -85,21 +86,32 @@ export default function OffersPage() {
 			const newStart = new Date(discount.start_date);
 			const newEnd = new Date(discount.end_date);
 
-			const overlapping = discounts.find(
-				(d) =>
-					d.discount_id !== discount.discount_id &&
-					d.product_id === discount.product_id &&
-					d.is_active &&
-					newStart < new Date(d.end_date) &&
-					newEnd > new Date(d.start_date),
-			);
+			const overlapping = discounts.find((d) => {
+				if (d.discount_id === discount.discount_id) return false;
+				if (d.product_uuid !== discount.product_uuid) return false;
+				if (!d.is_active) return false;
+
+				const datesOverlap =
+					newStart < new Date(d.end_date) && newEnd > new Date(d.start_date);
+				if (!datesOverlap) return false;
+
+				const dIsGlobal = !d.variant_uuids || d.variant_uuids.length === 0;
+				const thisIsGlobal =
+					!discount.variant_uuids || discount.variant_uuids.length === 0;
+
+				if (dIsGlobal || thisIsGlobal) return true;
+
+				return d.variant_uuids!.some((uuid) =>
+					discount.variant_uuids!.includes(uuid),
+				);
+			});
 
 			if (overlapping) {
 				const startStr = new Date(overlapping.start_date).toLocaleDateString();
 				const endStr = new Date(overlapping.end_date).toLocaleDateString();
 
 				toast.error(
-					`Conflicto: Choca con "${overlapping.name}" (Activa del ${startStr} al ${endStr}). Desactívala o edita las fechas primero.`,
+					`Conflicto: Choca con "${overlapping.name}" (Activa del ${startStr} al ${endStr}). Desactívala o edita el alcance primero.`,
 					{ duration: 5000 },
 				);
 				return;
@@ -161,11 +173,10 @@ export default function OffersPage() {
 			<div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<PageHeader
 					title="Gestión de Ofertas"
-					description="Administración de descuentos temporales (ABM)"
+					description="Administración de descuentos temporales e híbridos"
 					icon={Tag}
 				/>
 				<div className="flex gap-4 items-center">
-					{/* Agregamos el componente SwappToggle aquí */}
 					<SwappToggle
 						checked={showHistory}
 						onChange={setShowHistory}
@@ -186,13 +197,11 @@ export default function OffersPage() {
 				<table className="w-full text-left text-sm text-swapp-azul-petroleo dark:text-swapp-tiza">
 					<thead className="bg-swapp-tiza/50 dark:bg-swapp-azul-petroleo/30 text-swapp-negro-azulado dark:text-swapp-tiza select-none">
 						<tr>
-							<th className="px-6 py-4 font-semibold">Producto</th>
-							<th className="px-6 py-4 font-semibold">Campaña / Nombre</th>
+							<th className="px-6 py-4 font-semibold">Producto / Alcance</th>
+							<th className="px-6 py-4 font-semibold">Campaña</th>
 							<th className="px-6 py-4 font-semibold">Descuento</th>
 							<th className="px-6 py-4 font-semibold">Validez</th>
-							<th className="px-6 py-4 font-semibold text-center">
-								Estado (Activa)
-							</th>
+							<th className="px-6 py-4 font-semibold text-center">Estado</th>
 							<th className="px-6 py-4 font-semibold text-right">Acciones</th>
 						</tr>
 					</thead>
@@ -206,52 +215,94 @@ export default function OffersPage() {
 								</td>
 							</tr>
 						) : (
-							filteredDiscounts.map((d) => (
-								<tr
-									key={d.discount_id}
-									className={`transition-colors hover:bg-swapp-tiza/30 dark:hover:bg-swapp-azul-petroleo/30 ${new Date(d.end_date) < new Date() ? "opacity-60" : ""}`}>
-									<td className="px-6 py-4 font-medium">
-										{d.product_name || `ID: ${d.product_id}`}
-									</td>
-									<td className="px-6 py-4">{d.name}</td>
-									<td className="px-6 py-4 font-bold text-swapp-turquesa-oscuro dark:text-swapp-menta">
-										{d.discount_type === "percentage"
-											? `${d.value}%`
-											: formatCurrency(d.value)}
-									</td>
-									<td className="px-6 py-4 text-xs">
-										<div className="flex flex-col gap-1">
-											<span>
-												Desde: {new Date(d.start_date).toLocaleDateString()}
+							filteredDiscounts.map((d) => {
+								const isGlobal =
+									!d.variant_uuids || d.variant_uuids.length === 0;
+
+								return (
+									<tr
+										key={d.discount_id}
+										className={`transition-colors hover:bg-swapp-tiza/30 dark:hover:bg-swapp-azul-petroleo/30 ${new Date(d.end_date) < new Date() ? "opacity-60" : ""}`}>
+										{/* NUEVA COLUMNA CON BADGES DE ALCANCE */}
+										<td className="px-6 py-4">
+											<div className="flex flex-col gap-1.5">
+												<span className="font-medium text-swapp-negro-azulado dark:text-swapp-blanco">
+													{d.product_name || `ID: ${d.product_id}`}
+												</span>
+												{isGlobal ? (
+													<span className="w-fit inline-flex items-center gap-1 rounded-md bg-emerald-100/60 dark:bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
+														<Layers className="h-3 w-3" /> Catálogo Completo
+													</span>
+												) : (
+													<div className="flex flex-wrap gap-1">
+														{d.variant_uuids?.map((uuid) => {
+															// Buscamos el SKU cruzando datos con el catálogo maestro
+															const product = products.find(
+																(p) => p.product_uuid === d.product_uuid,
+															);
+															const sku =
+																product?.variants?.find(
+																	(v) => v.variant_uuid === uuid,
+																)?.sku || "...";
+
+															return (
+																<span
+																	key={uuid}
+																	className="inline-flex items-center rounded-md bg-swapp-tiza/50 dark:bg-swapp-azul-petroleo/40 px-2 py-0.5 text-[10px] font-mono font-medium text-swapp-azul-petroleo dark:text-swapp-tiza border border-swapp-tiza dark:border-swapp-azul-petroleo/50">
+																	SKU: {sku}
+																</span>
+															);
+														})}
+													</div>
+												)}
+											</div>
+										</td>
+
+										<td className="px-6 py-4 font-medium">{d.name}</td>
+										<td className="px-6 py-4">
+											<span className="inline-flex items-center gap-1 font-bold text-swapp-turquesa-oscuro dark:text-swapp-menta bg-swapp-turquesa-oscuro/10 dark:bg-swapp-menta/10 px-2 py-1 rounded-md">
+												<Tag className="h-3.5 w-3.5" />
+												{d.discount_type === "percentage"
+													? `${d.value}% OFF`
+													: formatCurrency(d.value)}
 											</span>
-											<span>
-												Hasta: {new Date(d.end_date).toLocaleDateString()}
-											</span>
-										</div>
-									</td>
-									<td className="px-6 py-4 text-center">
-										<button
-											onClick={() => handleToggleActive(d)}
-											title={d.is_active ? "Desactivar" : "Activar"}
-											disabled={new Date(d.end_date) < new Date()} // Evita activar ofertas vencidas
-											className={`inline-flex items-center justify-center p-2 rounded-full transition-all duration-300 ${
-												d.is_active
-													? "bg-emerald-100 text-emerald-600 hover:bg-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400"
-													: "bg-swapp-tiza text-swapp-azul-petroleo/40 hover:bg-swapp-tiza/80 dark:bg-swapp-azul-petroleo dark:text-swapp-tiza/40"
-											} disabled:cursor-not-allowed`}>
-											<Power className="h-4 w-4" />
-										</button>
-									</td>
-									<td className="px-6 py-4 text-right">
-										<button
-											onClick={() => openModal(d)}
-											title="Editar Oferta"
-											className="p-2 text-swapp-azul-petroleo/40 dark:text-swapp-tiza/40 hover:text-swapp-turquesa-oscuro dark:hover:text-swapp-menta transition-colors">
-											<Edit className="h-4 w-4" />
-										</button>
-									</td>
-								</tr>
-							))
+										</td>
+										<td className="px-6 py-4 text-xs">
+											<div className="flex flex-col gap-1 text-swapp-azul-petroleo/80 dark:text-swapp-tiza/80">
+												<span>
+													<span className="font-medium">Inicio:</span>{" "}
+													{new Date(d.start_date).toLocaleDateString()}
+												</span>
+												<span>
+													<span className="font-medium">Fin:</span>{" "}
+													{new Date(d.end_date).toLocaleDateString()}
+												</span>
+											</div>
+										</td>
+										<td className="px-6 py-4 text-center">
+											<button
+												onClick={() => handleToggleActive(d)}
+												title={d.is_active ? "Desactivar" : "Activar"}
+												disabled={new Date(d.end_date) < new Date()}
+												className={`inline-flex items-center justify-center p-2 rounded-full transition-all duration-300 ${
+													d.is_active
+														? "bg-emerald-100 text-emerald-600 hover:bg-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400"
+														: "bg-swapp-tiza text-swapp-azul-petroleo/40 hover:bg-swapp-tiza/80 dark:bg-swapp-azul-petroleo dark:text-swapp-tiza/40"
+												} disabled:cursor-not-allowed`}>
+												<Power className="h-4 w-4" />
+											</button>
+										</td>
+										<td className="px-6 py-4 text-right">
+											<button
+												onClick={() => openModal(d)}
+												title="Editar Oferta"
+												className="p-2 text-swapp-azul-petroleo/40 dark:text-swapp-tiza/40 hover:text-swapp-turquesa-oscuro dark:hover:text-swapp-menta transition-colors">
+												<Edit className="h-4 w-4" />
+											</button>
+										</td>
+									</tr>
+								);
+							})
 						)}
 					</tbody>
 				</table>

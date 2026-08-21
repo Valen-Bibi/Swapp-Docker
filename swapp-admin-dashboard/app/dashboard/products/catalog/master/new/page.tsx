@@ -20,20 +20,17 @@ export default function NewProductPage() {
 	const [categories, setCategories] = useState<Category[]>([]);
 	const [taxClasses, setTaxClasses] = useState<TaxClass[]>([]);
 	const [isSaving, setIsSaving] = useState(false);
-
 	const [showOptionalFields, setShowOptionalFields] = useState(false);
 
 	// --- ESTADOS MULTIMEDIA INDEPENDIENTES ---
 	const [mainImageFile, setMainImageFile] = useState<File | null>(null);
 	const [mainImagePreview, setMainImagePreview] = useState<string | null>(null);
-
 	const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
 	const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
 
 	const [formData, setFormData] = useState({
 		name: "",
 		slug: "",
-		sku: "",
 		cost_price: 0,
 		base_price: 0,
 		brand_id: "",
@@ -44,7 +41,6 @@ export default function NewProductPage() {
 		meta_title: "",
 		meta_description: "",
 		meta_keywords: "",
-		stock_quantity: 0,
 		max_order_quantity: 0,
 		weight: 0,
 		weight_unit: "kg",
@@ -57,7 +53,6 @@ export default function NewProductPage() {
 		is_returnable: false,
 		is_published: false,
 		is_featured: false,
-		variant_attributes_raw: "",
 	});
 
 	useEffect(() => {
@@ -103,7 +98,6 @@ export default function NewProductPage() {
 	const handleGalleryDrop = (acceptedFiles: File[]) => {
 		if (acceptedFiles.length === 0) return;
 		setGalleryFiles((prev) => [...prev, ...acceptedFiles]);
-
 		const tempUrls = acceptedFiles.map((file) => URL.createObjectURL(file));
 		setGalleryPreviews((prev) => [...prev, ...tempUrls]);
 	};
@@ -129,16 +123,6 @@ export default function NewProductPage() {
 			}
 		}
 
-		let parsedVariants = null;
-		if (formData.variant_attributes_raw.trim() !== "") {
-			try {
-				parsedVariants = JSON.parse(formData.variant_attributes_raw);
-			} catch (error) {
-				toast.error("Los Atributos de Variantes deben ser un JSON válido.");
-				return;
-			}
-		}
-
 		setIsSaving(true);
 		const toastId = toast.loading("Creando base del producto...");
 
@@ -154,10 +138,9 @@ export default function NewProductPage() {
 						}
 					: null;
 
-			// 1. CREAR EL PRODUCTO (Sin imágenes, ya que no existen en el esquema)
+			// CREAR LA PLANTILLA (Padre) - Desacoplamiento Total
 			const newProductResponse = await ProductService.create({
 				...formData,
-				sku: formData.sku || null,
 				meta_title: formData.meta_title || null,
 				meta_description: formData.meta_description || null,
 				meta_keywords: formData.meta_keywords || null,
@@ -168,7 +151,6 @@ export default function NewProductPage() {
 				weight: formData.weight || null,
 				weight_unit: formData.weight_unit || "kg",
 				dimensions: dimensionsObj,
-				variant_attributes: parsedVariants,
 				brand_id: formData.brand_id ? parseInt(formData.brand_id) : null,
 				category_id: formData.category_id
 					? parseInt(formData.category_id)
@@ -180,27 +162,28 @@ export default function NewProductPage() {
 
 			const newProductUuid = newProductResponse.product_uuid;
 
-			// 2. SUBIR IMAGEN PRINCIPAL (Si existe)
 			if (mainImageFile) {
 				toast.loading("Subiendo imagen principal...", { id: toastId });
 				await ProductService.uploadMainImage(newProductUuid, mainImageFile);
 			}
 
-			// 3. SUBIR GALERÍA (Si existen archivos)
 			if (galleryFiles.length > 0) {
-				toast.loading(
-					`Subiendo ${galleryFiles.length} imágenes a la galería...`,
-					{ id: toastId },
-				);
+				toast.loading(`Subiendo ${galleryFiles.length} imágenes...`, {
+					id: toastId,
+				});
 				await ProductService.uploadGalleryImages(newProductUuid, galleryFiles);
 			}
 
-			toast.success("¡Producto y multimedia creados exitosamente!", {
-				id: toastId,
-			});
+			toast.success(
+				"¡Carcasa creada exitosamente! Ahora podés añadir sus variantes.",
+				{
+					id: toastId,
+				},
+			);
+
 			setTimeout(() => {
 				router.push("/dashboard/products/catalog/master");
-			}, 1000);
+			}, 1500);
 		} catch (error: any) {
 			toast.error(
 				error.response?.data?.detail || "Error crítico al crear el producto.",
@@ -221,7 +204,7 @@ export default function NewProductPage() {
 					</Link>
 					<PageHeader
 						title="Incorporar Nuevo Producto"
-						description="Dar de alta un nuevo artículo o insumo en el ecosistema"
+						description="Dar de alta la carcasa base de un nuevo artículo"
 						icon={PackagePlus}
 					/>
 				</div>
@@ -231,7 +214,7 @@ export default function NewProductPage() {
 				<form onSubmit={handleCreateProduct} className="space-y-8">
 					<div className="space-y-6">
 						<h3 className="text-sm font-bold uppercase tracking-wider text-swapp-azul-petroleo dark:text-swapp-tiza">
-							Información Esencial
+							Identidad y Precios de Referencia
 						</h3>
 
 						<div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -254,12 +237,11 @@ export default function NewProductPage() {
 								}
 							/>
 							<SwappInput
-								label="Costo de Adquisición ($)"
+								label="Costo de Referencia ($)"
 								type="text"
 								formatThousands
 								step="0.01"
 								min="0"
-								required
 								value={formData.cost_price === 0 ? "" : formData.cost_price}
 								onChange={(e) =>
 									setFormData({
@@ -269,12 +251,11 @@ export default function NewProductPage() {
 								}
 							/>
 							<SwappInput
-								label="Precio Base de Venta ($)"
+								label="Precio Base de Referencia ($)"
 								type="text"
 								formatThousands
 								step="0.01"
 								min="0"
-								required
 								value={formData.base_price === 0 ? "" : formData.base_price}
 								onChange={(e) =>
 									setFormData({
@@ -285,16 +266,7 @@ export default function NewProductPage() {
 							/>
 						</div>
 
-						<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 border-t border-swapp-tiza dark:border-swapp-azul-petroleo pt-6 transition-colors">
-							<SwappInput
-								label="SKU / Código"
-								placeholder="Ej: ENV-VID-001"
-								required
-								value={formData.sku}
-								onChange={(e) =>
-									setFormData({ ...formData, sku: e.target.value })
-								}
-							/>
+						<div className="grid grid-cols-1 gap-6 sm:grid-cols-3 border-t border-swapp-tiza dark:border-swapp-azul-petroleo pt-6 transition-colors">
 							<div className="space-y-1">
 								<label className="block text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza">
 									Categoría <span className="text-red-500">*</span>
@@ -378,7 +350,7 @@ export default function NewProductPage() {
 								Detalles y Configuración Adicional
 							</h3>
 							<p className="text-sm text-swapp-azul-petroleo/70 dark:text-swapp-tiza/70 mt-1">
-								Logística extendida, SEO, multimedia avanzada y atributos
+								Logística extendida, SEO y multimedia avanzada
 							</p>
 						</div>
 						<SwappToggle
@@ -389,11 +361,7 @@ export default function NewProductPage() {
 					</div>
 
 					<div
-						className={`transition-all duration-500 ease-in-out -m-2 p-2 ${
-							showOptionalFields
-								? "max-h-[5000px] opacity-100 mt-2"
-								: "max-h-0 opacity-0 overflow-hidden"
-						}`}>
+						className={`transition-all duration-500 ease-in-out -m-2 p-2 ${showOptionalFields ? "max-h-[5000px] opacity-100 mt-2" : "max-h-0 opacity-0 overflow-hidden"}`}>
 						<div className="space-y-10">
 							<div className="space-y-6">
 								{formData.is_published && (
@@ -406,7 +374,6 @@ export default function NewProductPage() {
 										</p>
 									</div>
 								)}
-
 								<SwappInput
 									label="Descripción Corta (Catálogo)"
 									placeholder="Breve resumen para las tarjetas de la tienda..."
@@ -419,7 +386,6 @@ export default function NewProductPage() {
 										})
 									}
 								/>
-
 								<SwappTextarea
 									label="Descripción Extendida (Detalle)"
 									rows={4}
@@ -436,9 +402,7 @@ export default function NewProductPage() {
 								<h4 className="text-sm font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza/70 flex items-center justify-between">
 									Multimedia Avanzada
 								</h4>
-
 								<div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
-									{/* Dropzone Imagen Principal */}
 									<div className="space-y-3">
 										<SwappDropzone
 											label={`Imagen Principal ${formData.is_published ? "*" : ""}`}
@@ -464,8 +428,6 @@ export default function NewProductPage() {
 											</div>
 										)}
 									</div>
-
-									{/* Dropzone Galería */}
 									<div className="space-y-3">
 										<SwappDropzone
 											label={`Galería de Imágenes ${formData.is_published ? "*" : ""}`}
@@ -696,39 +658,7 @@ export default function NewProductPage() {
 								</div>
 							</div>
 
-							<div className="space-y-6 border-t border-swapp-tiza dark:border-swapp-azul-petroleo pt-6 transition-colors">
-								<h4 className="text-sm font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza/70">
-									Atributos y Variantes
-								</h4>
-								<SwappTextarea
-									label="JSON de Atributos Personalizados"
-									rows={3}
-									value={formData.variant_attributes_raw}
-									onChange={(e) =>
-										setFormData({
-											...formData,
-											variant_attributes_raw: e.target.value,
-										})
-									}
-								/>
-							</div>
-
 							<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 pt-6 border-t border-swapp-tiza dark:border-swapp-azul-petroleo transition-colors">
-								<SwappInput
-									label="Stock Inicial de Depósito"
-									type="text"
-									formatThousands
-									min="0"
-									value={
-										formData.stock_quantity === 0 ? "" : formData.stock_quantity
-									}
-									onChange={(e) =>
-										setFormData({
-											...formData,
-											stock_quantity: parseInt(e.target.value) || 0,
-										})
-									}
-								/>
 								<div className="space-y-4">
 									<SwappCheckbox
 										label="Es un envase retornable (Habilitar escaneo de IA)"
@@ -779,7 +709,7 @@ export default function NewProductPage() {
 							disabled={isSaving}
 							className="flex items-center gap-2 rounded-lg bg-swapp-turquesa-oscuro dark:bg-swapp-menta px-6 py-2.5 text-sm font-medium text-swapp-blanco dark:text-swapp-negro-azulado transition-colors hover:bg-swapp-azul-oceano dark:hover:bg-swapp-verde-agua disabled:opacity-50">
 							<Save className="h-4 w-4" />
-							{isSaving ? "Guardando..." : "Crear e Ingresar"}
+							{isSaving ? "Guardando..." : "Crear Carcasa"}
 						</button>
 					</div>
 				</form>

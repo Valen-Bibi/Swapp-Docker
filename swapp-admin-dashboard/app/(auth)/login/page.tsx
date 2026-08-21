@@ -66,7 +66,7 @@ export default function LoginPage() {
 				onSubmit={handleLogin}
 				className="w-full max-w-md rounded-xl bg-white/10 p-8 shadow-2xl backdrop-blur-md">
 				<h2 className="mb-6 text-2xl font-bold text-center text-white">
-					Swapp Admin Accesssss
+					Swapp Admin Access
 				</h2>
 
 				{error && (

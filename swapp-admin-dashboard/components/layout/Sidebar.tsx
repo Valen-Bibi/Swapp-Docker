@@ -143,7 +143,7 @@ export default function Sidebar() {
 											: "text-swapp-azul-petroleo/70 hover:bg-swapp-tiza dark:text-swapp-tiza/70 dark:hover:bg-swapp-azul-petroleo dark:hover:text-swapp-blanco"
 									}`}>
 									<Bookmark className="h-4 w-4" />
-									Marcas Registradas (AMB)
+									Marcas Registradas (ABM)
 								</Link>
 							</div>
 						</div>
