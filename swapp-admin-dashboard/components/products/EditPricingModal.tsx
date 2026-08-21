@@ -9,7 +9,7 @@ interface EditPricingModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	product: Product | null;
-	variant: ProductVariant | null; // Permitimos null para editar al padre
+	variant: ProductVariant | null;
 	onSuccess: () => void;
 }
 
@@ -27,12 +27,9 @@ export default function EditPricingModal({
 	useEffect(() => {
 		if (isOpen && product) {
 			if (variant) {
-				// Modo: Variante Física
 				setBasePrice(variant.price || 0);
 				setCostPrice(variant.cost_price || "");
 			} else {
-				// Modo: Producto Padre (Valores de Referencia)
-				// Envolvemos el producto en 'any' de una vez para evitar que TypeScript aborte el build
 				const p = product as any;
 				const refPrice = p.reference_price ?? p.base_price ?? 0;
 				const refCost = p.reference_cost ?? p.cost_price ?? "";
@@ -56,7 +53,6 @@ export default function EditPricingModal({
 
 		try {
 			if (variant) {
-				// 1. Guardar cambios en la variante
 				await ProductService.updateVariant(
 					product.product_uuid,
 					variant.variant_uuid!,
@@ -66,9 +62,7 @@ export default function EditPricingModal({
 					},
 				);
 			} else {
-				// 2. Guardar cambios en el producto padre
 				await ProductService.update(product.product_uuid, {
-					// Enviamos ambos nombres de variables para cubrir compatibilidad con el Schema
 					base_price: basePrice,
 					cost_price: costPrice === "" ? 0 : costPrice,
 					reference_price: basePrice,

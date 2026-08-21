@@ -94,6 +94,8 @@ class ProductVariantUpdate(BaseModel):
     stock_quantity: Optional[int] = None
     variant_attributes: Optional[Dict[str, Any]] = None
     low_stock_threshold: Optional[int] = None
+    is_active: Optional[bool] = None
+    image_url: Optional[str] = None
 
 class ProductVariantResponse(BaseModel):
     variant_id: int
@@ -105,8 +107,8 @@ class ProductVariantResponse(BaseModel):
     low_stock_threshold: int
     variant_attributes: Optional[Dict[str, Any]] = None
     is_active: bool
-
     model_config = ConfigDict(from_attributes=True)
+    image_url: Optional[str] = None
 
 class ProductoResponse(BaseModel):
     product_uuid: uuid.UUID

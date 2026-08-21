@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { X, Save } from "lucide-react";
+import { useState, useEffect } from "react";
+import { X, Save, Copy, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { ProductService } from "@/services/product.service";
-import { SwappInput } from "@/components/ui/SwappInput";
 import {
 	SwappAttributeBuilder,
 	AttributePair,
 } from "@/components/ui/SwappAttributeBuilder";
+import { SwappTooltip } from "@/components/ui/SwappTooltip";
 import { Product } from "@/types/product";
 
 interface NewVariantModalProps {
@@ -25,11 +25,82 @@ export default function NewVariantModal({
 	onSuccess,
 }: NewVariantModalProps) {
 	const [sku, setSku] = useState("");
-	const [lowStockThreshold, setLowStockThreshold] = useState<number>(5);
 	const [attributes, setAttributes] = useState<AttributePair[]>([]);
 	const [isSaving, setIsSaving] = useState(false);
+	const [clonedFrom, setClonedFrom] = useState<string | null>(null);
+
+	// LÓGICA DE CLONACIÓN INTELIGENTE
+	useEffect(() => {
+		if (isOpen && product) {
+			setSku(""); // Siempre forzamos SKU en blanco por seguridad
+
+			// Si el producto tiene variantes previas, usamos la última como plantilla
+			if (product.variants && product.variants.length > 0) {
+				const lastVariant = product.variants[product.variants.length - 1];
+
+				if (lastVariant.variant_attributes) {
+					const attrArray = Object.entries(lastVariant.variant_attributes).map(
+						([key, value]) => ({
+							key,
+							value: String(value),
+						}),
+					);
+					setAttributes(attrArray);
+					setClonedFrom(lastVariant.sku); // Guardamos la referencia visual
+				} else {
+					setAttributes([]);
+					setClonedFrom(null);
+				}
+			} else {
+				setAttributes([]);
+				setClonedFrom(null);
+			}
+		}
+	}, [isOpen, product]);
 
 	if (!isOpen || !product) return null;
+
+	// --- GENERADOR AUTOMÁTICO DE SKU ---
+	const handleGenerateSKU = () => {
+		if (!product) return;
+
+		// 1. Marca (Primeras 3 letras, alfanuméricas. Fallback: SWA)
+		// @ts-ignore - Accedemos a brand asumiendo que viene del joinedload
+		const brandName = product.brand?.name || "SWA";
+		const brandCode = brandName
+			.replace(/[^a-zA-Z0-9]/g, "")
+			.substring(0, 3)
+			.toUpperCase();
+
+		// 2. Producto (Primeras 3 letras, alfanuméricas)
+		const prodCode = product.name
+			.replace(/[^a-zA-Z0-9]/g, "")
+			.substring(0, 3)
+			.toUpperCase();
+
+		// 3. Atributo Principal (Primer atributo válido, si existe. Fallback: BAS - Base)
+		let attrCode = "BAS";
+		const firstValidAttr = attributes.find(
+			(a) => a.key.trim() !== "" && a.value.trim() !== "",
+		);
+		if (firstValidAttr) {
+			attrCode = firstValidAttr.value
+				.replace(/[^a-zA-Z0-9]/g, "")
+				.substring(0, 3)
+				.toUpperCase();
+		}
+
+		// 4. Hash (3 caracteres aleatorios para evitar colisiones)
+		const hash = Math.random().toString(36).substring(2, 5).toUpperCase();
+
+		// Ensamblamos el formato: MARCA-PROD-ATRIBUTO-HASH
+		const generatedSku = `${brandCode}-${prodCode}-${attrCode}-${hash}`;
+
+		setSku(generatedSku);
+		toast.success("SKU auto-generado de forma inteligente", {
+			position: "top-center",
+		});
+	};
 
 	const handleCreateVariant = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -38,7 +109,6 @@ export default function NewVariantModal({
 			return;
 		}
 
-		// Transformar el arreglo visual a un objeto JSON puro
 		const parsedVariants = attributes.reduce(
 			(acc: Record<string, string>, curr) => {
 				if (curr.key.trim() !== "") {
@@ -56,26 +126,13 @@ export default function NewVariantModal({
 		const toastId = toast.loading("Registrando nueva variante...");
 
 		try {
-			if (ProductService.createVariant) {
-				await ProductService.createVariant(product.product_uuid, {
-					sku: sku,
-					price: 0,
-					cost_price: 0,
-					stock_quantity: 0,
-					low_stock_threshold: lowStockThreshold,
-					variant_attributes: finalVariantAttributes,
-				});
-				toast.success("Variante física creada con éxito", { id: toastId });
-				setSku("");
-				setLowStockThreshold(5);
-				setAttributes([]);
-				onSuccess();
-				onClose();
-			} else {
-				throw new Error(
-					"El servicio createVariant no está implementado en el frontend.",
-				);
-			}
+			await ProductService.createVariant(product.product_uuid, {
+				sku: sku,
+				variant_attributes: finalVariantAttributes,
+			});
+			toast.success("Variante física creada con éxito", { id: toastId });
+			onSuccess();
+			onClose();
 		} catch (error: any) {
 			toast.error(
 				error.response?.data?.detail || "Error al crear la variante.",
@@ -96,7 +153,7 @@ export default function NewVariantModal({
 						<h2 className="text-xl font-bold text-swapp-negro-azulado dark:text-swapp-blanco">
 							Nueva Variante
 						</h2>
-						<p className="text-sm text-swapp-azul-petroleo/70 dark:text-swapp-tiza/70">
+						<p className="text-sm text-swapp-azul-petroleo/70 dark:text-swapp-tiza/70 mt-1">
 							Asignando a:{" "}
 							<span className="font-semibold text-swapp-turquesa-oscuro dark:text-swapp-menta">
 								{product.name}
@@ -110,6 +167,16 @@ export default function NewVariantModal({
 					</button>
 				</div>
 
+				{clonedFrom && (
+					<div className="mb-6 flex items-center gap-2 rounded-lg bg-swapp-azul-oceano/10 dark:bg-swapp-menta/10 p-3 text-sm text-swapp-azul-oceano dark:text-swapp-menta border border-swapp-azul-oceano/20 dark:border-swapp-menta/20 transition-colors animate-in fade-in">
+						<Copy className="h-4 w-4 shrink-0" />
+						<p>
+							Atributos clonados automáticamente desde la variante{" "}
+							<strong>{clonedFrom}</strong>.
+						</p>
+					</div>
+				)}
+
 				<form onSubmit={handleCreateVariant} className="space-y-6">
 					<div className="space-y-6">
 						<SwappAttributeBuilder
@@ -118,25 +185,31 @@ export default function NewVariantModal({
 							label="Atributos Diferenciadores (Ej: Color, Talle, Sabor)"
 						/>
 
-						<div className="border-t border-swapp-tiza dark:border-swapp-azul-petroleo pt-6 transition-colors grid grid-cols-1 md:grid-cols-2 gap-4">
-							<SwappInput
-								label="SKU / Código Único"
-								placeholder="Ej: PRD-VAR-001"
-								required
-								value={sku}
-								onChange={(e) => setSku(e.target.value)}
-							/>
-							<SwappInput
-								label="Umbral de Stock Bajo"
-								type="number"
-								min="0"
-								required
-								value={lowStockThreshold === 0 ? 0 : lowStockThreshold || ""}
-								onChange={(e) =>
-									setLowStockThreshold(parseInt(e.target.value) || 0)
-								}
-								helpText="Avisar cuando el stock caiga por debajo de esta cifra."
-							/>
+						<div className="border-t border-swapp-tiza dark:border-swapp-azul-petroleo pt-6 transition-colors">
+							{/* Componente de SKU modificado para incluir el botón Varita */}
+							<div className="space-y-1">
+								<label className="block text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza">
+									SKU / Código Único <span className="text-red-500">*</span>
+								</label>
+								<div className="flex gap-2">
+									<input
+										type="text"
+										required
+										className="w-full rounded-md border border-swapp-tiza dark:border-swapp-azul-petroleo bg-transparent px-3 py-2.5 text-sm font-mono text-swapp-negro-azulado dark:text-swapp-blanco outline-none transition-colors focus:border-swapp-turquesa-oscuro dark:focus:border-swapp-menta focus:ring-1 focus:ring-swapp-turquesa-oscuro dark:focus:ring-swapp-menta uppercase"
+										placeholder="Ej: SWA-BOT-AZU-X9Y"
+										value={sku}
+										onChange={(e) => setSku(e.target.value.toUpperCase())}
+									/>
+									<SwappTooltip text="Auto-generar código inteligente">
+										<button
+											type="button"
+											onClick={handleGenerateSKU}
+											className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-md border border-swapp-turquesa-oscuro/30 bg-swapp-turquesa-oscuro/10 text-swapp-turquesa-oscuro hover:bg-swapp-turquesa-oscuro hover:text-swapp-blanco dark:border-swapp-menta/30 dark:bg-swapp-menta/10 dark:text-swapp-menta dark:hover:bg-swapp-menta dark:hover:text-swapp-negro-azulado transition-all">
+											<Wand2 className="h-5 w-5" />
+										</button>
+									</SwappTooltip>
+								</div>
+							</div>
 						</div>
 					</div>
 

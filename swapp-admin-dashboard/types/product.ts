@@ -37,7 +37,7 @@ export interface ProductVariant {
   stock_quantity: number;
   low_stock_threshold?: number;
   variant_attributes?: Record<string, any> | null;
-  is_active?: boolean;
+  is_active: boolean;
 }
 
 // --- INTERFAZ ACTUALIZADA: LA PLANTILLA (PADRE) ---

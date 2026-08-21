@@ -203,6 +203,8 @@ class ProductVariant(Base):
     low_stock_threshold = Column(Integer, default=5, nullable=False)
     
     variant_attributes = Column(JSONB, default={})
+
+    image_url = Column(String(500), nullable=True)
     
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

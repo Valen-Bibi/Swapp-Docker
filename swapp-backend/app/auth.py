@@ -32,14 +32,19 @@ def get_password_hash(password):
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None, user_type: str = "customer"):
     to_encode = data.copy()
 
-    if user_type == "staff":
-        expire = datetime.utcnow() + timedelta(minutes=20)
-    elif expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    # --- LÓGICA DE EXPIRACIÓN DESACTIVADA TEMPORALMENTE ---
+    # if user_type == "staff":
+    #     expire = datetime.utcnow() + timedelta(minutes=20)
+    # elif expires_delta:
+    #     expire = datetime.utcnow() + expires_delta
+    # else:
+    #     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    # to_encode.update({"exp": expire, "user_type": user_type})
+    # --------------------------------------------------------
 
-    to_encode.update({"exp": expire, "user_type": user_type})
+    # Solo inyectamos el tipo de usuario, sin expiración
+    to_encode.update({"user_type": user_type})
+    
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
