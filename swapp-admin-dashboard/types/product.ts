@@ -72,6 +72,9 @@ export interface Product {
   is_returnable: boolean;
   is_featured?: boolean;
 
+  reference_cost?: number;
+  reference_price?: number;
+
   variants?: ProductVariant[];
   media?: {
     media_uuid: string;
