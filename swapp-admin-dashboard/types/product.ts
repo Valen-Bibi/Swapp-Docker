@@ -71,6 +71,7 @@ export interface Product {
   is_published: boolean;
   is_returnable: boolean;
   is_featured?: boolean;
+  is_active: boolean;
 
   reference_cost?: number;
   reference_price?: number;
