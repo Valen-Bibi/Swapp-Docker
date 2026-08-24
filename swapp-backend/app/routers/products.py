@@ -168,7 +168,7 @@ def update_product_discount(
                          .filter(models.ProductVariant.variant_uuid.in_(uuids)).all()
             discount.variant_ids = [v[0] for v in variants]
         else:
-            discount.variant_ids = None # Vuelve a ser Global
+            discount.variant_ids = None
 
     for key, value in update_data.items():
         setattr(discount, key, value)
@@ -179,14 +179,12 @@ def update_product_discount(
 @router.get("/discounts", response_model=List[schemas.DiscountResponse])
 def get_active_discounts(db: Session = Depends(get_db), admin_user = Depends(get_current_admin_user)):
     now = datetime.now(timezone.utc)
-    # Hacemos joinedload del producto y sus variantes para hacer el mapeo inverso sin matar la BD
     discounts = db.query(models.ProductDiscount)\
                   .options(joinedload(models.ProductDiscount.product).joinedload(models.Product.variants))\
                   .filter(models.ProductDiscount.end_date >= now).all()
     
     result = []
     for d in discounts:
-        # Convertimos la lista de integers (variant_ids) a UUIDs para mandarlos al Frontend
         variant_uuids = []
         if d.variant_ids and d.product and d.product.variants:
             variant_uuids = [

@@ -125,6 +125,7 @@ class ProductoCatalogoResponse(BaseModel):
     is_featured: bool
     sold_count: int
     is_returnable: bool
+    is_active: bool
     reference_price: Optional[float] = None
     reference_cost: Optional[float] = None
 
@@ -200,5 +201,6 @@ class ProductUpdateSchema(BaseModel):
     is_published: Optional[bool] = None
     is_featured: Optional[bool] = None
     is_returnable: Optional[bool] = None
+    is_active: Optional[bool] = None
 
     model_config = ConfigDict(from_attributes=True)

@@ -24,7 +24,6 @@ def get_obs_client() -> ObsClient:
     if ENVIRONMENT == "production" or not OBS_ACCESS_KEY.strip():
         print("🔐 Inicializando OBS_Client en Modo Producción (Credenciales Rotativas de Agencia)")
         try:
-            # 1. Consultar el servicio interno de metadatos del ECS para obtener el token temporal
             metadata_url = "http://169.254.169.254/openstack/latest/securitykey"
             response = requests.get(metadata_url, timeout=3)
             
@@ -36,7 +35,6 @@ def get_obs_client() -> ObsClient:
                 tmp_secret_key = credential.get("secret")
                 security_token = credential.get("securitytoken")
                 
-                # 2. Inicializar el cliente OBS con las credenciales dinámicas de la Agency
                 return ObsClient(
                     access_key_id=tmp_access_key,
                     secret_access_key=tmp_secret_key,
@@ -58,7 +56,8 @@ def get_obs_client() -> ObsClient:
             server=OBS_ENDPOINT
         )
 
-obs_client = get_obs_client()
+# ❌ ELIMINAMOS LA VARIABLE GLOBAL ESTÁTICA
+# obs_client = get_obs_client()
 
 
 async def process_and_upload_image(file: UploadFile, prefix: str = "products") -> str:
@@ -66,28 +65,25 @@ async def process_and_upload_image(file: UploadFile, prefix: str = "products") -
     Recibe un UploadFile, lo comprime a WEBP en memoria y lo suelta en el bucket de Huawei.
     Retorna la URL pública.
     """
+    # ✅ INSTANCIAMOS EL CLIENTE ACÁ ADENTRO (Refresca el token en cada subida)
+    obs_client = get_obs_client()
+    
     try:
-        # 1. Leemos el archivo en memoria (BytesIO)
         contents = await file.read()
         image = Image.open(io.BytesIO(contents))
         
-        # 2. Manejo de modos de color (Preservar transparencia de PNGs)
         if image.mode in ("RGBA", "P"):
             image = image.convert("RGBA")
         else:
             image = image.convert("RGB")
             
-        # Opcional: Redimensionar (límite 1920x1920px)
         image.thumbnail((1920, 1920), Image.Resampling.LANCZOS)
         
-        # 3. Comprimir a WEBP en memoria
         output_buffer = io.BytesIO()
         image.save(output_buffer, format="WEBP", quality=85, method=6)
         
-        # 4. Generar nombre único
         file_name = f"{prefix}/{uuid.uuid4().hex}.webp"
         
-        # 5. Subida nativa con esdk-obs-python
         resp = obs_client.putContent(
             bucketName=OBS_BUCKET_NAME,
             objectKey=file_name,
@@ -98,12 +94,10 @@ async def process_and_upload_image(file: UploadFile, prefix: str = "products") -
             }
         )
         
-        # 6. Validación HTTP desde Huawei
         if resp.status >= 300:
             print(f"Error de OBS [{resp.status}]: {resp.errorMessage}")
             raise HTTPException(status_code=500, detail="Fallo de autorización al subir al bucket.")
         
-        # 7. Éxito: Retornamos URL
         return f"{PUBLIC_URL_BASE}/{file_name}"
 
     except HTTPException:

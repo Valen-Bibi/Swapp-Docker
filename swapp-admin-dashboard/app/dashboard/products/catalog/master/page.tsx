@@ -55,11 +55,15 @@ export default function MasterCatalogPage() {
 	const [draftSku, setDraftSku] = useState("");
 	const [draftAttributes, setDraftAttributes] = useState<AttributePair[]>([]);
 	const [isSavingVariant, setIsSavingVariant] = useState(false);
+
+	// Estado para visibilidad de Variantes
 	const [showInactiveVariants, setShowInactiveVariants] = useState<
 		Record<string, boolean>
 	>({});
 
-	// --- ESTADO PARA EL MAPEO FOTOGRÁFICO ---
+	// --- NUEVO: Estado para visibilidad de Productos (Carcasas) ---
+	const [showInactiveProducts, setShowInactiveProducts] = useState(false);
+
 	const [imagePickerVariant, setImagePickerVariant] = useState<{
 		productUuid: string;
 		variantUuid: string;
@@ -220,7 +224,37 @@ export default function MasterCatalogPage() {
 		}
 	};
 
-	// --- ASIGNAR IMAGEN A VARIANTE ---
+	// --- NUEVO: ARCHIVADO DE PRODUCTO PADRE ---
+	const toggleProductStatus = async (
+		productUuid: string,
+		currentStatus: boolean,
+	) => {
+		const isDeactivating = currentStatus;
+		const toastId = toast.loading(
+			isDeactivating
+				? "Archivando producto base..."
+				: "Restaurando producto base...",
+		);
+
+		try {
+			await ProductService.update(productUuid, {
+				is_active: !isDeactivating,
+			});
+			toast.success(
+				isDeactivating
+					? "Producto archivado exitosamente"
+					: "Producto restaurado",
+				{ id: toastId },
+			);
+			fetchProducts();
+		} catch (error: any) {
+			toast.error(
+				error.response?.data?.detail || "Error al modificar el estado.",
+				{ id: toastId },
+			);
+		}
+	};
+
 	const assignVariantImage = async (imageUrl: string) => {
 		if (!imagePickerVariant) return;
 
@@ -245,6 +279,10 @@ export default function MasterCatalogPage() {
 	};
 
 	const filteredProducts = products.filter((p) => {
+		// 1. Aplicamos el filtro de visibilidad Soft-Delete
+		if (!showInactiveProducts && !p.is_active) return false;
+
+		// 2. Aplicamos el filtro de búsqueda
 		const searchLower = searchTerm.toLowerCase();
 		const matchName = p.name.toLowerCase().includes(searchLower);
 		const matchAnySku = p.variants?.some((v) =>
@@ -274,7 +312,19 @@ export default function MasterCatalogPage() {
 					description="Gestión de identidad y multimedia"
 					icon={Box}
 				/>
-				<div className="flex items-center gap-3">
+				<div className="flex items-center gap-4">
+					{/* NUEVO TOGGLE GLOBAL DE PRODUCTOS */}
+					<div className="flex items-center gap-2 bg-swapp-tiza/30 dark:bg-swapp-azul-petroleo/30 px-3 py-1.5 rounded-lg border border-swapp-tiza dark:border-swapp-azul-petroleo transition-colors">
+						<span className="text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza">
+							Ver Productos Archivados
+						</span>
+						<SwappToggle
+							checked={showInactiveProducts}
+							onChange={setShowInactiveProducts}
+							id="toggle-inactive-products"
+						/>
+					</div>
+
 					<SearchBar
 						searchTerm={searchTerm}
 						onSearchChange={setSearchTerm}
@@ -329,326 +379,386 @@ export default function MasterCatalogPage() {
 						</tr>
 					</thead>
 					<tbody className="divide-y divide-swapp-tiza dark:divide-swapp-azul-petroleo">
-						{processedProducts.map((p) => {
-							const mainImageUrl = p.media?.find(
-								(m: any) =>
-									m.media_type === "image" && m.media_subtype === "main",
-							)?.file_url;
+						{processedProducts.length === 0 ? (
+							<tr>
+								<td
+									colSpan={6}
+									className="px-6 py-12 text-center text-swapp-azul-petroleo/50 dark:text-swapp-tiza/50">
+									No se encontraron productos con esos filtros.
+								</td>
+							</tr>
+						) : (
+							processedProducts.map((p) => {
+								const mainImageUrl = p.media?.find(
+									(m: any) =>
+										m.media_type === "image" && m.media_subtype === "main",
+								)?.file_url;
 
-							const totalVariantsCount = p.variants?.length || 0;
-							const isShowingInactive = !!showInactiveVariants[p.product_uuid];
-							const visibleVariants =
-								p.variants?.filter((v) => isShowingInactive || v.is_active) ||
-								[];
-							const isExpanded = expandedRows.includes(p.product_uuid);
+								const totalVariantsCount = p.variants?.length || 0;
+								const isShowingInactive =
+									!!showInactiveVariants[p.product_uuid];
+								const visibleVariants =
+									p.variants?.filter((v) => isShowingInactive || v.is_active) ||
+									[];
+								const isExpanded = expandedRows.includes(p.product_uuid);
 
-							return (
-								<React.Fragment key={p.product_uuid}>
-									{/* Fila Principal (Padre) */}
-									<tr
-										className={`transition-colors hover:bg-swapp-tiza/30 dark:hover:bg-swapp-azul-petroleo/30 ${isExpanded ? "bg-swapp-tiza/10 dark:bg-swapp-azul-petroleo/10" : ""}`}>
-										<td className="px-6 py-4">
-											{mainImageUrl ? (
-												<img
-													src={mainImageUrl}
-													alt={`Imagen de ${p.name}`}
-													className="h-12 w-12 rounded-md object-cover border border-swapp-tiza dark:border-swapp-azul-petroleo"
-												/>
-											) : (
-												<div className="h-12 w-12 rounded-md bg-swapp-tiza dark:bg-swapp-azul-petroleo flex items-center justify-center text-swapp-azul-petroleo/30 dark:text-swapp-tiza/30 transition-colors">
-													<ImageIcon className="h-6 w-6" />
-												</div>
-											)}
-										</td>
-										<td className="px-6 py-4">
-											<div className="font-medium text-swapp-negro-azulado dark:text-swapp-blanco">
-												{p.name}
-											</div>
-											<div className="text-xs text-swapp-azul-petroleo/50 dark:text-swapp-tiza/50 flex items-center gap-1 mt-0.5">
-												{p.brand?.name && (
-													<>
-														<span className="font-semibold text-swapp-turquesa-oscuro dark:text-swapp-menta">
-															{p.brand.name}
-														</span>
-														<span>•</span>
-													</>
+								// Lógica de estilos fantasma para el padre
+								const parentRowStatusStyle = p.is_active
+									? `hover:bg-swapp-tiza/30 dark:hover:bg-swapp-azul-petroleo/30 ${isExpanded ? "bg-swapp-tiza/10 dark:bg-swapp-azul-petroleo/10" : ""}`
+									: "opacity-60 bg-swapp-tiza/40 dark:bg-swapp-negro-azulado/80 grayscale filter mix-blend-multiply dark:mix-blend-normal";
+
+								return (
+									<React.Fragment key={p.product_uuid}>
+										{/* Fila Principal (Padre) */}
+										<tr className={`transition-colors ${parentRowStatusStyle}`}>
+											<td className="px-6 py-4">
+												{mainImageUrl ? (
+													<img
+														src={mainImageUrl}
+														alt={`Imagen de ${p.name}`}
+														className="h-12 w-12 rounded-md object-cover border border-swapp-tiza dark:border-swapp-azul-petroleo"
+													/>
+												) : (
+													<div className="h-12 w-12 rounded-md bg-swapp-tiza dark:bg-swapp-azul-petroleo flex items-center justify-center text-swapp-azul-petroleo/30 dark:text-swapp-tiza/30 transition-colors">
+														<ImageIcon className="h-6 w-6" />
+													</div>
 												)}
-												<span>/{p.slug}</span>
-											</div>
-										</td>
-										<td className="px-6 py-4 font-mono text-xs text-swapp-azul-petroleo dark:text-swapp-tiza">
-											{totalVariantsCount > 0 ? (
-												<button
-													onClick={() => toggleRow(p.product_uuid)}
-													className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-swapp-tiza dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-negro-azulado hover:bg-swapp-tiza dark:hover:bg-swapp-azul-petroleo transition-colors text-swapp-turquesa-oscuro dark:text-swapp-menta font-sans font-medium">
-													<Layers className="h-3.5 w-3.5" />
-													{totalVariantsCount === 1
-														? "1 Variante"
-														: `${totalVariantsCount} Variantes`}
-													{isExpanded ? (
-														<ChevronDown className="h-4 w-4" />
-													) : (
-														<ChevronRight className="h-4 w-4" />
+											</td>
+											<td className="px-6 py-4">
+												<div
+													className={`font-medium text-swapp-negro-azulado dark:text-swapp-blanco ${!p.is_active ? "line-through" : ""}`}>
+													{p.name}
+												</div>
+												<div className="text-xs text-swapp-azul-petroleo/50 dark:text-swapp-tiza/50 flex items-center gap-1 mt-0.5">
+													{p.brand?.name && (
+														<>
+															<span className="font-semibold text-swapp-turquesa-oscuro dark:text-swapp-menta">
+																{p.brand.name}
+															</span>
+															<span>•</span>
+														</>
 													)}
-												</button>
-											) : (
-												"-"
-											)}
-										</td>
-										<td className="px-6 py-4">
-											<span
-												className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${p.is_returnable ? "bg-swapp-azul-oceano/10 dark:bg-swapp-menta/10 text-swapp-azul-oceano dark:text-swapp-menta" : "bg-swapp-tiza dark:bg-swapp-azul-petroleo text-swapp-azul-petroleo dark:text-swapp-tiza"}`}>
-												{p.is_returnable ? "Retornable" : "Estándar"}
-											</span>
-										</td>
-										<td className="px-6 py-4">
-											<span
-												className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${p.is_published ? "bg-swapp-verde-agua/10 dark:bg-swapp-menta/10 text-swapp-turquesa-oscuro dark:text-swapp-menta" : "bg-swapp-tiza dark:bg-swapp-azul-petroleo text-swapp-azul-petroleo dark:text-swapp-tiza"}`}>
-												{p.is_published ? "Publicado" : "Borrador"}
-											</span>
-										</td>
-										<td className="px-6 py-4 text-right">
-											<div className="flex items-center justify-end gap-2">
-												<SwappTooltip text="Añadir Variante Física">
+													<span>/{p.slug}</span>
+												</div>
+											</td>
+											<td className="px-6 py-4 font-mono text-xs text-swapp-azul-petroleo dark:text-swapp-tiza">
+												{totalVariantsCount > 0 ? (
 													<button
-														onClick={() => {
-															setSelectedProduct(p);
-															setIsNewVariantModalOpen(true);
-														}}
-														className="p-2 text-swapp-azul-petroleo/40 dark:text-swapp-tiza/40 hover:text-swapp-turquesa-oscuro dark:hover:text-swapp-menta transition-colors">
-														<PlusSquare className="h-4 w-4" />
+														onClick={() => toggleRow(p.product_uuid)}
+														className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-swapp-tiza dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-negro-azulado hover:bg-swapp-tiza dark:hover:bg-swapp-azul-petroleo transition-colors text-swapp-turquesa-oscuro dark:text-swapp-menta font-sans font-medium">
+														<Layers className="h-3.5 w-3.5" />
+														{totalVariantsCount === 1
+															? "1 Variante"
+															: `${totalVariantsCount} Variantes`}
+														{isExpanded ? (
+															<ChevronDown className="h-4 w-4" />
+														) : (
+															<ChevronRight className="h-4 w-4" />
+														)}
 													</button>
-												</SwappTooltip>
-												<SwappTooltip text="Editar Estructura General">
-													<button
-														onClick={() => {
-															setEditingProduct(p);
-															setIsEditModalOpen(true);
-														}}
-														className="p-2 text-swapp-azul-petroleo/40 dark:text-swapp-tiza/40 hover:text-swapp-azul-oceano dark:hover:text-swapp-verde-agua transition-colors">
-														<Edit className="h-4 w-4" />
-													</button>
-												</SwappTooltip>
-											</div>
-										</td>
-									</tr>
+												) : (
+													"-"
+												)}
+											</td>
+											<td className="px-6 py-4">
+												<span
+													className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${p.is_returnable ? "bg-swapp-azul-oceano/10 dark:bg-swapp-menta/10 text-swapp-azul-oceano dark:text-swapp-menta" : "bg-swapp-tiza dark:bg-swapp-azul-petroleo text-swapp-azul-petroleo dark:text-swapp-tiza"}`}>
+													{p.is_returnable ? "Retornable" : "Estándar"}
+												</span>
+											</td>
+											<td className="px-6 py-4">
+												<span
+													className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${p.is_published ? "bg-swapp-verde-agua/10 dark:bg-swapp-menta/10 text-swapp-turquesa-oscuro dark:text-swapp-menta" : "bg-swapp-tiza dark:bg-swapp-azul-petroleo text-swapp-azul-petroleo dark:text-swapp-tiza"}`}>
+													{p.is_published ? "Publicado" : "Borrador"}
+												</span>
+											</td>
+											<td className="px-6 py-4 text-right">
+												<div className="flex items-center justify-end gap-1">
+													{p.is_active ? (
+														<>
+															<SwappTooltip text="Añadir Variante Física">
+																<button
+																	onClick={() => {
+																		setSelectedProduct(p);
+																		setIsNewVariantModalOpen(true);
+																	}}
+																	className="p-1.5 rounded-md text-swapp-azul-petroleo/50 hover:text-swapp-turquesa-oscuro dark:text-swapp-tiza/50 dark:hover:text-swapp-menta hover:bg-swapp-tiza dark:hover:bg-swapp-azul-petroleo transition-colors">
+																	<PlusSquare className="h-4 w-4" />
+																</button>
+															</SwappTooltip>
+															<SwappTooltip text="Editar Estructura General">
+																<button
+																	onClick={() => {
+																		setEditingProduct(p);
+																		setIsEditModalOpen(true);
+																	}}
+																	className="p-1.5 rounded-md text-swapp-azul-petroleo/50 hover:text-swapp-azul-oceano dark:text-swapp-tiza/50 dark:hover:text-swapp-verde-agua hover:bg-swapp-tiza dark:hover:bg-swapp-azul-petroleo transition-colors">
+																	<Edit className="h-4 w-4" />
+																</button>
+															</SwappTooltip>
+															<SwappTooltip text="Archivar Producto Base">
+																<button
+																	onClick={() =>
+																		toggleProductStatus(
+																			p.product_uuid!,
+																			p.is_active,
+																		)
+																	}
+																	className="p-1.5 rounded-md text-swapp-azul-petroleo/40 hover:text-red-500 dark:text-swapp-tiza/40 hover:bg-red-500/10 transition-colors">
+																	<Archive className="h-4 w-4" />
+																</button>
+															</SwappTooltip>
+														</>
+													) : (
+														<SwappTooltip text="Restaurar Producto Base">
+															<button
+																onClick={() =>
+																	toggleProductStatus(
+																		p.product_uuid!,
+																		p.is_active,
+																	)
+																}
+																className="p-1.5 rounded-md text-swapp-azul-petroleo/60 hover:text-swapp-verde-agua dark:text-swapp-tiza/60 dark:hover:text-swapp-menta hover:bg-swapp-tiza dark:hover:bg-swapp-azul-petroleo transition-colors">
+																<RotateCcw className="h-4 w-4" />
+															</button>
+														</SwappTooltip>
+													)}
+												</div>
+											</td>
+										</tr>
 
-									{/* Fila Desplegable (Hijos / Variantes) */}
-									{isExpanded && totalVariantsCount > 0 && (
-										<tr className="bg-swapp-tiza/10 dark:bg-swapp-negro-azulado border-b border-swapp-tiza dark:border-swapp-azul-petroleo">
-											<td colSpan={6} className="px-6 py-4">
-												<div className="rounded-lg border border-swapp-tiza/50 dark:border-swapp-azul-petroleo/50 overflow-hidden bg-swapp-blanco dark:bg-swapp-negro-azulado/50">
-													<table className="w-full text-xs text-left">
-														<thead className="bg-swapp-tiza/30 dark:bg-swapp-azul-petroleo/20 text-swapp-azul-petroleo/70 dark:text-swapp-tiza/70">
-															<tr>
-																<th className="px-4 py-2 font-medium w-12 text-center">
-																	Img
-																</th>
-																<th className="px-4 py-2 font-medium w-1/4">
-																	<div className="flex items-center gap-2">
-																		<SwappTooltip
-																			text={
-																				isShowingInactive
-																					? "Ocultar Archivados"
-																					: "Mostrar Archivados"
-																			}>
-																			<div className="scale-[0.80] origin-left flex items-center">
-																				<SwappToggle
-																					checked={isShowingInactive}
-																					onChange={(val) =>
-																						setShowInactiveVariants((prev) => ({
-																							...prev,
-																							[p.product_uuid]: val,
-																						}))
-																					}
-																					id={`toggle-${p.product_uuid}`}
-																				/>
-																			</div>
-																		</SwappTooltip>
-																		<span>SKU Específico</span>
-																	</div>
-																</th>
-																<th className="px-4 py-2 font-medium w-2/4">
-																	Atributos
-																</th>
-																<th className="px-4 py-2 font-medium">
-																	Precio
-																</th>
-																<th className="px-4 py-2 font-medium">
-																	Stock Físico
-																</th>
-																<th className="px-4 py-2 font-medium text-right">
-																	Acciones
-																</th>
-															</tr>
-														</thead>
-														<tbody className="divide-y divide-swapp-tiza/30 dark:divide-swapp-azul-petroleo/30">
-															{visibleVariants.length === 0 ? (
+										{/* Fila Desplegable (Hijos / Variantes) */}
+										{isExpanded && totalVariantsCount > 0 && (
+											<tr className="bg-swapp-tiza/10 dark:bg-swapp-negro-azulado border-b border-swapp-tiza dark:border-swapp-azul-petroleo">
+												<td colSpan={6} className="px-6 py-4">
+													<div className="rounded-lg border border-swapp-tiza/50 dark:border-swapp-azul-petroleo/50 overflow-hidden bg-swapp-blanco dark:bg-swapp-negro-azulado/50">
+														<table className="w-full text-xs text-left">
+															<thead className="bg-swapp-tiza/30 dark:bg-swapp-azul-petroleo/20 text-swapp-azul-petroleo/70 dark:text-swapp-tiza/70">
 																<tr>
-																	<td
-																		colSpan={6}
-																		className="px-4 py-6 text-center text-swapp-azul-petroleo/50 dark:text-swapp-tiza/50 italic">
-																		Todas las variantes están archivadas.
-																		Encendé el switch para verlas.
-																	</td>
-																</tr>
-															) : (
-																visibleVariants.map((v: any) => {
-																	const isEditing =
-																		editingVariantId === v.variant_uuid;
-																	const rowStatusStyle = v.is_active
-																		? "hover:bg-swapp-tiza/20 dark:hover:bg-swapp-azul-petroleo/20"
-																		: "opacity-60 bg-swapp-tiza/40 dark:bg-swapp-negro-azulado/80 grayscale filter mix-blend-multiply dark:mix-blend-normal";
-
-																	return (
-																		<tr
-																			key={v.variant_uuid}
-																			className={`transition-all ${rowStatusStyle}`}>
-																			{/* --- NUEVA COLUMNA FOTOGRÁFICA --- */}
-																			<td className="px-4 py-2 align-middle text-center">
-																				<SwappTooltip text="Asignar fotografía">
-																					<button
-																						onClick={() =>
-																							setImagePickerVariant({
-																								productUuid: p.product_uuid!,
-																								variantUuid: v.variant_uuid,
-																								media: p.media || [],
-																							})
+																	<th className="px-4 py-2 font-medium w-12 text-center">
+																		Img
+																	</th>
+																	<th className="px-4 py-2 font-medium w-1/4">
+																		<div className="flex items-center gap-2">
+																			<SwappTooltip
+																				text={
+																					isShowingInactive
+																						? "Ocultar Archivados"
+																						: "Mostrar Archivados"
+																				}>
+																				<div className="scale-[0.80] origin-left flex items-center">
+																					<SwappToggle
+																						checked={isShowingInactive}
+																						onChange={(val) =>
+																							setShowInactiveVariants(
+																								(prev) => ({
+																									...prev,
+																									[p.product_uuid]: val,
+																								}),
+																							)
 																						}
-																						className="group relative h-8 w-8 overflow-hidden rounded bg-swapp-tiza/50 dark:bg-swapp-azul-petroleo/50 border border-swapp-tiza dark:border-swapp-azul-petroleo flex items-center justify-center hover:border-swapp-turquesa-oscuro dark:hover:border-swapp-menta transition-colors">
-																						{v.image_url ? (
-																							<>
-																								<img
-																									src={v.image_url}
-																									alt={v.sku}
-																									className="h-full w-full object-cover"
-																								/>
-																								<div className="absolute inset-0 bg-swapp-negro-azulado/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-																									<ImagePlus className="h-4 w-4 text-swapp-blanco" />
-																								</div>
-																							</>
-																						) : (
-																							<ImageIcon className="h-4 w-4 text-swapp-azul-petroleo/30 dark:text-swapp-tiza/30 group-hover:text-swapp-turquesa-oscuro dark:group-hover:text-swapp-menta" />
-																						)}
-																					</button>
-																				</SwappTooltip>
-																			</td>
-
-																			<td className="px-4 py-2.5 font-mono text-swapp-negro-azulado dark:text-swapp-blanco align-middle">
-																				{isEditing ? (
-																					<input
-																						type="text"
-																						className="w-full rounded-md border border-swapp-turquesa-oscuro dark:border-swapp-menta bg-swapp-blanco dark:bg-swapp-negro-azulado px-2 py-1 text-xs text-swapp-negro-azulado dark:text-swapp-blanco outline-none shadow-sm focus:ring-1 focus:ring-swapp-turquesa-oscuro dark:focus:ring-swapp-menta transition-all"
-																						value={draftSku}
-																						onChange={(e) =>
-																							setDraftSku(e.target.value)
-																						}
-																						placeholder="Ej: SKU-123"
+																						id={`toggle-${p.product_uuid}`}
 																					/>
-																				) : (
-																					<div className="flex items-center gap-2 group/sku">
-																						<span
-																							className={
-																								!v.is_active
-																									? "line-through opacity-70"
-																									: ""
-																							}>
-																							{v.sku}
-																						</span>
+																				</div>
+																			</SwappTooltip>
+																			<span>SKU Específico</span>
+																		</div>
+																	</th>
+																	<th className="px-4 py-2 font-medium w-2/4">
+																		Atributos
+																	</th>
+																	<th className="px-4 py-2 font-medium">
+																		Precio
+																	</th>
+																	<th className="px-4 py-2 font-medium">
+																		Stock Físico
+																	</th>
+																	<th className="px-4 py-2 font-medium text-right">
+																		Acciones
+																	</th>
+																</tr>
+															</thead>
+															<tbody className="divide-y divide-swapp-tiza/30 dark:divide-swapp-azul-petroleo/30">
+																{visibleVariants.length === 0 ? (
+																	<tr>
+																		<td
+																			colSpan={6}
+																			className="px-4 py-6 text-center text-swapp-azul-petroleo/50 dark:text-swapp-tiza/50 italic">
+																			Todas las variantes están archivadas.
+																			Encendé el switch para verlas.
+																		</td>
+																	</tr>
+																) : (
+																	visibleVariants.map((v: any) => {
+																		const isEditing =
+																			editingVariantId === v.variant_uuid;
+																		const rowStatusStyle = v.is_active
+																			? "hover:bg-swapp-tiza/20 dark:hover:bg-swapp-azul-petroleo/20"
+																			: "opacity-60 bg-swapp-tiza/40 dark:bg-swapp-negro-azulado/80 grayscale filter mix-blend-multiply dark:mix-blend-normal";
 
-																						{p.is_returnable && (
-																							<SwappTooltip text="Activo Circulante (Logística Inversa habilitada)">
-																								<Recycle className="h-4 w-4 text-swapp-verde-agua dark:text-swapp-menta/90" />
-																							</SwappTooltip>
-																						)}
-
-																						{v.sku && (
-																							<SwappTooltip text="Copiar al portapapeles">
-																								<button
-																									onClick={() =>
-																										handleCopySku(v.sku)
-																									}
-																									className="opacity-0 group-hover/sku:opacity-100 p-1 rounded-md text-swapp-azul-petroleo/40 hover:text-swapp-turquesa-oscuro dark:text-swapp-tiza/40 dark:hover:text-swapp-menta hover:bg-swapp-tiza dark:hover:bg-swapp-azul-petroleo transition-all">
-																									<Copy className="h-3.5 w-3.5" />
-																								</button>
-																							</SwappTooltip>
-																						)}
-																					</div>
-																				)}
-																			</td>
-																			<td className="px-4 py-2.5 align-middle">
-																				{isEditing ? (
-																					<div className="min-w-[250px] scale-[0.90] origin-left">
-																						<SwappAttributeBuilder
-																							attributes={draftAttributes}
-																							onChange={setDraftAttributes}
-																						/>
-																					</div>
-																				) : v.variant_attributes ? (
-																					<div className="flex flex-wrap gap-1">
-																						{Object.entries(
-																							v.variant_attributes,
-																						).map(([key, val]) => (
-																							<span
-																								key={key}
-																								className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium border ${v.is_active ? "bg-swapp-tiza dark:bg-swapp-azul-petroleo text-swapp-azul-petroleo dark:text-swapp-tiza border-swapp-tiza/50 dark:border-swapp-azul-petroleo/50" : "bg-transparent border-swapp-azul-petroleo/30 dark:border-swapp-tiza/30 text-swapp-azul-petroleo/60 dark:text-swapp-tiza/60"}`}>
-																								{key}: {String(val)}
-																							</span>
-																						))}
-																					</div>
-																				) : (
-																					<span className="text-swapp-azul-petroleo/40 dark:text-swapp-tiza/40 italic">
-																						Sin atributos
-																					</span>
-																				)}
-																			</td>
-																			<td className="px-4 py-2.5 font-medium text-swapp-turquesa-oscuro dark:text-swapp-menta align-middle">
-																				$
-																				{Number(v.price).toLocaleString(
-																					"es-AR",
-																				)}
-																			</td>
-																			<td className="px-4 py-2.5 align-middle">
-																				<span
-																					className={`font-medium ${v.stock_quantity > 0 ? "text-swapp-verde-agua dark:text-swapp-menta" : "text-red-500"}`}>
-																					{v.stock_quantity} un.
-																				</span>
-																			</td>
-																			<td className="px-4 py-2.5 text-right align-middle">
-																				{isEditing ? (
-																					<div className="flex items-center justify-end gap-1.5">
+																		return (
+																			<tr
+																				key={v.variant_uuid}
+																				className={`transition-all ${rowStatusStyle}`}>
+																				{/* --- NUEVA COLUMNA FOTOGRÁFICA --- */}
+																				<td className="px-4 py-2 align-middle text-center">
+																					<SwappTooltip text="Asignar fotografía">
 																						<button
 																							onClick={() =>
-																								saveVariant(
-																									p.product_uuid!,
-																									v.variant_uuid!,
-																								)
+																								setImagePickerVariant({
+																									productUuid: p.product_uuid!,
+																									variantUuid: v.variant_uuid,
+																									media: p.media || [],
+																								})
 																							}
-																							disabled={isSavingVariant}
-																							className="p-1.5 rounded-md bg-swapp-verde-agua/20 text-swapp-turquesa-oscuro dark:bg-swapp-menta/20 dark:text-swapp-menta hover:bg-swapp-verde-agua/40 transition-colors"
-																							title="Guardar">
-																							<Check className="h-4 w-4" />
+																							className="group relative h-8 w-8 overflow-hidden rounded bg-swapp-tiza/50 dark:bg-swapp-azul-petroleo/50 border border-swapp-tiza dark:border-swapp-azul-petroleo flex items-center justify-center hover:border-swapp-turquesa-oscuro dark:hover:border-swapp-menta transition-colors">
+																							{v.image_url ? (
+																								<>
+																									<img
+																										src={v.image_url}
+																										alt={v.sku}
+																										className="h-full w-full object-cover"
+																									/>
+																									<div className="absolute inset-0 bg-swapp-negro-azulado/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+																										<ImagePlus className="h-4 w-4 text-swapp-blanco" />
+																									</div>
+																								</>
+																							) : (
+																								<ImageIcon className="h-4 w-4 text-swapp-azul-petroleo/30 dark:text-swapp-tiza/30 group-hover:text-swapp-turquesa-oscuro dark:group-hover:text-swapp-menta" />
+																							)}
 																						</button>
-																						<button
-																							onClick={cancelEditingVariant}
-																							disabled={isSavingVariant}
-																							className="p-1.5 rounded-md bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
-																							title="Cancelar">
-																							<X className="h-4 w-4" />
-																						</button>
-																					</div>
-																				) : (
-																					<div className="flex items-center justify-end gap-1">
-																						{v.is_active ? (
-																							<>
-																								<button
-																									onClick={() =>
-																										startEditingVariant(v)
-																									}
-																									className="p-1.5 rounded-md text-swapp-azul-petroleo/50 hover:text-swapp-turquesa-oscuro dark:text-swapp-tiza/50 dark:hover:text-swapp-menta hover:bg-swapp-tiza dark:hover:bg-swapp-azul-petroleo transition-colors"
-																									title="Editar atributos">
-																									<Edit className="h-3.5 w-3.5" />
-																								</button>
+																					</SwappTooltip>
+																				</td>
+
+																				<td className="px-4 py-2.5 font-mono text-swapp-negro-azulado dark:text-swapp-blanco align-middle">
+																					{isEditing ? (
+																						<input
+																							type="text"
+																							className="w-full rounded-md border border-swapp-turquesa-oscuro dark:border-swapp-menta bg-swapp-blanco dark:bg-swapp-negro-azulado px-2 py-1 text-xs text-swapp-negro-azulado dark:text-swapp-blanco outline-none shadow-sm focus:ring-1 focus:ring-swapp-turquesa-oscuro dark:focus:ring-swapp-menta transition-all"
+																							value={draftSku}
+																							onChange={(e) =>
+																								setDraftSku(e.target.value)
+																							}
+																							placeholder="Ej: SKU-123"
+																						/>
+																					) : (
+																						<div className="flex items-center gap-2 group/sku">
+																							<span
+																								className={
+																									!v.is_active
+																										? "line-through opacity-70"
+																										: ""
+																								}>
+																								{v.sku}
+																							</span>
+
+																							{p.is_returnable && (
+																								<SwappTooltip text="Activo Circulante (Logística Inversa habilitada)">
+																									<Recycle className="h-4 w-4 text-swapp-verde-agua dark:text-swapp-menta/90" />
+																								</SwappTooltip>
+																							)}
+
+																							{v.sku && (
+																								<SwappTooltip text="Copiar al portapapeles">
+																									<button
+																										onClick={() =>
+																											handleCopySku(v.sku)
+																										}
+																										className="opacity-0 group-hover/sku:opacity-100 p-1 rounded-md text-swapp-azul-petroleo/40 hover:text-swapp-turquesa-oscuro dark:text-swapp-tiza/40 dark:hover:text-swapp-menta hover:bg-swapp-tiza dark:hover:bg-swapp-azul-petroleo transition-all">
+																										<Copy className="h-3.5 w-3.5" />
+																									</button>
+																								</SwappTooltip>
+																							)}
+																						</div>
+																					)}
+																				</td>
+																				<td className="px-4 py-2.5 align-middle">
+																					{isEditing ? (
+																						<div className="min-w-[250px] scale-[0.90] origin-left">
+																							<SwappAttributeBuilder
+																								attributes={draftAttributes}
+																								onChange={setDraftAttributes}
+																							/>
+																						</div>
+																					) : v.variant_attributes ? (
+																						<div className="flex flex-wrap gap-1">
+																							{Object.entries(
+																								v.variant_attributes,
+																							).map(([key, val]) => (
+																								<span
+																									key={key}
+																									className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium border ${v.is_active ? "bg-swapp-tiza dark:bg-swapp-azul-petroleo text-swapp-azul-petroleo dark:text-swapp-tiza border-swapp-tiza/50 dark:border-swapp-azul-petroleo/50" : "bg-transparent border-swapp-azul-petroleo/30 dark:border-swapp-tiza/30 text-swapp-azul-petroleo/60 dark:text-swapp-tiza/60"}`}>
+																									{key}: {String(val)}
+																								</span>
+																							))}
+																						</div>
+																					) : (
+																						<span className="text-swapp-azul-petroleo/40 dark:text-swapp-tiza/40 italic">
+																							Sin atributos
+																						</span>
+																					)}
+																				</td>
+																				<td className="px-4 py-2.5 font-medium text-swapp-turquesa-oscuro dark:text-swapp-menta align-middle">
+																					$
+																					{Number(v.price).toLocaleString(
+																						"es-AR",
+																					)}
+																				</td>
+																				<td className="px-4 py-2.5 align-middle">
+																					<span
+																						className={`font-medium ${v.stock_quantity > 0 ? "text-swapp-verde-agua dark:text-swapp-menta" : "text-red-500"}`}>
+																						{v.stock_quantity} un.
+																					</span>
+																				</td>
+																				<td className="px-4 py-2.5 text-right align-middle">
+																					{isEditing ? (
+																						<div className="flex items-center justify-end gap-1.5">
+																							<button
+																								onClick={() =>
+																									saveVariant(
+																										p.product_uuid!,
+																										v.variant_uuid!,
+																									)
+																								}
+																								disabled={isSavingVariant}
+																								className="p-1.5 rounded-md bg-swapp-verde-agua/20 text-swapp-turquesa-oscuro dark:bg-swapp-menta/20 dark:text-swapp-menta hover:bg-swapp-verde-agua/40 transition-colors"
+																								title="Guardar">
+																								<Check className="h-4 w-4" />
+																							</button>
+																							<button
+																								onClick={cancelEditingVariant}
+																								disabled={isSavingVariant}
+																								className="p-1.5 rounded-md bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
+																								title="Cancelar">
+																								<X className="h-4 w-4" />
+																							</button>
+																						</div>
+																					) : (
+																						<div className="flex items-center justify-end gap-1">
+																							{v.is_active ? (
+																								<>
+																									<button
+																										onClick={() =>
+																											startEditingVariant(v)
+																										}
+																										className="p-1.5 rounded-md text-swapp-azul-petroleo/50 hover:text-swapp-turquesa-oscuro dark:text-swapp-tiza/50 dark:hover:text-swapp-menta hover:bg-swapp-tiza dark:hover:bg-swapp-azul-petroleo transition-colors"
+																										title="Editar atributos">
+																										<Edit className="h-3.5 w-3.5" />
+																									</button>
+																									<button
+																										onClick={() =>
+																											toggleVariantStatus(
+																												p.product_uuid!,
+																												v.variant_uuid!,
+																												v.is_active,
+																											)
+																										}
+																										className="p-1.5 rounded-md text-swapp-azul-petroleo/40 hover:text-red-500 dark:text-swapp-tiza/40 hover:bg-red-500/10 transition-colors"
+																										title="Archivar Variante">
+																										<Archive className="h-3.5 w-3.5" />
+																									</button>
+																								</>
+																							) : (
 																								<button
 																									onClick={() =>
 																										toggleVariantStatus(
@@ -657,41 +767,28 @@ export default function MasterCatalogPage() {
 																											v.is_active,
 																										)
 																									}
-																									className="p-1.5 rounded-md text-swapp-azul-petroleo/40 hover:text-red-500 dark:text-swapp-tiza/40 hover:bg-red-500/10 transition-colors"
-																									title="Archivar Variante">
-																									<Archive className="h-3.5 w-3.5" />
+																									className="p-1.5 rounded-md text-swapp-azul-petroleo/60 hover:text-swapp-verde-agua dark:text-swapp-tiza/60 dark:hover:text-swapp-menta hover:bg-swapp-tiza dark:hover:bg-swapp-azul-petroleo transition-colors"
+																									title="Restaurar Variante">
+																									<RotateCcw className="h-3.5 w-3.5" />
 																								</button>
-																							</>
-																						) : (
-																							<button
-																								onClick={() =>
-																									toggleVariantStatus(
-																										p.product_uuid!,
-																										v.variant_uuid!,
-																										v.is_active,
-																									)
-																								}
-																								className="p-1.5 rounded-md text-swapp-azul-petroleo/60 hover:text-swapp-verde-agua dark:text-swapp-tiza/60 dark:hover:text-swapp-menta hover:bg-swapp-tiza dark:hover:bg-swapp-azul-petroleo transition-colors"
-																								title="Restaurar Variante">
-																								<RotateCcw className="h-3.5 w-3.5" />
-																							</button>
-																						)}
-																					</div>
-																				)}
-																			</td>
-																		</tr>
-																	);
-																})
-															)}
-														</tbody>
-													</table>
-												</div>
-											</td>
-										</tr>
-									)}
-								</React.Fragment>
-							);
-						})}
+																							)}
+																						</div>
+																					)}
+																				</td>
+																			</tr>
+																		);
+																	})
+																)}
+															</tbody>
+														</table>
+													</div>
+												</td>
+											</tr>
+										)}
+									</React.Fragment>
+								);
+							})
+						)}
 					</tbody>
 				</table>
 			</div>
