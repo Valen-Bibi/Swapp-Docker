@@ -13,8 +13,8 @@ export const ProductService = {
     return data;
   },
 
-  getCategories: async (): Promise<Category[]> => {
-    const { data } = await api.get("/api/products/admin/categories");
+  getCategories: async (includeInactive: boolean = false): Promise<Category[]> => {
+    const { data } = await api.get(`/api/products/admin/categories?include_inactive=${includeInactive}`);
     return data;
   },
   
@@ -43,7 +43,11 @@ export const ProductService = {
     return data;
   },
 
-  // --- LOGÍSTICA E HISTORIAL ---
+  createCategory: async (payload: { name: string; slug: string; parent_id?: number | null; display_order?: number; is_active?: boolean; image_url?: string | null }) => {
+    const { data } = await api.post("/api/products/admin/categories", payload);
+    return data;
+  },
+
   addMovement: async (
     productUuid: string,
     variantUuid: string, // NUEVO PARÁMETRO
@@ -56,12 +60,31 @@ export const ProductService = {
     return data;
   },
 
+  getAttributes: async () => {
+    const { data } = await api.get("/api/products/admin/attributes");
+    return data;
+  },
+
+  createAttribute: async (payload: { name: string; is_variant: boolean; values: string[] }) => {
+    const { data } = await api.post("/api/products/admin/attributes", payload);
+    return data;
+  },
+
+  addAttributeValue: async (attributeId: number, payload: { value: string; display_order: number }) => {
+    const { data } = await api.post(`/api/products/admin/attributes/${attributeId}/values`, payload);
+    return data;
+  },
+
+  deleteAttributeValue: async (valueId: number) => {
+    const { data } = await api.delete(`/api/products/admin/attributes/values/${valueId}`);
+    return data;
+  },
+
  getPriceHistory: async (productUuid: string, variantUuid: string): Promise<any[]> => {
 		const { data } = await api.get(`/api/products/admin/${productUuid}/variants/${variantUuid}/price-history`);
 		return data;
 	},
 
-  // --- MULTIMEDIA ---
   uploadMainImage: async (product_uuid: string, file: File) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -89,6 +112,21 @@ export const ProductService = {
 
   deleteMedia: async (product_uuid: string, media_uuid: string) => {
     const { data } = await api.delete(`/api/products/admin/${product_uuid}/media/${media_uuid}`);
+    return data;
+  },
+
+  getCategoryAttributes: async (categoryId: number) => {
+    const { data } = await api.get(`/api/products/admin/categories/${categoryId}/attributes`);
+    return data;
+  },
+
+  linkAttributeToCategory: async (categoryId: number, payload: { attribute_id: number; is_required: boolean }) => {
+    const { data } = await api.post(`/api/products/admin/categories/${categoryId}/attributes`, payload);
+    return data;
+  },
+
+  unlinkAttributeFromCategory: async (categoryId: number, attributeId: number) => {
+    const { data } = await api.delete(`/api/products/admin/categories/${categoryId}/attributes/${attributeId}`);
     return data;
   },
 };

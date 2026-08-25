@@ -5,21 +5,7 @@ from .users import (
     StaffCreate
 )
 
-from .products import (
-    BrandCreate,
-    BrandUpdate,
-    BrandResponse,
-    CategoryCreate,
-    CategoryUpdate,
-    CategoriaResponse,
-    TaxClassResponse,
-    ProductMediaResponse,
-    ProductoResponse,
-    ProductoCatalogoResponse,
-    ProductCreateSchema,
-    ProductUpdateSchema,
-    ProductVariantUpdate,
-)
+from .products import *
 
 from .inventory import (
     PriceHistoryResponse,

@@ -18,7 +18,7 @@ export interface ProductDiscount {
 	product_id: number;
 	product_uuid?: string;
 	product_name?: string;
-	variant_uuids?: string[]; // Modificado para el modelo de selección múltiple
+	variant_uuids?: string[];
 	name: string;
 	discount_type: string;
 	value: number;
@@ -53,7 +53,7 @@ export default function NewDiscountModal({
 
 	const [formData, setFormData] = useState({
 		product_uuid: "",
-		variant_uuids: [] as string[], // Ahora es un array
+		variant_uuids: [] as string[],
 		name: "",
 		discount_type: "percentage",
 		value: "",
@@ -126,7 +126,6 @@ export default function NewDiscountModal({
 			return;
 		}
 
-		// VALIDACIÓN DE SOLAPAMIENTO INTELIGENTE (Arrays)
 		const overlapping = allDiscounts.find((d) => {
 			if (editingDiscount && d.discount_id === editingDiscount.discount_id)
 				return false;
@@ -139,9 +138,6 @@ export default function NewDiscountModal({
 
 			if (!datesOverlap) return false;
 
-			// Choque de alcance:
-			// 1. Si alguna de las dos es global (array vacío), se pisan en todo el producto.
-			// 2. Si ambas son específicas, revisamos si comparten algún variant_uuid.
 			const dIsGlobal = !d.variant_uuids || d.variant_uuids.length === 0;
 			const formIsGlobal = formData.variant_uuids.length === 0;
 
@@ -322,7 +318,7 @@ export default function NewDiscountModal({
 								setFormData({
 									...formData,
 									product_uuid: e.target.value,
-									variant_uuids: [], // Reseteamos al cambiar de producto
+									variant_uuids: [],
 								})
 							}>
 							<option value="">Seleccione un producto...</option>

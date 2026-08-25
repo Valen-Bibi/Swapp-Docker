@@ -16,7 +16,10 @@ from .products import (
     ProductRelationship, 
     TaxClass, 
     Product, 
-    ProductMedia
+    ProductMedia,
+    ProductAttribute,
+    ProductAttributeValue,
+    SubcategoryAttribute
 )
 
 from .inventory import (

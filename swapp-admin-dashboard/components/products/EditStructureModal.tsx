@@ -48,6 +48,10 @@ export default function EditStructureModal({
 	const [dimWidth, setDimWidth] = useState(0);
 	const [dimHeight, setDimHeight] = useState(0);
 
+	// --- LÓGICA DE CATEGORÍAS JERÁRQUICAS ---
+	const parentCategories = categories.filter((c) => !c.parent_id);
+	const subCategories = categories.filter((c) => c.parent_id);
+
 	useEffect(() => {
 		if (isOpen && product) {
 			setEditingProduct(product);
@@ -258,10 +262,12 @@ export default function EditStructureModal({
 						<div className="grid grid-cols-1 gap-6 sm:grid-cols-3 border-t border-swapp-tiza dark:border-swapp-azul-petroleo pt-6 transition-colors">
 							<div className="space-y-1">
 								<label className="block text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza">
-									Categoría
+									Categoría (Subcategoría){" "}
+									<span className="text-red-500">*</span>
 								</label>
 								<select
 									className="w-full rounded-md border border-swapp-tiza dark:border-swapp-azul-petroleo bg-transparent px-3 py-2.5 text-sm text-swapp-negro-azulado dark:text-swapp-blanco outline-none transition-colors focus:border-swapp-turquesa-oscuro dark:focus:border-swapp-menta focus:ring-1 focus:ring-swapp-turquesa-oscuro dark:focus:ring-swapp-menta"
+									required
 									value={editingProduct.category_id || ""}
 									onChange={(e) =>
 										setEditingProduct({
@@ -271,16 +277,28 @@ export default function EditStructureModal({
 												: null,
 										})
 									}>
-									<option value="" className="dark:bg-swapp-negro-azulado">
-										Sin categoría
+									<option
+										value=""
+										className="dark:bg-swapp-negro-azulado"
+										disabled>
+										Seleccione una subcategoría...
 									</option>
-									{categories.map((c) => (
-										<option
-											key={c.category_id}
-											value={c.category_id}
-											className="dark:bg-swapp-negro-azulado">
-											{c.name}
-										</option>
+									{parentCategories.map((parent) => (
+										<optgroup
+											key={parent.category_id}
+											label={parent.name}
+											className="dark:bg-swapp-negro-azulado font-bold text-swapp-turquesa-oscuro dark:text-swapp-menta">
+											{subCategories
+												.filter((sub) => sub.parent_id === parent.category_id)
+												.map((sub) => (
+													<option
+														key={sub.category_id}
+														value={sub.category_id}
+														className="dark:bg-swapp-negro-azulado font-normal text-swapp-negro-azulado dark:text-swapp-blanco">
+														{sub.name}
+													</option>
+												))}
+										</optgroup>
 									))}
 								</select>
 							</div>

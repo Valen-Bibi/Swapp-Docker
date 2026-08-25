@@ -19,6 +19,7 @@ import {
 	Copy,
 	Recycle,
 	ImagePlus,
+	Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import TableSkeleton from "@/components/tables/TableSkeleton";
@@ -29,10 +30,7 @@ import { SwappTooltip } from "@/components/ui/SwappTooltip";
 import EditStructureModal from "@/components/products/EditStructureModal";
 import NewVariantModal from "@/components/products/NewVariantModal";
 import { SwappToggle } from "@/components/ui/SwappToggle";
-import {
-	SwappAttributeBuilder,
-	AttributePair,
-} from "@/components/ui/SwappAttributeBuilder";
+import { SwappSearchableSelect } from "@/components/ui/SwappSearchableSelect";
 import { useTableSort } from "@/hooks/useTableSort";
 import { Product, Brand, Category, TaxClass } from "@/types/product";
 
@@ -53,15 +51,16 @@ export default function MasterCatalogPage() {
 	const [expandedRows, setExpandedRows] = useState<string[]>([]);
 	const [editingVariantId, setEditingVariantId] = useState<string | null>(null);
 	const [draftSku, setDraftSku] = useState("");
-	const [draftAttributes, setDraftAttributes] = useState<AttributePair[]>([]);
 	const [isSavingVariant, setIsSavingVariant] = useState(false);
 
-	// Estado para visibilidad de Variantes
+	// --- NUEVOS ESTADOS PIM PARA EDICIÓN INLINE ---
+	const [draftValues, setDraftValues] = useState<Record<string, string>>({});
+	const [activePimSchema, setActivePimSchema] = useState<any[]>([]);
+	const [isLoadingPim, setIsLoadingPim] = useState(false);
+
 	const [showInactiveVariants, setShowInactiveVariants] = useState<
 		Record<string, boolean>
 	>({});
-
-	// --- NUEVO: Estado para visibilidad de Productos (Carcasas) ---
 	const [showInactiveProducts, setShowInactiveProducts] = useState(false);
 
 	const [imagePickerVariant, setImagePickerVariant] = useState<{
@@ -134,26 +133,47 @@ export default function MasterCatalogPage() {
 		toast.success(`SKU ${sku} copiado`, { position: "top-center" });
 	};
 
-	const startEditingVariant = (variant: any) => {
+	// --- ACTUALIZADO: Carga de PIM al editar variante ---
+	const startEditingVariant = async (variant: any, p: Product) => {
 		setEditingVariantId(variant.variant_uuid);
 		setDraftSku(variant.sku || "");
-		if (variant.variant_attributes) {
-			const attrArray = Object.entries(variant.variant_attributes).map(
-				([key, value]) => ({
-					key,
-					value: String(value),
-				}),
-			);
-			setDraftAttributes(attrArray);
-		} else {
-			setDraftAttributes([]);
+		setDraftValues(variant.variant_attributes || {});
+
+		if (!p.category_id) {
+			setActivePimSchema([]);
+			return;
+		}
+
+		setIsLoadingPim(true);
+		try {
+			const [globalAttrs, linkedAttrs] = await Promise.all([
+				ProductService.getAttributes(),
+				ProductService.getCategoryAttributes(p.category_id),
+			]);
+
+			const variantLinkedAttrs = linkedAttrs.filter((l: any) => l.is_variant);
+			const enrichedAttrs = variantLinkedAttrs.map((linked: any) => {
+				const globalAttr = globalAttrs.find(
+					(g: any) => g.attribute_id === linked.attribute_id,
+				);
+				return {
+					...linked,
+					values: globalAttr ? globalAttr.values : [],
+				};
+			});
+			setActivePimSchema(enrichedAttrs);
+		} catch (error) {
+			toast.error("Error al cargar reglas del PIM.");
+		} finally {
+			setIsLoadingPim(false);
 		}
 	};
 
 	const cancelEditingVariant = () => {
 		setEditingVariantId(null);
 		setDraftSku("");
-		setDraftAttributes([]);
+		setDraftValues({});
+		setActivePimSchema([]);
 	};
 
 	const saveVariant = async (productUuid: string, variantUuid: string) => {
@@ -162,10 +182,19 @@ export default function MasterCatalogPage() {
 			return;
 		}
 
-		const parsedVariants = draftAttributes.reduce(
-			(acc: Record<string, string>, curr) => {
-				if (curr.key.trim() !== "") {
-					acc[curr.key.trim()] = curr.value.trim();
+		// Validar PIM
+		const missingRequired = activePimSchema.some(
+			(attr) => attr.is_required && !draftValues[attr.name],
+		);
+		if (missingRequired) {
+			toast.error("Faltan completar atributos obligatorios.");
+			return;
+		}
+
+		const cleanAttributes = Object.entries(draftValues).reduce(
+			(acc: Record<string, string>, [key, val]) => {
+				if (val && val.trim() !== "") {
+					acc[key] = val.trim();
 				}
 				return acc;
 			},
@@ -173,7 +202,7 @@ export default function MasterCatalogPage() {
 		);
 
 		const finalAttributes =
-			Object.keys(parsedVariants).length > 0 ? parsedVariants : null;
+			Object.keys(cleanAttributes).length > 0 ? cleanAttributes : null;
 
 		setIsSavingVariant(true);
 		const toastId = toast.loading("Actualizando variante...");
@@ -184,7 +213,7 @@ export default function MasterCatalogPage() {
 				variant_attributes: finalAttributes,
 			});
 			toast.success("Variante actualizada exitosamente", { id: toastId });
-			setEditingVariantId(null);
+			cancelEditingVariant();
 			fetchProducts();
 		} catch (error: any) {
 			toast.error(error.response?.data?.detail || "Error al actualizar.", {
@@ -224,7 +253,6 @@ export default function MasterCatalogPage() {
 		}
 	};
 
-	// --- NUEVO: ARCHIVADO DE PRODUCTO PADRE ---
 	const toggleProductStatus = async (
 		productUuid: string,
 		currentStatus: boolean,
@@ -263,9 +291,7 @@ export default function MasterCatalogPage() {
 			await ProductService.updateVariant(
 				imagePickerVariant.productUuid,
 				imagePickerVariant.variantUuid,
-				{
-					image_url: imageUrl,
-				},
+				{ image_url: imageUrl },
 			);
 			toast.success("Fotografía asignada correctamente", { id: toastId });
 			setImagePickerVariant(null);
@@ -279,10 +305,7 @@ export default function MasterCatalogPage() {
 	};
 
 	const filteredProducts = products.filter((p) => {
-		// 1. Aplicamos el filtro de visibilidad Soft-Delete
 		if (!showInactiveProducts && !p.is_active) return false;
-
-		// 2. Aplicamos el filtro de búsqueda
 		const searchLower = searchTerm.toLowerCase();
 		const matchName = p.name.toLowerCase().includes(searchLower);
 		const matchAnySku = p.variants?.some((v) =>
@@ -313,7 +336,6 @@ export default function MasterCatalogPage() {
 					icon={Box}
 				/>
 				<div className="flex items-center gap-4">
-					{/* NUEVO TOGGLE GLOBAL DE PRODUCTOS */}
 					<div className="flex items-center gap-2 bg-swapp-tiza/30 dark:bg-swapp-azul-petroleo/30 px-3 py-1.5 rounded-lg border border-swapp-tiza dark:border-swapp-azul-petroleo transition-colors">
 						<span className="text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza">
 							Ver Productos Archivados
@@ -342,7 +364,9 @@ export default function MasterCatalogPage() {
 				</div>
 			</div>
 
-			<div className="overflow-hidden rounded-xl border border-swapp-tiza dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-negro-azulado shadow-sm transition-colors">
+			<div
+				className="rounded-xl border border-swapp-tiza dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-negro-azulado shadow-sm transition-all duration-300 overflow-visible sm:overflow-auto"
+				style={{ paddingBottom: editingVariantId ? "12rem" : "0" }}>
 				<table className="w-full text-left text-sm text-swapp-azul-petroleo dark:text-swapp-tiza">
 					<thead className="bg-swapp-tiza/50 dark:bg-swapp-azul-petroleo/30 text-swapp-negro-azulado dark:text-swapp-tiza select-none">
 						<tr>
@@ -393,7 +417,6 @@ export default function MasterCatalogPage() {
 									(m: any) =>
 										m.media_type === "image" && m.media_subtype === "main",
 								)?.file_url;
-
 								const totalVariantsCount = p.variants?.length || 0;
 								const isShowingInactive =
 									!!showInactiveVariants[p.product_uuid];
@@ -402,14 +425,12 @@ export default function MasterCatalogPage() {
 									[];
 								const isExpanded = expandedRows.includes(p.product_uuid);
 
-								// Lógica de estilos fantasma para el padre
 								const parentRowStatusStyle = p.is_active
 									? `hover:bg-swapp-tiza/30 dark:hover:bg-swapp-azul-petroleo/30 ${isExpanded ? "bg-swapp-tiza/10 dark:bg-swapp-azul-petroleo/10" : ""}`
 									: "opacity-60 bg-swapp-tiza/40 dark:bg-swapp-negro-azulado/80 grayscale filter mix-blend-multiply dark:mix-blend-normal";
 
 								return (
 									<React.Fragment key={p.product_uuid}>
-										{/* Fila Principal (Padre) */}
 										<tr className={`transition-colors ${parentRowStatusStyle}`}>
 											<td className="px-6 py-4">
 												{mainImageUrl ? (
@@ -527,11 +548,10 @@ export default function MasterCatalogPage() {
 											</td>
 										</tr>
 
-										{/* Fila Desplegable (Hijos / Variantes) */}
 										{isExpanded && totalVariantsCount > 0 && (
 											<tr className="bg-swapp-tiza/10 dark:bg-swapp-negro-azulado border-b border-swapp-tiza dark:border-swapp-azul-petroleo">
 												<td colSpan={6} className="px-6 py-4">
-													<div className="rounded-lg border border-swapp-tiza/50 dark:border-swapp-azul-petroleo/50 overflow-hidden bg-swapp-blanco dark:bg-swapp-negro-azulado/50">
+													<div className="rounded-lg border border-swapp-tiza/50 dark:border-swapp-azul-petroleo/50 overflow-visible bg-swapp-blanco dark:bg-swapp-negro-azulado/50">
 														<table className="w-full text-xs text-left">
 															<thead className="bg-swapp-tiza/30 dark:bg-swapp-azul-petroleo/20 text-swapp-azul-petroleo/70 dark:text-swapp-tiza/70">
 																<tr>
@@ -565,7 +585,7 @@ export default function MasterCatalogPage() {
 																		</div>
 																	</th>
 																	<th className="px-4 py-2 font-medium w-2/4">
-																		Atributos
+																		Atributos (PIM)
 																	</th>
 																	<th className="px-4 py-2 font-medium">
 																		Precio
@@ -600,7 +620,6 @@ export default function MasterCatalogPage() {
 																			<tr
 																				key={v.variant_uuid}
 																				className={`transition-all ${rowStatusStyle}`}>
-																				{/* --- NUEVA COLUMNA FOTOGRÁFICA --- */}
 																				<td className="px-4 py-2 align-middle text-center">
 																					<SwappTooltip text="Asignar fotografía">
 																						<button
@@ -651,13 +670,11 @@ export default function MasterCatalogPage() {
 																								}>
 																								{v.sku}
 																							</span>
-
 																							{p.is_returnable && (
 																								<SwappTooltip text="Activo Circulante (Logística Inversa habilitada)">
 																									<Recycle className="h-4 w-4 text-swapp-verde-agua dark:text-swapp-menta/90" />
 																								</SwappTooltip>
 																							)}
-
 																							{v.sku && (
 																								<SwappTooltip text="Copiar al portapapeles">
 																									<button
@@ -672,14 +689,60 @@ export default function MasterCatalogPage() {
 																						</div>
 																					)}
 																				</td>
-																				<td className="px-4 py-2.5 align-middle">
+
+																				<td className="px-4 py-2.5 align-middle relative overflow-visible">
 																					{isEditing ? (
-																						<div className="min-w-[250px] scale-[0.90] origin-left">
-																							<SwappAttributeBuilder
-																								attributes={draftAttributes}
-																								onChange={setDraftAttributes}
-																							/>
-																						</div>
+																						isLoadingPim ? (
+																							<div className="flex items-center gap-2 text-xs text-swapp-azul-petroleo/60 dark:text-swapp-tiza/60">
+																								<Loader2 className="h-3 w-3 animate-spin text-swapp-turquesa-oscuro dark:text-swapp-menta" />{" "}
+																								Cargando reglas...
+																							</div>
+																						) : activePimSchema.length === 0 ? (
+																							<span className="text-xs text-red-500">
+																								Sin reglas en subcategoría.
+																							</span>
+																						) : (
+																							<div className="flex flex-col gap-3 min-w-[200px] py-1">
+																								{activePimSchema.map((attr) => {
+																									const formatOptions =
+																										attr.values.map(
+																											(v: any) => ({
+																												label: v.value,
+																												value: v.value,
+																											}),
+																										);
+																									return (
+																										<div
+																											key={attr.attribute_id}
+																											className="flex flex-col gap-1">
+																											<span className="text-[10px] font-semibold text-swapp-azul-petroleo/70 dark:text-swapp-tiza/70 uppercase">
+																												{attr.name}{" "}
+																												{attr.is_required && (
+																													<span className="text-red-500">
+																														*
+																													</span>
+																												)}
+																											</span>
+																											<SwappSearchableSelect
+																												options={formatOptions}
+																												value={
+																													draftValues[
+																														attr.name
+																													] || ""
+																												}
+																												onChange={(val) =>
+																													setDraftValues({
+																														...draftValues,
+																														[attr.name]: val,
+																													})
+																												}
+																												placeholder={`Buscar ${attr.name}...`}
+																											/>
+																										</div>
+																									);
+																								})}
+																							</div>
+																						)
 																					) : v.variant_attributes ? (
 																						<div className="flex flex-wrap gap-1">
 																							{Object.entries(
@@ -698,6 +761,7 @@ export default function MasterCatalogPage() {
 																						</span>
 																					)}
 																				</td>
+
 																				<td className="px-4 py-2.5 font-medium text-swapp-turquesa-oscuro dark:text-swapp-menta align-middle">
 																					$
 																					{Number(v.price).toLocaleString(
@@ -739,7 +803,7 @@ export default function MasterCatalogPage() {
 																								<>
 																									<button
 																										onClick={() =>
-																											startEditingVariant(v)
+																											startEditingVariant(v, p)
 																										}
 																										className="p-1.5 rounded-md text-swapp-azul-petroleo/50 hover:text-swapp-turquesa-oscuro dark:text-swapp-tiza/50 dark:hover:text-swapp-menta hover:bg-swapp-tiza dark:hover:bg-swapp-azul-petroleo transition-colors"
 																										title="Editar atributos">
@@ -802,7 +866,6 @@ export default function MasterCatalogPage() {
 				taxClasses={taxClasses}
 				onSuccess={fetchProducts}
 			/>
-
 			<NewVariantModal
 				isOpen={isNewVariantModalOpen}
 				onClose={() => setIsNewVariantModalOpen(false)}
@@ -810,7 +873,6 @@ export default function MasterCatalogPage() {
 				onSuccess={fetchProducts}
 			/>
 
-			{/* MODAL DE SELECCIÓN DE IMAGEN PARA VARIANTE */}
 			{imagePickerVariant && (
 				<div className="fixed inset-0 z-[999] flex items-center justify-center bg-swapp-negro/50 dark:bg-swapp-negro/70 backdrop-blur-sm p-4 animate-in fade-in">
 					<div className="w-full max-w-md rounded-xl bg-swapp-blanco dark:bg-swapp-negro-azulado p-6 shadow-2xl border-t-4 border-swapp-turquesa-oscuro dark:border-swapp-menta">

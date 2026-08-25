@@ -56,6 +56,7 @@ class ProductCategory(Base):
 
     parent = relationship("ProductCategory", remote_side=[category_id], backref="children")
     products = relationship("Product", back_populates="category")
+    allowed_attributes = relationship("SubcategoryAttribute", back_populates="category", cascade="all, delete-orphan")
 
 
 class ProductRelationship(Base):
@@ -113,8 +114,7 @@ class Product(Base):
 
     product_id = Column(BigInteger, primary_key=True, autoincrement=True)
     product_uuid = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, nullable=False)
-    
-    # Datos Estructurales (Sin SKU ni atributos de variante)
+
     name = Column(String(255), nullable=False)
     slug = Column(String(255), unique=True, nullable=False)
     description = Column(Text, nullable=True)
@@ -128,8 +128,7 @@ class Product(Base):
     track_inventory = Column(Boolean, default=True)
     allow_backorder = Column(Boolean, default=False)
     max_order_quantity = Column(Integer)
-    
-    # Logística
+
     product_type = Column(String(50), default='physical')
     weight = Column(Numeric(10,2))
     weight_unit = Column(String(10), default='kg')
@@ -137,20 +136,17 @@ class Product(Base):
     download_url = Column(Text)
     file_size = Column(BigInteger)
     file_extension = Column(String(10))
-    
-    # SEO
+
     meta_title = Column(String(70))
     meta_description = Column(String(160))
     meta_keywords = Column(Text)
     
-    # Estados
     is_featured = Column(Boolean, default=False)
     is_published = Column(Boolean, default=False)
     published_at = Column(DateTime(timezone=True))
     visibility = Column(String(20), default='catalog')
     has_variants = Column(Boolean, default=False)
     
-    # Métricas
     view_count = Column(Integer, default=0)
     sold_count = Column(Integer, default=0)
     rating_avg = Column(Numeric(3,2), default=0)
@@ -185,8 +181,6 @@ class Product(Base):
     related_from = relationship("ProductRelationship", foreign_keys="[ProductRelationship.target_product_id]", back_populates="target_product")
     inventory_movements = relationship("InventoryMovement", back_populates="product", cascade="all, delete")
 
-
-# --- NUEVA TABLA HIJO: VARIANTE FÍSICA ---
 class ProductVariant(Base):
     __tablename__ = "product_variants"
     __table_args__ = {"schema": "swapp"}
@@ -239,3 +233,52 @@ class ProductMedia(Base):
     meta_data = Column("metadata", JSONB, default={})
     
     product = relationship("Product", back_populates="media")
+
+class ProductAttribute(Base):
+    __tablename__ = "product_attributes"
+    __table_args__ = {"schema": "swapp"}
+
+    attribute_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    attribute_uuid = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, nullable=False)
+    name = Column(String(100), nullable=False, unique=True)
+
+    is_variant = Column(Boolean, default=False, nullable=False) 
+    
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    values = relationship("ProductAttributeValue", back_populates="attribute", cascade="all, delete-orphan")
+    subcategories = relationship("SubcategoryAttribute", back_populates="attribute", cascade="all, delete-orphan")
+
+
+class ProductAttributeValue(Base):
+    __tablename__ = "product_attribute_values"
+    __table_args__ = {"schema": "swapp"}
+
+    value_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    value_uuid = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, nullable=False)
+    attribute_id = Column(BigInteger, ForeignKey("swapp.product_attributes.attribute_id", ondelete="CASCADE"), nullable=False)
+    
+    value = Column(String(255), nullable=False)
+    display_order = Column(Integer, default=0)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+    attribute = relationship("ProductAttribute", back_populates="values")
+
+
+class SubcategoryAttribute(Base):
+    __tablename__ = "subcategory_attributes"
+    __table_args__ = {"schema": "swapp"}
+
+    category_id = Column(BigInteger, ForeignKey("swapp.product_categories.category_id", ondelete="CASCADE"), primary_key=True)
+    attribute_id = Column(BigInteger, ForeignKey("swapp.product_attributes.attribute_id", ondelete="CASCADE"), primary_key=True)
+    
+    is_required = Column(Boolean, default=False)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    category = relationship("ProductCategory", back_populates="allowed_attributes")
+    attribute = relationship("ProductAttribute", back_populates="subcategories")

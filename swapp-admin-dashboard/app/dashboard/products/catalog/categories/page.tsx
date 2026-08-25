@@ -1,19 +1,27 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FolderTree, Plus, Edit } from "lucide-react";
+import { FolderTree, Plus, Edit, PlusCircle } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import PageHeader from "@/components/layout/PageHeader";
 import SearchBar from "@/components/ui/SearchBar";
 import TableSkeleton from "@/components/tables/TableSkeleton";
 import NewCategoryModal from "@/components/products/NewCategoryModal";
+import NewSubcategoryModal from "@/components/products/NewSubcategoryModal";
+import CategoryAttributesModal from "@/components/products/CategoryAttributesModal";
+import { SwappTooltip } from "@/components/ui/SwappTooltip";
+import { SwappToggle } from "@/components/ui/SwappToggle";
+import { ProductService } from "@/services/product.service";
 import { Category } from "@/types/product";
+import { Lock } from "lucide-react";
 
 export default function CategoriesPage() {
 	const [categories, setCategories] = useState<Category[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [searchTerm, setSearchTerm] = useState("");
+
+	const [showInactive, setShowInactive] = useState(false);
 
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
@@ -25,20 +33,36 @@ export default function CategoriesPage() {
 		is_active: true,
 	});
 
-	const fetchCategories = async () => {
+	const [isSubModalOpen, setIsSubModalOpen] = useState(false);
+	const [selectedParent, setSelectedParent] = useState<{
+		id: number;
+		name: string;
+	} | null>(null);
+
+	const [isLockModalOpen, setIsLockModalOpen] = useState(false);
+	const [selectedCategoryForLock, setSelectedCategoryForLock] = useState<{
+		id: number;
+		name: string;
+	} | null>(null);
+
+	// Actualizamos la función para que escuche el estado del toggle
+	const fetchCategories = async (includeInactive = showInactive) => {
+		setLoading(true);
 		try {
-			const { data } = await api.get("/api/products/admin/categories");
-			setCategories(data);
+			const data = await ProductService.getCategories(includeInactive);
+			setCategories(Array.isArray(data) ? data : []);
 		} catch (error) {
 			toast.error("Error al cargar las categorías.");
+			setCategories([]);
 		} finally {
 			setLoading(false);
 		}
 	};
 
+	// Refrescamos la tabla cada vez que el usuario toca el toggle
 	useEffect(() => {
-		fetchCategories();
-	}, []);
+		fetchCategories(showInactive);
+	}, [showInactive]);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -53,7 +77,13 @@ export default function CategoriesPage() {
 					editingCat,
 				);
 			} else {
-				await api.post("/api/products/admin/categories", editingCat);
+				await ProductService.createCategory({
+					name: editingCat.name!,
+					slug: editingCat.slug!,
+					parent_id: editingCat.parent_id,
+					is_active: editingCat.is_active,
+					display_order: editingCat.display_order,
+				});
 			}
 			toast.success("Operación exitosa", { id: toastId });
 			setIsModalOpen(false);
@@ -67,10 +97,20 @@ export default function CategoriesPage() {
 		}
 	};
 
-	// Agregamos el sort dinámico para respetar la prioridad en el cliente
-	const filteredCategories = categories
-		.filter((c) => c.name.toLowerCase().includes(searchTerm.toLowerCase()))
-		.sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+	const parentCategories = categories.filter((c) => !c.parent_id);
+	const hierarchicalCategories: Category[] = [];
+
+	parentCategories.forEach((parent) => {
+		hierarchicalCategories.push(parent);
+		const children = categories.filter(
+			(c) => c.parent_id === parent.category_id,
+		);
+		hierarchicalCategories.push(...children);
+	});
+
+	const filteredCategories = hierarchicalCategories.filter((c) =>
+		(c.name || "").toLowerCase().includes((searchTerm || "").toLowerCase()),
+	);
 
 	if (loading) return <TableSkeleton />;
 
@@ -79,15 +119,28 @@ export default function CategoriesPage() {
 			<div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<PageHeader
 					title="Árbol de Categorías"
-					description="Clasificación jerárquica del catálogo"
+					description="Clasificación jerárquica del catálogo y nodos finales"
 					icon={FolderTree}
 				/>
-				<div className="flex items-center gap-3">
+				<div className="flex flex-wrap items-center gap-3">
 					<SearchBar
 						searchTerm={searchTerm}
 						onSearchChange={setSearchTerm}
 						placeholder="Buscar categoría..."
 					/>
+
+					{/* --- EL NUEVO TOGGLE VISUAL --- */}
+					<div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-swapp-tiza dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-negro-azulado transition-colors">
+						<span className="text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza">
+							Ver Archivadas
+						</span>
+						<SwappToggle
+							checked={showInactive}
+							onChange={setShowInactive}
+							id="toggle-inactive-cats"
+						/>
+					</div>
+
 					<button
 						onClick={() => {
 							setEditingCat({
@@ -100,7 +153,7 @@ export default function CategoriesPage() {
 							setIsModalOpen(true);
 						}}
 						className="inline-flex items-center gap-2 rounded-lg bg-swapp-turquesa-oscuro dark:bg-swapp-menta px-4 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-negro-azulado hover:bg-swapp-azul-oceano dark:hover:bg-swapp-verde-agua transition-colors">
-						<Plus className="h-4 w-4" /> Nueva Categoría
+						<Plus className="h-4 w-4" /> Nueva Categoría Principal
 					</button>
 				</div>
 			</div>
@@ -110,50 +163,107 @@ export default function CategoriesPage() {
 					<thead className="bg-swapp-tiza/50 dark:bg-swapp-azul-petroleo/30 text-swapp-negro-azulado dark:text-swapp-tiza select-none">
 						<tr>
 							<th className="px-6 py-4 font-semibold">Categoría (Slug)</th>
-							<th className="px-6 py-4 font-semibold">Categoría Padre</th>
+							<th className="px-6 py-4 font-semibold">Jerarquía</th>
 							<th className="px-6 py-4 font-semibold">Orden</th>
 							<th className="px-6 py-4 font-semibold">Estado</th>
 							<th className="px-6 py-4 font-semibold text-right">Acciones</th>
 						</tr>
 					</thead>
 					<tbody className="divide-y divide-swapp-tiza dark:divide-swapp-azul-petroleo">
-						{filteredCategories.map((c) => (
-							<tr
-								key={c.category_id}
-								className="transition-colors hover:bg-swapp-tiza/30 dark:hover:bg-swapp-azul-petroleo/30">
-								<td className="px-6 py-4">
-									<div className="font-medium text-swapp-negro-azulado dark:text-swapp-blanco">
-										{c.name}
-									</div>
-									<div className="text-xs text-swapp-azul-petroleo/50 dark:text-swapp-tiza/50">
-										/{c.slug}
-									</div>
-								</td>
-								<td className="px-6 py-4 text-swapp-turquesa-oscuro dark:text-swapp-menta font-medium text-xs">
-									{c.parent_id
-										? categories.find((p) => p.category_id === c.parent_id)
-												?.name
-										: "— Principal —"}
-								</td>
-								<td className="px-6 py-4">{c.display_order}</td>
-								<td className="px-6 py-4">
-									<span
-										className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${c.is_active ? "bg-swapp-verde-agua/10 dark:bg-swapp-menta/10 text-swapp-turquesa-oscuro dark:text-swapp-menta" : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"}`}>
-										{c.is_active ? "Activa" : "Oculta"}
-									</span>
-								</td>
-								<td className="px-6 py-4 text-right">
-									<button
-										onClick={() => {
-											setEditingCat(c);
-											setIsModalOpen(true);
-										}}
-										className="p-2 text-swapp-azul-petroleo/40 dark:text-swapp-tiza/40 hover:text-swapp-turquesa-oscuro dark:hover:text-swapp-menta transition-colors">
-										<Edit className="h-4 w-4" />
-									</button>
+						{filteredCategories.length === 0 ? (
+							<tr>
+								<td
+									colSpan={5}
+									className="px-6 py-12 text-center text-swapp-azul-petroleo/50 dark:text-swapp-tiza/50">
+									No se encontraron categorías.
 								</td>
 							</tr>
-						))}
+						) : (
+							filteredCategories.map((c) => {
+								const isChild = !!c.parent_id;
+								return (
+									<tr
+										key={c.category_id}
+										className={`transition-colors hover:bg-swapp-tiza/30 dark:hover:bg-swapp-azul-petroleo/30 ${isChild ? "bg-swapp-tiza/10 dark:bg-swapp-azul-petroleo/10" : ""}`}>
+										<td className="px-6 py-4">
+											<div
+												className={`font-medium flex items-center gap-2 text-swapp-negro-azulado dark:text-swapp-blanco ${isChild ? "pl-6 border-l-2 border-swapp-turquesa-oscuro dark:border-swapp-menta" : ""}`}>
+												{isChild && (
+													<span className="text-swapp-menta/60">↳</span>
+												)}
+												{c.name}
+											</div>
+											<div
+												className={`text-xs text-swapp-azul-petroleo/50 dark:text-swapp-tiza/50 ${isChild ? "pl-6" : ""}`}>
+												/{c.slug}
+											</div>
+										</td>
+										<td className="px-6 py-4 text-xs">
+											{isChild ? (
+												<span className="inline-flex items-center gap-1 rounded-full bg-swapp-turquesa-oscuro/10 dark:bg-swapp-menta/10 px-2.5 py-1 font-semibold text-swapp-turquesa-oscuro dark:text-swapp-menta">
+													Subcategoría
+												</span>
+											) : (
+												<span className="inline-flex items-center gap-1 rounded-full bg-swapp-azul-petroleo/10 dark:bg-swapp-tiza/10 px-2.5 py-1 font-semibold text-swapp-azul-petroleo dark:text-swapp-tiza">
+													Principal
+												</span>
+											)}
+										</td>
+										<td className="px-6 py-4">{c.display_order}</td>
+										<td className="px-6 py-4">
+											<span
+												className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${c.is_active ? "bg-swapp-verde-agua/10 dark:bg-swapp-menta/10 text-swapp-turquesa-oscuro dark:text-swapp-menta" : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"}`}>
+												{c.is_active ? "Activa" : "Oculta"}
+											</span>
+										</td>
+										<td className="px-6 py-4 text-right">
+											<div className="flex items-center justify-end gap-1">
+												{isChild && (
+													<SwappTooltip text="Candado de Atributos">
+														<button
+															onClick={() => {
+																setSelectedCategoryForLock({
+																	id: c.category_id,
+																	name: c.name,
+																});
+																setIsLockModalOpen(true);
+															}}
+															className="p-2 text-swapp-turquesa-oscuro dark:text-swapp-menta hover:bg-swapp-turquesa-oscuro/10 dark:hover:bg-swapp-menta/10 rounded-md transition-colors">
+															<Lock className="h-4 w-4" />
+														</button>
+													</SwappTooltip>
+												)}
+												{!isChild && (
+													<SwappTooltip text="Añadir Subcategoría">
+														<button
+															onClick={() => {
+																setSelectedParent({
+																	id: c.category_id,
+																	name: c.name,
+																});
+																setIsSubModalOpen(true);
+															}}
+															className="p-2 text-swapp-azul-petroleo/40 dark:text-swapp-tiza/40 hover:text-swapp-turquesa-oscuro dark:hover:text-swapp-menta transition-colors">
+															<PlusCircle className="h-4 w-4" />
+														</button>
+													</SwappTooltip>
+												)}
+												<SwappTooltip text="Editar Categoría">
+													<button
+														onClick={() => {
+															setEditingCat(c);
+															setIsModalOpen(true);
+														}}
+														className="p-2 text-swapp-azul-petroleo/40 dark:text-swapp-tiza/40 hover:text-swapp-turquesa-oscuro dark:hover:text-swapp-menta transition-colors">
+														<Edit className="h-4 w-4" />
+													</button>
+												</SwappTooltip>
+											</div>
+										</td>
+									</tr>
+								);
+							})
+						)}
 					</tbody>
 				</table>
 			</div>
@@ -166,6 +276,17 @@ export default function CategoriesPage() {
 				categories={categories}
 				onSubmit={handleSubmit}
 				isSaving={isSaving}
+			/>
+			<NewSubcategoryModal
+				isOpen={isSubModalOpen}
+				onClose={() => setIsSubModalOpen(false)}
+				onSuccess={() => fetchCategories()}
+				parentCategory={selectedParent}
+			/>
+			<CategoryAttributesModal
+				isOpen={isLockModalOpen}
+				onClose={() => setIsLockModalOpen(false)}
+				category={selectedCategoryForLock}
 			/>
 		</div>
 	);

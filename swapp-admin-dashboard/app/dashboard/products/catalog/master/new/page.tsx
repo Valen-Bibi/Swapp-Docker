@@ -3,7 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProductService } from "@/services/product.service";
-import { PackagePlus, ArrowLeft, Save, AlertCircle, X } from "lucide-react";
+import {
+	PackagePlus,
+	ArrowLeft,
+	Save,
+	AlertCircle,
+	X,
+	Loader2,
+} from "lucide-react";
 import { toast } from "sonner";
 import PageHeader from "@/components/layout/PageHeader";
 import { SwappInput } from "@/components/ui/SwappInput";
@@ -11,6 +18,7 @@ import { SwappTextarea } from "@/components/ui/SwappTextarea";
 import { SwappCheckbox } from "@/components/ui/SwappCheckbox";
 import { SwappToggle } from "@/components/ui/SwappToggle";
 import { SwappDropzone } from "@/components/ui/SwappDropzone";
+import { SwappSearchableSelect } from "@/components/ui/SwappSearchableSelect"; // <-- IMPORTAMOS EL BUSCADOR
 import Link from "next/link";
 import { Brand, Category, TaxClass } from "@/types/product";
 
@@ -27,6 +35,13 @@ export default function NewProductPage() {
 	const [mainImagePreview, setMainImagePreview] = useState<string | null>(null);
 	const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
 	const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
+
+	// --- ESTADOS DE LA FICHA TÉCNICA (PIM) ---
+	const [structuralAttributes, setStructuralAttributes] = useState<any[]>([]);
+	const [customAttributes, setCustomAttributes] = useState<
+		Record<string, string>
+	>({});
+	const [isLoadingPim, setIsLoadingPim] = useState(false);
 
 	const [formData, setFormData] = useState({
 		name: "",
@@ -55,6 +70,9 @@ export default function NewProductPage() {
 		is_featured: false,
 	});
 
+	const parentCategories = categories.filter((c) => !c.parent_id);
+	const subCategories = categories.filter((c) => c.parent_id);
+
 	useEffect(() => {
 		const fetchFormData = async () => {
 			try {
@@ -74,6 +92,49 @@ export default function NewProductPage() {
 		};
 		fetchFormData();
 	}, []);
+
+	// --- CARGA DINÁMICA DE LA FICHA TÉCNICA ---
+	useEffect(() => {
+		const loadStructuralAttributes = async () => {
+			if (!formData.category_id) {
+				setStructuralAttributes([]);
+				setCustomAttributes({});
+				return;
+			}
+
+			setIsLoadingPim(true);
+			try {
+				const [globalAttrs, linkedAttrs] = await Promise.all([
+					ProductService.getAttributes(),
+					ProductService.getCategoryAttributes(parseInt(formData.category_id)),
+				]);
+
+				// Filtramos SOLO los atributos que NO son variantes (Ficha Técnica)
+				const structuralLinkedAttrs = linkedAttrs.filter(
+					(l: any) => !l.is_variant,
+				);
+				const enrichedAttrs = structuralLinkedAttrs.map((linked: any) => {
+					const globalAttr = globalAttrs.find(
+						(g: any) => g.attribute_id === linked.attribute_id,
+					);
+					return {
+						...linked,
+						values: globalAttr ? globalAttr.values : [],
+					};
+				});
+
+				setStructuralAttributes(enrichedAttrs);
+				// Limpiamos los atributos previamente seleccionados si cambia la categoría
+				setCustomAttributes({});
+			} catch (error) {
+				toast.error("Error al cargar la ficha técnica de esta categoría.");
+			} finally {
+				setIsLoadingPim(false);
+			}
+		};
+
+		loadStructuralAttributes();
+	}, [formData.category_id]);
 
 	const generateSlug = (text: string) =>
 		text
@@ -123,6 +184,17 @@ export default function NewProductPage() {
 			}
 		}
 
+		// Validamos que se hayan completado los atributos estructurales obligatorios
+		const missingStructural = structuralAttributes.some(
+			(attr) => attr.is_required && !customAttributes[attr.name],
+		);
+		if (missingStructural) {
+			toast.error(
+				"Faltan completar atributos obligatorios en la Ficha Técnica.",
+			);
+			return;
+		}
+
 		setIsSaving(true);
 		const toastId = toast.loading("Creando base del producto...");
 
@@ -138,9 +210,21 @@ export default function NewProductPage() {
 						}
 					: null;
 
-			// CREAR LA PLANTILLA (Padre) - Desacoplamiento Total
+			// Limpiamos los atributos estructurales vacíos
+			const cleanCustomAttributes = Object.entries(customAttributes).reduce(
+				(acc: Record<string, string>, [key, val]) => {
+					if (val && val.trim() !== "") acc[key] = val;
+					return acc;
+				},
+				{},
+			);
+
 			const newProductResponse = await ProductService.create({
 				...formData,
+				custom_attributes:
+					Object.keys(cleanCustomAttributes).length > 0
+						? cleanCustomAttributes
+						: null, // <-- INYECTAMOS LA FICHA TÉCNICA
 				meta_title: formData.meta_title || null,
 				meta_description: formData.meta_description || null,
 				meta_keywords: formData.meta_keywords || null,
@@ -176,14 +260,9 @@ export default function NewProductPage() {
 
 			toast.success(
 				"¡Carcasa creada exitosamente! Ahora podés añadir sus variantes.",
-				{
-					id: toastId,
-				},
+				{ id: toastId },
 			);
-
-			setTimeout(() => {
-				router.push("/dashboard/products/catalog/master");
-			}, 1500);
+			setTimeout(() => router.push("/dashboard/products/catalog/master"), 1500);
 		} catch (error: any) {
 			toast.error(
 				error.response?.data?.detail || "Error crítico al crear el producto.",
@@ -194,7 +273,7 @@ export default function NewProductPage() {
 	};
 
 	return (
-		<div className="p-6 relative max-w-4xl mx-auto">
+		<div className="p-6 relative max-w-4xl mx-auto pb-32">
 			<div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center justify-between">
 				<div className="flex items-center gap-4">
 					<Link
@@ -269,7 +348,8 @@ export default function NewProductPage() {
 						<div className="grid grid-cols-1 gap-6 sm:grid-cols-3 border-t border-swapp-tiza dark:border-swapp-azul-petroleo pt-6 transition-colors">
 							<div className="space-y-1">
 								<label className="block text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza">
-									Categoría <span className="text-red-500">*</span>
+									Categoría (Subcategoría){" "}
+									<span className="text-red-500">*</span>
 								</label>
 								<select
 									className="w-full rounded-md border border-swapp-tiza dark:border-swapp-azul-petroleo bg-transparent px-3 py-2.5 text-sm text-swapp-negro-azulado dark:text-swapp-blanco outline-none transition-colors focus:border-swapp-turquesa-oscuro dark:focus:border-swapp-menta focus:ring-1 focus:ring-swapp-turquesa-oscuro dark:focus:ring-swapp-menta"
@@ -278,16 +358,28 @@ export default function NewProductPage() {
 									onChange={(e) =>
 										setFormData({ ...formData, category_id: e.target.value })
 									}>
-									<option value="" className="dark:bg-swapp-negro-azulado">
-										Seleccione...
+									<option
+										value=""
+										className="dark:bg-swapp-negro-azulado"
+										disabled>
+										Seleccione una subcategoría...
 									</option>
-									{categories.map((c) => (
-										<option
-											key={c.category_id}
-											value={c.category_id}
-											className="dark:bg-swapp-negro-azulado">
-											{c.name}
-										</option>
+									{parentCategories.map((parent) => (
+										<optgroup
+											key={parent.category_id}
+											label={parent.name}
+											className="dark:bg-swapp-negro-azulado font-bold text-swapp-turquesa-oscuro dark:text-swapp-menta">
+											{subCategories
+												.filter((sub) => sub.parent_id === parent.category_id)
+												.map((sub) => (
+													<option
+														key={sub.category_id}
+														value={sub.category_id}
+														className="dark:bg-swapp-negro-azulado font-normal text-swapp-negro-azulado dark:text-swapp-blanco">
+														{sub.name}
+													</option>
+												))}
+										</optgroup>
 									))}
 								</select>
 							</div>
@@ -344,6 +436,53 @@ export default function NewProductPage() {
 						</div>
 					</div>
 
+					{/* --- NUEVA SECCIÓN: FICHA TÉCNICA DINÁMICA --- */}
+					{(isLoadingPim || structuralAttributes.length > 0) && (
+						<div className="border-t border-swapp-tiza dark:border-swapp-azul-petroleo pt-6 transition-colors space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
+							<div className="flex items-center gap-3">
+								<h3 className="text-sm font-bold uppercase tracking-wider text-swapp-azul-petroleo dark:text-swapp-tiza">
+									Ficha Técnica (Estructural)
+								</h3>
+								{isLoadingPim && (
+									<Loader2 className="h-4 w-4 animate-spin text-swapp-turquesa-oscuro dark:text-swapp-menta" />
+								)}
+							</div>
+
+							{!isLoadingPim && structuralAttributes.length > 0 && (
+								<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 relative z-50">
+									{structuralAttributes.map((attr) => {
+										const formatOptions = attr.values.map((v: any) => ({
+											label: v.value,
+											value: v.value,
+										}));
+
+										return (
+											<div key={attr.attribute_id} className="space-y-1">
+												<label className="block text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza">
+													{attr.name}{" "}
+													{attr.is_required && (
+														<span className="text-red-500">*</span>
+													)}
+												</label>
+												<SwappSearchableSelect
+													options={formatOptions}
+													value={customAttributes[attr.name] || ""}
+													onChange={(val) =>
+														setCustomAttributes({
+															...customAttributes,
+															[attr.name]: val,
+														})
+													}
+													placeholder={`Seleccionar ${attr.name}...`}
+												/>
+											</div>
+										);
+									})}
+								</div>
+							)}
+						</div>
+					)}
+
 					<div className="flex items-center justify-between border-t border-swapp-tiza dark:border-swapp-azul-petroleo pt-6 transition-colors">
 						<div>
 							<h3 className="text-lg font-semibold text-swapp-negro-azulado dark:text-swapp-blanco">
@@ -376,7 +515,7 @@ export default function NewProductPage() {
 								)}
 								<SwappInput
 									label="Descripción Corta (Catálogo)"
-									placeholder="Breve resumen para las tarjetas de la tienda..."
+									placeholder="Breve resumen..."
 									required={formData.is_published}
 									value={formData.short_description}
 									onChange={(e) =>

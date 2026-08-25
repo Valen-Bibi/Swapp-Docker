@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import func
 from typing import List
 from uuid import UUID
 from datetime import datetime, timezone
@@ -45,7 +46,6 @@ def create_product_discount(
         
     if not product.variants:
         raise HTTPException(status_code=400, detail="El producto no tiene variantes asignadas para descontar")
-
     # 1. Analizamos el alcance (Scope) de la oferta
     target_variants = []
     target_variant_ids = None
@@ -232,15 +232,20 @@ def get_all_products_admin(
 
 # --- CATEGORÍAS Y MARCAS ---
 @router.get("/categories", response_model=List[schemas.CategoriaResponse])
-def get_categories(db: Session = Depends(get_db)):
-    categories = db.query(models.ProductCategory)\
-                   .filter(models.ProductCategory.is_active == True)\
-                   .order_by(models.ProductCategory.display_order)\
-                   .all()
+def get_categories(include_inactive: bool = False, db: Session = Depends(get_db)):
+    """Obtiene el árbol de categorías, con opción de incluir las archivadas"""
+    query = db.query(models.ProductCategory)
+    
+    # Si no nos piden las inactivas, filtramos solo las activas
+    if not include_inactive:
+        query = query.filter(models.ProductCategory.is_active == True)
+        
+    categories = query.order_by(models.ProductCategory.display_order).all()
     return categories
 
 @router.get("/brands", response_model=List[schemas.BrandResponse])
 def get_brands(db: Session = Depends(get_db)):
+    """Obtiene todas las marcas activas del catálogo"""
     brands = db.query(models.Brand)\
                .filter(models.Brand.is_active == True)\
                .order_by(models.Brand.display_order)\
@@ -261,6 +266,17 @@ def update_product_admin(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
     
     update_data = product_update.model_dump(exclude_unset=True)
+
+    # --- NUEVA REGLA: BLINDAJE DE SUBCATEGORÍA AL EDITAR ---
+    if 'category_id' in update_data and update_data['category_id'] is not None:
+        category = db.query(models.ProductCategory).filter(models.ProductCategory.category_id == update_data['category_id']).first()
+        if not category:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="La categoría seleccionada no existe.")
+        if category.parent_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, 
+                detail="Operación rechazada: Los productos solo pueden asociarse a subcategorías finales."
+            )
 
     if 'slug' in update_data and update_data['slug'] is not None:
         existing_slug = db.query(models.Product).filter(
@@ -621,7 +637,6 @@ def create_product_admin(
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
-    # 1. Validar unicidad de Slug
     existing_slug = db.query(models.Product).filter(models.Product.slug == product_in.slug).first()
     if existing_slug:
         raise HTTPException(
@@ -629,8 +644,17 @@ def create_product_admin(
             detail="Operación rechazada: La URL amigable (slug) ya está en uso."
         )
 
+    category = db.query(models.ProductCategory).filter(models.ProductCategory.category_id == product_in.category_id).first()
+    if not category:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="La categoría seleccionada no existe.")
+    
+    if category.parent_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Operación rechazada: Los productos solo pueden asociarse a subcategorías finales, no a categorías generales o rubros."
+        )
+
     try:
-        # 2. Crear Producto Padre (Carcasa)
         new_product = models.Product(
             name=product_in.name,
             slug=product_in.slug,
@@ -642,7 +666,6 @@ def create_product_admin(
             brand_id=product_in.brand_id,
             category_id=product_in.category_id,
             tax_class_id=product_in.tax_class_id,
-            # --- ACÁ GUARDAMOS LOS VALORES DE REFERENCIA ---
             reference_price=product_in.base_price, 
             reference_cost=product_in.cost_price,
             meta_title=product_in.meta_title,
@@ -655,7 +678,8 @@ def create_product_admin(
             download_url=product_in.download_url,
             file_size=product_in.file_size,
             file_extension=product_in.file_extension,
-            has_variants=False, # Nace intencionalmente sin variantes
+            custom_attributes=product_in.custom_attributes,
+            has_variants=False,
             created_by=admin_user.staff_id, 
             updated_by=admin_user.staff_id,
             sold_count=0 
@@ -739,3 +763,191 @@ def create_product_variant_admin(
         
     db.commit()
     return {"message": "Variante creada y vinculada", "variant_uuid": str(new_variant.variant_uuid)}
+
+@router.get("/attributes", response_model=List[schemas.AttributeResponse])
+def get_all_attributes(db: Session = Depends(get_db), admin_user = Depends(get_current_admin_user)):
+    """Obtiene todos los atributos con sus respectivos valores normalizados"""
+    attributes = db.query(models.ProductAttribute)\
+                   .options(joinedload(models.ProductAttribute.values))\
+                   .order_by(models.ProductAttribute.name)\
+                   .all()
+    
+    for attr in attributes:
+        attr.values = [v for v in attr.values if v.is_active]
+        
+    return attributes
+
+
+@router.post("/attributes", status_code=status.HTTP_201_CREATED)
+def create_attribute(
+    attr_in: schemas.AttributeCreate,
+    db: Session = Depends(get_db),
+    admin_user = Depends(get_current_admin_user)
+):
+    """Crea un nuevo atributo y opcionalmente sus valores iniciales"""
+    existing_attr = db.query(models.ProductAttribute).filter(
+        func.lower(models.ProductAttribute.name) == attr_in.name.lower()
+    ).first()
+    
+    if existing_attr:
+        raise HTTPException(status_code=400, detail="Ya existe un atributo con este nombre.")
+
+    new_attr = models.ProductAttribute(
+        name=attr_in.name,
+        is_variant=attr_in.is_variant
+    )
+    db.add(new_attr)
+    db.flush()
+
+    if attr_in.values:
+        for idx, val in enumerate(attr_in.values):
+            new_val = models.ProductAttributeValue(
+                attribute_id=new_attr.attribute_id,
+                value=val.strip(),
+                display_order=idx
+            )
+            db.add(new_val)
+
+    db.commit()
+    return {"message": "Atributo creado exitosamente"}
+
+
+@router.post("/attributes/{attribute_id}/values", status_code=status.HTTP_201_CREATED)
+def add_attribute_value(
+    attribute_id: int,
+    value_in: schemas.AttributeValueCreate,
+    db: Session = Depends(get_db),
+    admin_user = Depends(get_current_admin_user)
+):
+    """Agrega un nuevo valor normalizado a un atributo existente"""
+    attr = db.query(models.ProductAttribute).filter(models.ProductAttribute.attribute_id == attribute_id).first()
+    if not attr:
+        raise HTTPException(status_code=404, detail="Atributo no encontrado.")
+        
+    existing_val = db.query(models.ProductAttributeValue).filter(
+        models.ProductAttributeValue.attribute_id == attribute_id,
+        func.lower(models.ProductAttributeValue.value) == value_in.value.lower()
+    ).first()
+    
+    if existing_val:
+        raise HTTPException(status_code=400, detail="Este valor ya existe para el atributo seleccionado.")
+    max_order = db.query(func.max(models.ProductAttributeValue.display_order))\
+                  .filter(models.ProductAttributeValue.attribute_id == attribute_id)\
+                  .scalar()
+    
+    # Si ya hay valores, le sumamos 1 al máximo. Si está vacío, arranca en 0.
+    next_order = (max_order + 1) if max_order is not None else 0
+
+    new_val = models.ProductAttributeValue(
+        attribute_id=attribute_id,
+        value=value_in.value.strip(),
+        display_order=next_order  # <--- Reemplazamos el 0 duro por el cálculo automático
+    )
+    db.add(new_val)
+    db.commit()
+    return {"message": "Valor agregado exitosamente"}
+
+
+@router.delete("/attributes/values/{value_id}")
+def delete_attribute_value(
+    value_id: int,
+    db: Session = Depends(get_db),
+    admin_user = Depends(get_current_admin_user)
+):
+    """Realiza un soft-delete de un valor de atributo"""
+    val = db.query(models.ProductAttributeValue).filter(models.ProductAttributeValue.value_id == value_id).first()
+    if not val:
+        raise HTTPException(status_code=404, detail="Valor no encontrado.")
+        
+    val.is_active = False
+    db.commit()
+    return {"message": "Valor eliminado del diccionario"}
+
+@router.get("/categories/{category_id}/attributes")
+def get_category_attributes(
+    category_id: int, 
+    db: Session = Depends(get_db), 
+    admin_user = Depends(get_current_admin_user)
+):
+    """Obtiene los atributos vinculados a una subcategoría específica"""
+    category = db.query(models.ProductCategory).filter(models.ProductCategory.category_id == category_id).first()
+    if not category:
+        raise HTTPException(status_code=404, detail="Categoría no encontrada.")
+
+    # Traemos los enlaces pivot con la información del atributo
+    links = db.query(models.SubcategoryAttribute)\
+              .options(joinedload(models.SubcategoryAttribute.attribute))\
+              .filter(models.SubcategoryAttribute.category_id == category_id)\
+              .all()
+    
+    return [
+        {
+            "attribute_id": link.attribute_id,
+            "name": link.attribute.name,
+            "is_variant": link.attribute.is_variant,
+            "is_required": link.is_required
+        } for link in links
+    ]
+
+
+@router.post("/categories/{category_id}/attributes")
+def link_attribute_to_category(
+    category_id: int,
+    link_data: schemas.SubcategoryAttributeLink,
+    db: Session = Depends(get_db),
+    admin_user = Depends(get_current_admin_user)
+):
+    """Vincula un atributo a una subcategoría (Crea el candado)"""
+    # 1. Verificamos que la categoría exista y sea una SUBCATEGORÍA (tenga padre)
+    category = db.query(models.ProductCategory).filter(models.ProductCategory.category_id == category_id).first()
+    if not category:
+        raise HTTPException(status_code=404, detail="Categoría no encontrada.")
+    if category.parent_id is None:
+        raise HTTPException(status_code=400, detail="Los atributos solo pueden asignarse a subcategorías (nodos finales).")
+
+    # 2. Verificamos que el atributo exista
+    attribute = db.query(models.ProductAttribute).filter(models.ProductAttribute.attribute_id == link_data.attribute_id).first()
+    if not attribute:
+        raise HTTPException(status_code=404, detail="Atributo no encontrado.")
+
+    # 3. Verificamos que no esté ya vinculado
+    existing_link = db.query(models.SubcategoryAttribute).filter(
+        models.SubcategoryAttribute.category_id == category_id,
+        models.SubcategoryAttribute.attribute_id == link_data.attribute_id
+    ).first()
+    
+    if existing_link:
+        # Si ya existe, solo actualizamos el is_required
+        existing_link.is_required = link_data.is_required
+    else:
+        # Si no existe, creamos el vínculo en la tabla Pivot
+        new_link = models.SubcategoryAttribute(
+            category_id=category_id,
+            attribute_id=link_data.attribute_id,
+            is_required=link_data.is_required
+        )
+        db.add(new_link)
+
+    db.commit()
+    return {"message": "Atributo vinculado a la subcategoría exitosamente."}
+
+
+@router.delete("/categories/{category_id}/attributes/{attribute_id}")
+def unlink_attribute_from_category(
+    category_id: int,
+    attribute_id: int,
+    db: Session = Depends(get_db),
+    admin_user = Depends(get_current_admin_user)
+):
+    """Rompe el vínculo entre un atributo y una subcategoría"""
+    link = db.query(models.SubcategoryAttribute).filter(
+        models.SubcategoryAttribute.category_id == category_id,
+        models.SubcategoryAttribute.attribute_id == attribute_id
+    ).first()
+    
+    if not link:
+        raise HTTPException(status_code=404, detail="El atributo no está vinculado a esta subcategoría.")
+        
+    db.delete(link)
+    db.commit()
+    return {"message": "Atributo desvinculado exitosamente."}

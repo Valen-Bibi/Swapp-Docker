@@ -2,7 +2,6 @@ import uuid
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, ConfigDict
 
-# --- MARCAS ---
 class BrandCreate(BaseModel):
     name: str
     slug: str
@@ -30,7 +29,6 @@ class BrandResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-# --- CATEGORÍAS ---
 class CategoryCreate(BaseModel):
     name: str
     slug: str
@@ -57,7 +55,6 @@ class CategoriaResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-# --- IMPUESTOS ---
 class TaxClassResponse(BaseModel):
     tax_class_id: int
     name: str
@@ -66,7 +63,6 @@ class TaxClassResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-# --- MULTIMEDIA ---
 class ProductMediaResponse(BaseModel):
     media_uuid: uuid.UUID
     media_type: str
@@ -156,6 +152,7 @@ class ProductCreateSchema(BaseModel):
     is_returnable: bool = False
     is_published: bool = False
     is_featured: bool = False
+    custom_attributes: Optional[Dict[str, str]] = None
 
     meta_title: Optional[str] = None
     meta_description: Optional[str] = None
@@ -204,3 +201,41 @@ class ProductUpdateSchema(BaseModel):
     is_active: Optional[bool] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+class AttributeValueBase(BaseModel):
+    value: str
+    display_order: int = 0
+
+class AttributeValueCreate(AttributeValueBase):
+    pass
+
+class AttributeValueResponse(AttributeValueBase):
+    value_id: int
+    value_uuid: uuid.UUID
+    is_active: bool
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class AttributeBase(BaseModel):
+    name: str
+    is_variant: bool = False
+
+class AttributeCreate(AttributeBase):
+    values: List[str] = [] 
+
+class AttributeUpdate(BaseModel):
+    name: Optional[str] = None
+    is_variant: Optional[bool] = None
+    is_active: Optional[bool] = None
+
+class AttributeResponse(AttributeBase):
+    attribute_id: int
+    attribute_uuid: uuid.UUID
+    is_active: bool
+    values: List[AttributeValueResponse] = []
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class SubcategoryAttributeLink(BaseModel):
+    attribute_id: int
+    is_required: bool = False
