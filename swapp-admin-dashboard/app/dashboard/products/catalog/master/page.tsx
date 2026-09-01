@@ -132,7 +132,6 @@ export default function MasterCatalogPage() {
 		toast.success(`SKU ${sku} copiado`, { position: "top-center" });
 	};
 
-	// --- ACTUALIZADO: Carga de PIM al editar variante ---
 	const startEditingVariant = async (variant: any, p: Product) => {
 		setEditingVariantId(variant.variant_uuid);
 		setDraftSku(variant.sku || "");

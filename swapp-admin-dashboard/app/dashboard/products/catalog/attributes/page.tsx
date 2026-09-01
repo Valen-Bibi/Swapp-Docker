@@ -51,7 +51,6 @@ export default function AttributesPage() {
 		}
 	};
 
-	// --- NUEVA FUNCIÓN: ARCHIVAR ATRIBUTO ---
 	const handleDeleteAttribute = async (attributeId: number) => {
 		const confirmed = window.confirm(
 			"¿Estás seguro de que querés archivar este atributo? Dejará de estar disponible para nuevos productos y subcategorías.",

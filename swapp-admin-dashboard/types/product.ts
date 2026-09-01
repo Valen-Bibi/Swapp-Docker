@@ -87,3 +87,19 @@ export interface Product {
     is_active: boolean;
   }[];
 }
+
+export interface AttributeValue {
+    value_id: number;
+    value_uuid: string;
+    value: string;
+    is_active: boolean;
+}
+
+export interface Attribute {
+    attribute_id: number;
+    attribute_uuid: string;
+    name: string;
+    is_variant: boolean;
+    is_active: boolean;
+    values: AttributeValue[];
+}
