@@ -765,51 +765,57 @@ def create_product_variant_admin(
     return {"message": "Variante creada y vinculada", "variant_uuid": str(new_variant.variant_uuid)}
 
 @router.get("/attributes", response_model=List[schemas.AttributeResponse])
-def get_all_attributes(db: Session = Depends(get_db), admin_user = Depends(get_current_admin_user)):
-    """Obtiene todos los atributos con sus respectivos valores normalizados"""
+def get_attributes(db: Session = Depends(get_db), admin_user = Depends(get_current_admin_user)):
     attributes = db.query(models.ProductAttribute)\
-                   .options(joinedload(models.ProductAttribute.values))\
-                   .order_by(models.ProductAttribute.name)\
+                   .filter(models.ProductAttribute.is_active == True)\
                    .all()
-    
-    for attr in attributes:
-        attr.values = [v for v in attr.values if v.is_active]
-        
     return attributes
 
 
-@router.post("/attributes", status_code=status.HTTP_201_CREATED)
+@router.post("/attributes")
 def create_attribute(
-    attr_in: schemas.AttributeCreate,
+    payload: schemas.AttributeCreate,
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
-    """Crea un nuevo atributo y opcionalmente sus valores iniciales"""
     existing_attr = db.query(models.ProductAttribute).filter(
-        func.lower(models.ProductAttribute.name) == attr_in.name.lower()
+        func.lower(models.ProductAttribute.name) == payload.name.lower()
     ).first()
-    
+
     if existing_attr:
-        raise HTTPException(status_code=400, detail="Ya existe un atributo con este nombre.")
-
-    new_attr = models.ProductAttribute(
-        name=attr_in.name,
-        is_variant=attr_in.is_variant
-    )
-    db.add(new_attr)
-    db.flush()
-
-    if attr_in.values:
-        for idx, val in enumerate(attr_in.values):
-            new_val = models.ProductAttributeValue(
-                attribute_id=new_attr.attribute_id,
-                value=val.strip(),
-                display_order=idx
+        if existing_attr.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, 
+                detail="Ya existe un atributo activo con este nombre."
             )
-            db.add(new_val)
+        else:
+            if existing_attr.is_variant != payload.is_variant:
+                tipo_viejo = "Divisor de Stock" if existing_attr.is_variant else "Ficha Técnica"
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, 
+                    detail=f"El atributo '{existing_attr.name}' está archivado como '{tipo_viejo}'. No podés recrearlo con un comportamiento distinto porque corrompería el historial del catálogo."
+                )
+            
+            existing_attr.is_active = True
+            
+            for val_str in payload.values:
+                existing_val = db.query(models.ProductAttributeValue).filter(
+                    models.ProductAttributeValue.attribute_id == existing_attr.attribute_id,
+                    func.lower(models.ProductAttributeValue.value) == val_str.lower()
+                ).first()
 
-    db.commit()
-    return {"message": "Atributo creado exitosamente"}
+                if existing_val:
+                    existing_val.is_active = True
+                else:
+                    new_val = models.ProductAttributeValue(
+                        attribute_id=existing_attr.attribute_id,
+                        value=val_str,
+                        is_active=True
+                    )
+                    db.add(new_val)
+            
+            db.commit()
+            return existing_attr
 
 
 @router.post("/attributes/{attribute_id}/values", status_code=status.HTTP_201_CREATED)
@@ -835,13 +841,12 @@ def add_attribute_value(
                   .filter(models.ProductAttributeValue.attribute_id == attribute_id)\
                   .scalar()
     
-    # Si ya hay valores, le sumamos 1 al máximo. Si está vacío, arranca en 0.
     next_order = (max_order + 1) if max_order is not None else 0
 
     new_val = models.ProductAttributeValue(
         attribute_id=attribute_id,
         value=value_in.value.strip(),
-        display_order=next_order  # <--- Reemplazamos el 0 duro por el cálculo automático
+        display_order=next_order
     )
     db.add(new_val)
     db.commit()
@@ -854,7 +859,6 @@ def delete_attribute_value(
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
-    """Realiza un soft-delete de un valor de atributo"""
     val = db.query(models.ProductAttributeValue).filter(models.ProductAttributeValue.value_id == value_id).first()
     if not val:
         raise HTTPException(status_code=404, detail="Valor no encontrado.")
@@ -863,13 +867,33 @@ def delete_attribute_value(
     db.commit()
     return {"message": "Valor eliminado del diccionario"}
 
+@router.delete("/attributes/{attribute_id}")
+def delete_attribute(
+    attribute_id: int,
+    db: Session = Depends(get_db),
+    admin_user = Depends(get_current_admin_user)
+):
+    attr = db.query(models.ProductAttribute).filter(models.ProductAttribute.attribute_id == attribute_id).first()
+    
+    if not attr:
+        raise HTTPException(status_code=404, detail="Atributo no encontrado.")
+        
+    attr.is_active = False
+
+    db.query(models.ProductAttributeValue)\
+      .filter(models.ProductAttributeValue.attribute_id == attribute_id)\
+      .update({"is_active": False})
+    
+    db.commit()
+    
+    return {"message": "Atributo archivado correctamente"}
+
 @router.get("/categories/{category_id}/attributes")
 def get_category_attributes(
     category_id: int, 
     db: Session = Depends(get_db), 
     admin_user = Depends(get_current_admin_user)
 ):
-    """Obtiene los atributos vinculados a una subcategoría específica"""
     category = db.query(models.ProductCategory).filter(models.ProductCategory.category_id == category_id).first()
     if not category:
         raise HTTPException(status_code=404, detail="Categoría no encontrada.")

@@ -207,9 +207,9 @@ export default function MainScannerApp() {
 					className={`absolute inset-0 bg-white z-40 pointer-events-none transition-opacity duration-150 ${showFlash ? "opacity-100" : "opacity-0"}`}></div>
 
 				{appState === "ANALYZING" && (
-					<div className="absolute inset-0 bg-swapp-negro-azulado/90 z-50 flex flex-col items-center justify-center backdrop-blur-md">
-						<div className="w-16 h-16 border-4 border-swapp-menta/30 border-t-swapp-menta rounded-full animate-spin mb-6 drop-shadow-[0_0_8px_rgba(128,225,199,1)]"></div>
-						<p className="text-swapp-menta font-black text-lg tracking-[0.3em] animate-pulse drop-shadow-[0_0_5px_rgba(128,225,199,0.8)]">
+					<div className="absolute inset-0 bg-swapp-azul-oscuro/90 z-50 flex flex-col items-center justify-center backdrop-blur-md">
+						<div className="w-16 h-16 border-4 border-swapp-verde-menta/30 border-t-swapp-verde-menta rounded-full animate-spin mb-6 drop-shadow-[0_0_8px_rgba(128,225,199,1)]"></div>
+						<p className="text-swapp-verde-menta font-black text-lg tracking-[0.3em] animate-pulse drop-shadow-[0_0_5px_rgba(128,225,199,0.8)]">
 							ANALIZANDO...
 						</p>
 					</div>
@@ -219,7 +219,7 @@ export default function MainScannerApp() {
 					appState === "QUANTITY_SELECTION" ||
 					appState === "ERROR_NOT_DETECTED") &&
 					capturedImage && (
-						<div className="absolute inset-0 z-10 bg-swapp-negro-azulado flex flex-col items-center justify-start overflow-hidden pt-10">
+						<div className="absolute inset-0 z-10 bg-swapp-azul-oscuro flex flex-col items-center justify-start overflow-hidden pt-10">
 							<img
 								src={capturedImage}
 								alt="Fondo"
@@ -235,34 +235,34 @@ export default function MainScannerApp() {
 					)}
 
 				{appState === "ERROR_NOT_DETECTED" && (
-					<div className="absolute bottom-0 left-0 w-full p-6 z-30 flex flex-col items-center animate-slideUp bg-gradient-to-t from-swapp-negro-azulado via-swapp-negro-azulado/95 to-transparent pt-12 text-center">
+					<div className="absolute bottom-0 left-0 w-full p-6 z-30 flex flex-col items-center animate-slideUp bg-gradient-to-t from-swapp-azul-oscuro via-swapp-azul-oscuro/95 to-transparent pt-12 text-center">
 						<div className="bg-red-500/10 p-5 rounded-full mb-4 border border-red-500/20">
 							<span className="text-4xl opacity-80">🤔</span>
 						</div>
 						<h3 className="text-white text-2xl font-black mb-2 drop-shadow-md">
 							No pudimos identificarlo
 						</h3>
-						<p className="text-swapp-tiza/80 text-sm mb-8 px-4">
+						<p className="text-swapp-tiza-verdoso/80 text-sm mb-8 px-4">
 							Asegurate de que el envase esté bien centrado y haya buena luz en
 							la habitación.
 						</p>
 
 						<button
 							onClick={handleRetake}
-							className="w-full bg-swapp-tiza text-swapp-negro-azulado py-4 rounded-xl font-black text-lg shadow-xl hover:scale-[1.02] active:scale-95 transition-all mb-3">
+							className="w-full bg-swapp-tiza-verdoso text-swapp-azul-oscuro py-4 rounded-xl font-black text-lg shadow-xl hover:scale-[1.02] active:scale-95 transition-all mb-3">
 							Intentar de nuevo
 						</button>
 						<button
 							onClick={() => router.push("/catalogo")}
-							className="text-swapp-verde-agua font-bold tracking-wide py-2">
+							className="text-swapp-verde-pastel font-bold tracking-wide py-2">
 							Buscar en catálogo manual
 						</button>
 					</div>
 				)}
 
 				{appState === "CONFIRMATION" && (
-					<div className="absolute bottom-0 left-0 w-full p-6 z-30 flex flex-col animate-slideUp bg-gradient-to-t from-swapp-negro-azulado via-swapp-negro-azulado/95 to-transparent pt-12 text-center">
-						<p className="text-swapp-menta text-sm font-bold uppercase tracking-widest mb-1">
+					<div className="absolute bottom-0 left-0 w-full p-6 z-30 flex flex-col animate-slideUp bg-gradient-to-t from-swapp-azul-oscuro via-swapp-azul-oscuro/95 to-transparent pt-12 text-center">
+						<p className="text-swapp-verde-menta text-sm font-bold uppercase tracking-widest mb-1">
 							¿Es este tu producto?
 						</p>
 						<h3 className="text-white text-2xl font-black mb-8 drop-shadow-md">
@@ -272,7 +272,7 @@ export default function MainScannerApp() {
 						<div className="flex flex-col gap-3 w-full">
 							<button
 								onClick={handleConfirmProduct}
-								className="w-full bg-swapp-menta text-swapp-negro-azulado py-4 rounded-xl font-black text-lg shadow-[0_0_20px_rgba(128,225,199,0.3)] hover:scale-[1.02] active:scale-95 transition-all">
+								className="w-full bg-swapp-verde-menta text-swapp-azul-oscuro py-4 rounded-xl font-black text-lg shadow-[0_0_20px_rgba(128,225,199,0.3)] hover:scale-[1.02] active:scale-95 transition-all">
 								1. ¡Sí, es mi producto!
 							</button>
 							<button
@@ -285,7 +285,7 @@ export default function MainScannerApp() {
 				)}
 
 				{appState === "QUANTITY_SELECTION" && (
-					<div className="absolute bottom-0 left-0 w-full p-6 z-30 flex flex-col animate-slideUp bg-swapp-negro-azulado border-t border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+					<div className="absolute bottom-0 left-0 w-full p-6 z-30 flex flex-col animate-slideUp bg-swapp-azul-oscuro border-t border-white/10 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
 						<button
 							onClick={() => setAppState("CONFIRMATION")}
 							className="absolute top-5 left-5 text-white/50 hover:text-white transition-colors">
@@ -331,14 +331,14 @@ export default function MainScannerApp() {
 									</div>
 								</div>
 
-								<div className="flex-1 bg-swapp-verde-agua/10 rounded-2xl p-3 border border-swapp-verde-agua/30 shadow-[0_0_15px_rgba(1,195,142,0.1)]">
-									<p className="text-xs text-swapp-menta font-bold mb-2 uppercase text-center tracking-wider">
+								<div className="flex-1 bg-swapp-verde-pastel/10 rounded-2xl p-3 border border-swapp-verde-pastel/30 shadow-[0_0_15px_rgba(1,195,142,0.1)]">
+									<p className="text-xs text-swapp-verde-menta font-bold mb-2 uppercase text-center tracking-wider">
 										Llenos (Llevás)
 									</p>
 									<div className="flex items-center justify-between bg-black/40 rounded-xl p-1.5">
 										<button
 											onClick={() => setReceiveQty(Math.max(1, receiveQty - 1))}
-											className="w-8 h-8 flex items-center justify-center rounded-lg bg-swapp-verde-agua/20 text-swapp-menta font-bold hover:bg-swapp-verde-agua/40 transition-colors">
+											className="w-8 h-8 flex items-center justify-center rounded-lg bg-swapp-verde-pastel/20 text-swapp-verde-menta font-bold hover:bg-swapp-verde-pastel/40 transition-colors">
 											-
 										</button>
 										<span className="text-white font-black text-lg">
@@ -346,7 +346,7 @@ export default function MainScannerApp() {
 										</span>
 										<button
 											onClick={() => setReceiveQty(receiveQty + 1)}
-											className="w-8 h-8 flex items-center justify-center rounded-lg bg-swapp-verde-agua/20 text-swapp-menta font-bold hover:bg-swapp-verde-agua/40 transition-colors">
+											className="w-8 h-8 flex items-center justify-center rounded-lg bg-swapp-verde-pastel/20 text-swapp-verde-menta font-bold hover:bg-swapp-verde-pastel/40 transition-colors">
 											+
 										</button>
 									</div>
@@ -369,7 +369,7 @@ export default function MainScannerApp() {
 										</span>
 										<button
 											onClick={() => setQuantity(quantity + 1)}
-											className="w-10 h-10 flex items-center justify-center rounded-lg bg-swapp-verde-agua/20 text-swapp-menta font-bold hover:bg-swapp-verde-agua/40 transition-colors">
+											className="w-10 h-10 flex items-center justify-center rounded-lg bg-swapp-verde-pastel/20 text-swapp-verde-menta font-bold hover:bg-swapp-verde-pastel/40 transition-colors">
 											+
 										</button>
 									</div>
@@ -381,7 +381,7 @@ export default function MainScannerApp() {
 						<button
 							onClick={handleAddToCart}
 							disabled={isSaving}
-							className="w-full bg-gradient-to-r from-swapp-turquesa-oscuro to-swapp-verde-agua text-swapp-negro-azulado py-4 rounded-xl font-black text-lg shadow-[0_0_20px_rgba(1,195,142,0.3)] hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 mt-2">
+							className="w-full bg-gradient-to-r from-swapp-verde-oscuro to-swapp-verde-pastel text-swapp-azul-oscuro py-4 rounded-xl font-black text-lg shadow-[0_0_20px_rgba(1,195,142,0.3)] hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 mt-2">
 							{isSaving ? "Procesando..." : "Ir al carrito y pagar"}
 						</button>
 					</div>
@@ -395,14 +395,14 @@ export default function MainScannerApp() {
 							className={`pointer-events-auto w-20 h-20 rounded-full border-4 flex items-center justify-center transition active:scale-95 bg-transparent ${
 								!isCameraReady
 									? "border-white shadow-[0_0_30px_rgba(255,255,255,0.4)] hover:scale-105 animate-pulse"
-									: "border-swapp-menta shadow-[0_0_15px_rgba(128,225,199,0.5)]"
+									: "border-swapp-verde-menta shadow-[0_0_15px_rgba(128,225,199,0.5)]"
 							}`}>
 							<div
 								className={`w-16 h-16 rounded-full backdrop-blur-sm ${!isCameraReady ? "bg-white/90" : "bg-white/50"}`}></div>
 						</button>
 						<button
 							onClick={toggleExpand}
-							className="pointer-events-auto w-12 h-12 flex items-center justify-center rounded-full bg-black/40 text-white hover:text-swapp-menta hover:bg-black/60 backdrop-blur-md transition border border-white/10">
+							className="pointer-events-auto w-12 h-12 flex items-center justify-center rounded-full bg-black/40 text-white hover:text-swapp-verde-menta hover:bg-black/60 backdrop-blur-md transition border border-white/10">
 							{isExpanded ? (
 								<svg
 									className="w-6 h-6"

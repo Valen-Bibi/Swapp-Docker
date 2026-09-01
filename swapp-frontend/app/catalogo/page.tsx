@@ -182,7 +182,7 @@ export default function CatalogoPage() {
 	const displayCategories = categories.filter((c) => c.parent_id === null);
 
 	return (
-		<div className="absolute inset-0 z-10 bg-swapp-tiza overflow-y-auto px-5 pt-4 pb-[120px] flex flex-col gap-6">
+		<div className="absolute inset-0 z-10 bg-swapp-tiza-verdoso overflow-y-auto px-5 pt-4 pb-[120px] flex flex-col gap-6">
 			{/* Dirección, Búsqueda y Ordenamiento */}
 			<div className="space-y-4">
 				<div className="flex items-center gap-2 text-swapp-azul-petroleo font-medium">
@@ -274,7 +274,7 @@ export default function CatalogoPage() {
 										className="bg-swapp-blanco rounded-xl p-3 min-w-[140px] flex-shrink-0 relative flex flex-col items-center shadow-md cursor-pointer hover:shadow-lg transition-shadow">
 										{/* Badge de Oferta */}
 										{product.sale_price && (
-											<span className="absolute top-2 left-2 bg-swapp-turquesa-oscuro text-white text-[10px] font-bold px-2 py-1 rounded-md z-10">
+											<span className="absolute top-2 left-2 bg-swapp-verde-oscuro text-white text-[10px] font-bold px-2 py-1 rounded-md z-10">
 												OFERTA
 											</span>
 										)}
@@ -389,7 +389,7 @@ export default function CatalogoPage() {
 												AGOTADO
 											</span>
 										) : product.sale_price ? (
-											<span className="bg-swapp-turquesa-oscuro text-white text-[10px] font-bold px-2 py-1 rounded-md">
+											<span className="bg-swapp-verde-oscuro text-white text-[10px] font-bold px-2 py-1 rounded-md">
 												OFERTA
 											</span>
 										) : null}
@@ -460,7 +460,7 @@ export default function CatalogoPage() {
 					<div className="relative bg-swapp-blanco w-full max-w-sm rounded-[2rem] shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
 						<button
 							onClick={() => setSelectedProduct(null)}
-							className="absolute top-4 right-4 z-[70] bg-swapp-tiza p-2 rounded-full text-swapp-azul-petroleo hover:bg-gray-200 transition-colors">
+							className="absolute top-4 right-4 z-[70] bg-swapp-tiza-verdoso p-2 rounded-full text-swapp-azul-petroleo hover:bg-gray-200 transition-colors">
 							<svg
 								className="w-5 h-5"
 								fill="none"
@@ -486,7 +486,7 @@ export default function CatalogoPage() {
 							/>
 
 							{isReturnable && selectedProduct.stock_quantity > 0 ? (
-								<span className="bg-swapp-verde-agua/20 text-swapp-turquesa-oscuro text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide mb-2 relative z-10">
+								<span className="bg-swapp-verde-pastel/20 text-swapp-verde-oscuro text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide mb-2 relative z-10">
 									Intercambio disponible
 								</span>
 							) : null}
@@ -496,7 +496,7 @@ export default function CatalogoPage() {
 							</h2>
 
 							{selectedProduct.short_description && (
-								<p className="text-xs font-medium text-swapp-turquesa-oscuro text-center mb-3">
+								<p className="text-xs font-medium text-swapp-verde-oscuro text-center mb-3">
 									{selectedProduct.short_description}
 								</p>
 							)}

@@ -18,6 +18,7 @@ import TableSkeleton from "@/components/tables/TableSkeleton";
 import PageHeader from "@/components/layout/PageHeader";
 import SearchBar from "@/components/ui/SearchBar";
 import EditPricingModal from "@/components/products/EditPricingModal";
+import { SwappTooltip } from "@/components/ui/SwappTooltip";
 import PriceHistoryModal from "@/components/products/PriceHistoryModal";
 import { Product, ProductVariant } from "@/types/product";
 import { formatCurrency } from "@/lib/utils";
@@ -151,9 +152,9 @@ export default function CostsPage() {
 				/>
 			</div>
 
-			<div className="overflow-hidden rounded-xl border border-swapp-tiza dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-negro-azulado shadow-sm transition-colors">
-				<table className="w-full text-left text-sm text-swapp-azul-petroleo dark:text-swapp-tiza">
-					<thead className="bg-swapp-tiza/50 dark:bg-swapp-azul-petroleo/30 text-swapp-negro-azulado dark:text-swapp-tiza select-none">
+			<div className="overflow-hidden rounded-xl border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro shadow-sm transition-colors">
+				<table className="w-full text-left text-sm text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
+					<thead className="bg-swapp-tiza-verdoso/50 dark:bg-swapp-azul-petroleo/30 text-swapp-azul-oscuro dark:text-swapp-tiza-verdoso select-none">
 						<tr>
 							<th className="px-6 py-4 font-semibold w-16">Imagen</th>
 							<th className="px-6 py-4 font-semibold">Producto General</th>
@@ -162,7 +163,7 @@ export default function CostsPage() {
 							<th className="px-6 py-4 font-semibold text-right">Acciones</th>
 						</tr>
 					</thead>
-					<tbody className="divide-y divide-swapp-tiza dark:divide-swapp-azul-petroleo">
+					<tbody className="divide-y divide-swapp-tiza-verdoso dark:divide-swapp-azul-petroleo">
 						{filteredProducts.map((p) => {
 							const mainImageUrl = p.media?.find(
 								(m: any) =>
@@ -203,28 +204,28 @@ export default function CostsPage() {
 								<React.Fragment key={p.product_uuid}>
 									{/* Fila Principal (Padre) */}
 									<tr
-										className={`transition-colors hover:bg-swapp-tiza/30 dark:hover:bg-swapp-azul-petroleo/30 ${isExpanded ? "bg-swapp-tiza/10 dark:bg-swapp-azul-petroleo/10" : ""}`}>
+										className={`transition-colors hover:bg-swapp-tiza-verdoso/30 dark:hover:bg-swapp-azul-petroleo/30 ${isExpanded ? "bg-swapp-tiza-verdoso/10 dark:bg-swapp-azul-petroleo/10" : ""}`}>
 										<td className="px-6 py-4">
 											{mainImageUrl ? (
 												<img
 													src={mainImageUrl}
 													alt={`Imagen de ${p.name}`}
-													className="h-10 w-10 rounded-md object-cover border border-swapp-tiza dark:border-swapp-azul-petroleo"
+													className="h-10 w-10 rounded-md object-cover border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo"
 												/>
 											) : (
-												<div className="h-10 w-10 rounded-md bg-swapp-tiza dark:bg-swapp-azul-petroleo flex items-center justify-center text-swapp-azul-petroleo/30 dark:text-swapp-tiza/30 transition-colors">
+												<div className="h-10 w-10 rounded-md bg-swapp-tiza-verdoso dark:bg-swapp-azul-petroleo flex items-center justify-center text-swapp-azul-petroleo/30 dark:text-swapp-tiza-verdoso/30 transition-colors">
 													<ImageIcon className="h-5 w-5" />
 												</div>
 											)}
 										</td>
-										<td className="px-6 py-4 font-medium text-swapp-negro-azulado dark:text-swapp-blanco">
+										<td className="px-6 py-4 font-medium text-swapp-azul-oscuro dark:text-swapp-blanco">
 											{p.name}
 										</td>
 										<td className="px-6 py-4 font-mono text-xs">
 											{variantsCount > 0 ? (
 												<button
 													onClick={() => toggleRow(p.product_uuid)}
-													className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-swapp-tiza dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-negro-azulado hover:bg-swapp-tiza dark:hover:bg-swapp-azul-petroleo transition-colors text-swapp-turquesa-oscuro dark:text-swapp-menta font-sans font-medium">
+													className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo transition-colors text-swapp-verde-oscuro dark:text-swapp-verde-menta font-sans font-medium">
 													<Layers className="h-3.5 w-3.5" />
 													{variantsCount === 1
 														? "1 Variante"
@@ -236,14 +237,14 @@ export default function CostsPage() {
 													)}
 												</button>
 											) : (
-												<span className="text-swapp-azul-petroleo/40">
+												<span className="text-swapp-azul-petroleo/60">
 													Sin stock físico
 												</span>
 											)}
 										</td>
 										<td className="px-6 py-4 text-xs">
 											<div className="flex items-center gap-3">
-												<span className="text-swapp-azul-petroleo/70 dark:text-swapp-tiza/70">
+												<span className="text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
 													Costo: {refCost ? formatCurrency(refCost) : "-"}
 												</span>
 												{refMargin !== null && (
@@ -255,23 +256,24 @@ export default function CostsPage() {
 											</div>
 										</td>
 										<td className="px-6 py-4 text-right">
-											<button
-												onClick={() => handleEditClick(p, null)}
-												title="Ajustar valores de referencia"
-												className="p-1.5 rounded-md text-swapp-azul-petroleo/40 dark:text-swapp-tiza/40 hover:bg-swapp-tiza dark:hover:bg-swapp-azul-petroleo hover:text-swapp-turquesa-oscuro dark:hover:text-swapp-menta transition-colors">
-												<Edit className="h-4 w-4" />
-											</button>
+											<SwappTooltip text="Ajustar Valores de Referencia">
+												<button
+													onClick={() => handleEditClick(p, null)}
+													className="p-1.5 rounded-md text-swapp-azul-petroleo/50 hover:text-swapp-verde-oscuro dark:text-swapp-tiza-verdoso/50 dark:hover:text-swapp-verde-menta hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo transition-colors">
+													<Edit className="h-4 w-4" />
+												</button>
+											</SwappTooltip>
 										</td>
 									</tr>
 
 									{/* Fila Desplegable (Hijos / Variantes Físicas) */}
 									{isExpanded && variantsCount > 0 && (
-										<tr className="bg-swapp-tiza/10 dark:bg-swapp-negro-azulado border-b border-swapp-tiza dark:border-swapp-azul-petroleo">
+										<tr className="bg-swapp-tiza-verdoso/10 dark:bg-swapp-azul-oscuro border-b border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo">
 											{/* Ahora colSpan es 5 para cubrir toda la tabla */}
 											<td colSpan={5} className="px-6 py-4">
-												<div className="rounded-lg border border-swapp-tiza/50 dark:border-swapp-azul-petroleo/50 overflow-hidden bg-swapp-blanco dark:bg-swapp-negro-azulado/50">
+												<div className="rounded-lg border border-swapp-tiza-verdoso/50 dark:border-swapp-azul-petroleo/50 overflow-hidden bg-swapp-blanco dark:bg-swapp-azul-oscuro/50">
 													<table className="w-full text-xs text-left">
-														<thead className="bg-swapp-tiza/30 dark:bg-swapp-azul-petroleo/20 text-swapp-azul-petroleo/70 dark:text-swapp-tiza/70">
+														<thead className="bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/20 text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
 															<tr>
 																<th className="px-4 py-2 font-medium">
 																	SKU Específico
@@ -294,7 +296,7 @@ export default function CostsPage() {
 																</th>
 															</tr>
 														</thead>
-														<tbody className="divide-y divide-swapp-tiza/30 dark:divide-swapp-azul-petroleo/30">
+														<tbody className="divide-y divide-swapp-tiza-verdoso/30 dark:divide-swapp-azul-petroleo/30">
 															{p.variants?.map((v) => {
 																// --- CÁLCULO DE OFERTA HÍBRIDA POR SKU ---
 																const activeDiscount = p.active_discounts?.find(
@@ -335,11 +337,11 @@ export default function CostsPage() {
 																return (
 																	<tr
 																		key={v.variant_uuid}
-																		className="hover:bg-swapp-tiza/20 dark:hover:bg-swapp-azul-petroleo/20 transition-colors">
-																		<td className="px-4 py-3 font-mono font-medium text-swapp-negro-azulado dark:text-swapp-blanco">
+																		className="hover:bg-swapp-tiza-verdoso/20 dark:hover:bg-swapp-azul-petroleo/20 transition-colors">
+																		<td className="px-4 py-3 font-mono font-medium text-swapp-azul-oscuro dark:text-swapp-blanco">
 																			{v.sku}
 																		</td>
-																		<td className="px-4 py-3 text-swapp-azul-petroleo/70 dark:text-swapp-tiza/70">
+																		<td className="px-4 py-3 text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
 																			{v.cost_price
 																				? formatCurrency(v.cost_price)
 																				: "-"}
@@ -347,7 +349,7 @@ export default function CostsPage() {
 
 																		{/* COLUMNA: Precio Base (tachado si hay oferta) */}
 																		<td
-																			className={`px-4 py-3 font-semibold ${activeDiscount ? "text-swapp-azul-petroleo/40 dark:text-swapp-tiza/40 line-through text-[10px]" : "text-swapp-turquesa-oscuro dark:text-swapp-menta"}`}>
+																			className={`px-4 py-3 font-semibold ${activeDiscount ? "text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40 line-through text-[10px]" : "text-swapp-verde-oscuro dark:text-swapp-verde-menta"}`}>
 																			{formatCurrency(v.price)}
 																		</td>
 
@@ -364,7 +366,7 @@ export default function CostsPage() {
 																					</span>
 																				</div>
 																			) : (
-																				<span className="text-swapp-azul-petroleo/30 dark:text-swapp-tiza/30">
+																				<span className="text-swapp-azul-petroleo/30 dark:text-swapp-tiza-verdoso/30">
 																					-
 																				</span>
 																			)}
@@ -380,27 +382,31 @@ export default function CostsPage() {
 																					{marg}%
 																				</span>
 																			) : (
-																				<span className="text-swapp-azul-petroleo/30 dark:text-swapp-tiza/30">
+																				<span className="text-swapp-azul-petroleo/30 dark:text-swapp-tiza-verdoso/30">
 																					N/A
 																				</span>
 																			)}
 																		</td>
 																		<td className="px-4 py-3 text-right">
 																			<div className="flex items-center justify-end gap-1.5">
-																				<button
-																					onClick={() =>
-																						handleHistoryClick(p, v)
-																					}
-																					title="Ver historial de cambios"
-																					className="p-1.5 rounded-md text-swapp-azul-petroleo/40 dark:text-swapp-tiza/40 hover:bg-swapp-tiza dark:hover:bg-swapp-azul-petroleo hover:text-swapp-azul-oceano dark:hover:text-swapp-verde-agua transition-colors">
-																					<History className="h-3.5 w-3.5" />
-																				</button>
-																				<button
-																					onClick={() => handleEditClick(p, v)}
-																					title="Ajustar precios y costos"
-																					className="p-1.5 rounded-md text-swapp-azul-petroleo/40 dark:text-swapp-tiza/40 hover:bg-swapp-tiza dark:hover:bg-swapp-azul-petroleo hover:text-swapp-turquesa-oscuro dark:hover:text-swapp-menta transition-colors">
-																					<Edit className="h-3.5 w-3.5" />
-																				</button>
+																				<SwappTooltip text="Ver Historial de Cambios">
+																					<button
+																						onClick={() =>
+																							handleHistoryClick(p, v)
+																						}
+																						className="p-1.5 rounded-md text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40 hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo hover:text-swapp-azul-oceano dark:hover:text-swapp-verde-pastel transition-colors">
+																						<History className="h-3.5 w-3.5" />
+																					</button>
+																				</SwappTooltip>
+																				<SwappTooltip text="Ajustar Precios y Costos">
+																					<button
+																						onClick={() =>
+																							handleEditClick(p, v)
+																						}
+																						className="p-1.5 rounded-md text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40 hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo hover:text-swapp-verde-oscuro dark:hover:text-swapp-verde-menta transition-colors">
+																						<Edit className="h-3.5 w-3.5" />
+																					</button>
+																				</SwappTooltip>
 																			</div>
 																		</td>
 																	</tr>

@@ -82,23 +82,23 @@ export default function NewSubcategoryModal({
 
 	return (
 		<div className="fixed inset-0 z-[100] flex items-center justify-center bg-swapp-negro/50 dark:bg-swapp-negro/70 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95">
-			<div className="w-full max-w-md rounded-xl bg-swapp-blanco dark:bg-swapp-negro-azulado p-6 shadow-2xl border-t-4 border-swapp-turquesa-oscuro dark:border-swapp-menta">
+			<div className="w-full max-w-md rounded-xl bg-swapp-blanco dark:bg-swapp-azul-oscuro p-6 shadow-2xl border-t-4 border-swapp-verde-oscuro dark:border-swapp-verde-menta">
 				<div className="mb-6 flex items-center justify-between">
 					<div>
-						<h2 className="text-xl font-bold text-swapp-negro-azulado dark:text-swapp-blanco flex items-center gap-2">
-							<FolderTree className="h-5 w-5 text-swapp-turquesa-oscuro dark:text-swapp-menta" />
+						<h2 className="text-xl font-bold text-swapp-azul-oscuro dark:text-swapp-blanco flex items-center gap-2">
+							<FolderTree className="h-5 w-5 text-swapp-verde-oscuro dark:text-swapp-verde-menta" />
 							Nueva Subcategoría
 						</h2>
-						<p className="text-sm text-swapp-azul-petroleo/70 dark:text-swapp-tiza/70 mt-1">
+						<p className="text-sm text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 mt-1">
 							Colgando de:{" "}
-							<span className="font-semibold text-swapp-turquesa-oscuro dark:text-swapp-menta">
+							<span className="font-semibold text-swapp-verde-oscuro dark:text-swapp-verde-menta">
 								{parentCategory.name}
 							</span>
 						</p>
 					</div>
 					<button
 						onClick={onClose}
-						className="text-swapp-azul-petroleo/50 hover:text-swapp-negro-azulado dark:text-swapp-tiza/50 dark:hover:text-swapp-blanco transition-colors">
+						className="text-swapp-azul-petroleo/50 hover:text-swapp-azul-oscuro dark:text-swapp-tiza-verdoso/50 dark:hover:text-swapp-blanco transition-colors">
 						<X className="h-5 w-5" />
 					</button>
 				</div>
@@ -121,8 +121,8 @@ export default function NewSubcategoryModal({
 						placeholder="ej-botellas-termicas"
 					/>
 
-					<div className="flex items-center justify-between rounded-lg border border-swapp-tiza dark:border-swapp-azul-petroleo p-3 bg-swapp-tiza/10 dark:bg-swapp-azul-petroleo/10">
-						<span className="text-sm font-medium text-swapp-negro-azulado dark:text-swapp-blanco">
+					<div className="flex items-center justify-between rounded-lg border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo p-3 bg-swapp-tiza-verdoso/10 dark:bg-swapp-azul-petroleo/10">
+						<span className="text-sm font-medium text-swapp-azul-oscuro dark:text-swapp-blanco">
 							Subcategoría Activa
 						</span>
 						<SwappToggle
@@ -136,13 +136,13 @@ export default function NewSubcategoryModal({
 						<button
 							type="button"
 							onClick={onClose}
-							className="px-4 py-2 text-sm font-medium text-swapp-azul-petroleo hover:bg-swapp-tiza rounded-lg transition-colors">
+							className="px-4 py-2 text-sm font-medium text-swapp-azul-petroleo hover:bg-swapp-tiza-verdoso rounded-lg transition-colors">
 							Cancelar
 						</button>
 						<button
 							type="submit"
 							disabled={isSaving}
-							className="bg-swapp-turquesa-oscuro text-swapp-blanco hover:bg-swapp-azul-oceano px-6 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
+							className="bg-swapp-verde-oscuro text-swapp-blanco hover:bg-swapp-azul-oceano px-6 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
 							{isSaving ? "Guardando..." : "Crear"}
 						</button>
 					</div>

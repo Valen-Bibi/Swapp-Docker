@@ -40,14 +40,14 @@ export default function NewCategoryModal({
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-swapp-negro/50 dark:bg-swapp-negro/70 backdrop-blur-sm p-4">
-			<div className="w-full max-w-lg rounded-xl bg-swapp-blanco dark:bg-swapp-negro-azulado p-6 shadow-2xl border-t-4 border-swapp-turquesa-oscuro dark:border-swapp-menta">
+			<div className="w-full max-w-lg rounded-xl bg-swapp-blanco dark:bg-swapp-azul-oscuro p-6 shadow-2xl border-t-4 border-swapp-verde-oscuro dark:border-swapp-verde-menta">
 				<div className="mb-6 flex items-center justify-between">
-					<h2 className="text-xl font-bold text-swapp-negro-azulado dark:text-swapp-blanco">
+					<h2 className="text-xl font-bold text-swapp-azul-oscuro dark:text-swapp-blanco">
 						{editingCat.category_id ? "Editar Categoría" : "Nueva Categoría"}
 					</h2>
 					<button
 						onClick={onClose}
-						className="text-swapp-azul-petroleo/50 dark:text-swapp-tiza/50 hover:text-swapp-negro-azulado dark:hover:text-swapp-blanco">
+						className="text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50 hover:text-swapp-azul-oscuro dark:hover:text-swapp-blanco">
 						<X className="h-5 w-5" />
 					</button>
 				</div>
@@ -71,11 +71,11 @@ export default function NewCategoryModal({
 					</div>
 
 					<div className="space-y-1">
-						<label className="block text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza">
+						<label className="block text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
 							Categoría Padre (Opcional)
 						</label>
 						<select
-							className="w-full rounded-md border border-swapp-tiza dark:border-swapp-azul-petroleo bg-transparent px-3 py-2.5 text-sm text-swapp-negro-azulado dark:text-swapp-blanco outline-none focus:border-swapp-turquesa-oscuro dark:focus:border-swapp-menta"
+							className="w-full rounded-md border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-transparent px-3 py-2.5 text-sm text-swapp-azul-oscuro dark:text-swapp-blanco outline-none focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta"
 							value={editingCat.parent_id || ""}
 							onChange={(e) =>
 								setEditingCat({
@@ -83,7 +83,7 @@ export default function NewCategoryModal({
 									parent_id: e.target.value ? parseInt(e.target.value) : null,
 								})
 							}>
-							<option value="" className="dark:bg-swapp-negro-azulado">
+							<option value="" className="dark:bg-swapp-azul-oscuro">
 								Es categoría principal
 							</option>
 							{categories
@@ -92,7 +92,7 @@ export default function NewCategoryModal({
 									<option
 										key={c.category_id}
 										value={c.category_id}
-										className="dark:bg-swapp-negro-azulado">
+										className="dark:bg-swapp-azul-oscuro">
 										{c.name}
 									</option>
 								))}
@@ -112,7 +112,7 @@ export default function NewCategoryModal({
 						}
 					/>
 
-					<div className="border-t border-swapp-tiza dark:border-swapp-azul-petroleo pt-4 space-y-4">
+					<div className="border-t border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo pt-4 space-y-4">
 						<SwappToggle
 							label="Categoría Activa"
 							checked={editingCat.is_active || false}
@@ -120,17 +120,17 @@ export default function NewCategoryModal({
 						/>
 					</div>
 
-					<div className="mt-6 flex justify-end gap-3 pt-4 border-t border-swapp-tiza dark:border-swapp-azul-petroleo">
+					<div className="mt-6 flex justify-end gap-3 pt-4 border-t border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo">
 						<button
 							type="button"
 							onClick={onClose}
-							className="rounded-lg px-4 py-2 text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza hover:bg-swapp-tiza dark:hover:bg-swapp-azul-petroleo">
+							className="rounded-lg px-4 py-2 text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo">
 							Cancelar
 						</button>
 						<button
 							type="submit"
 							disabled={isSaving}
-							className="rounded-lg bg-swapp-turquesa-oscuro dark:bg-swapp-menta px-4 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-negro-azulado transition-colors hover:bg-swapp-azul-oceano disabled:opacity-50">
+							className="rounded-lg bg-swapp-verde-oscuro dark:bg-swapp-verde-menta px-4 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro transition-colors hover:bg-swapp-azul-oceano disabled:opacity-50">
 							{isSaving ? "Guardando..." : "Guardar Categoría"}
 						</button>
 					</div>

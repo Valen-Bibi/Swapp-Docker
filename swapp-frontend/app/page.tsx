@@ -39,7 +39,7 @@ export default function LandingPage() {
 	return (
 		<div className="fixed inset-0 bg-black flex items-center justify-center z-[70] overflow-hidden">
 			<div className="relative w-full h-full sm:w-[400px] sm:h-[850px] sm:max-h-[90vh] bg-swapp-negro sm:rounded-[32px] overflow-hidden flex flex-col items-center justify-center">
-				<div className="w-14 h-14 border-4 border-swapp-verde-agua/30 border-t-swapp-verde-agua rounded-full animate-spin drop-shadow-[0_0_10px_rgba(1,195,142,0.8)]"></div>
+				<div className="w-14 h-14 border-4 border-swapp-verde-pastel/30 border-t-swapp-verde-pastel rounded-full animate-spin drop-shadow-[0_0_10px_rgba(1,195,142,0.8)]"></div>
 			</div>
 		</div>
 	);

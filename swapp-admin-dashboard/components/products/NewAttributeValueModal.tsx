@@ -56,14 +56,14 @@ export default function NewAttributeValueModal({
 
 	return (
 		<div className="fixed inset-0 z-[100] flex items-center justify-center bg-swapp-negro/50 dark:bg-swapp-negro/70 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95">
-			<div className="w-full max-w-sm rounded-xl bg-swapp-blanco dark:bg-swapp-negro-azulado p-5 shadow-2xl border-t-4 border-swapp-turquesa-oscuro dark:border-swapp-menta">
+			<div className="w-full max-w-sm rounded-xl bg-swapp-blanco dark:bg-swapp-azul-oscuro p-5 shadow-2xl border-t-4 border-swapp-verde-oscuro dark:border-swapp-verde-menta">
 				<div className="mb-4 flex items-center justify-between">
-					<h3 className="text-lg font-bold text-swapp-negro-azulado dark:text-swapp-blanco">
+					<h3 className="text-lg font-bold text-swapp-azul-oscuro dark:text-swapp-blanco">
 						Nuevo valor para "{attributeName}"
 					</h3>
 					<button
 						onClick={onClose}
-						className="text-swapp-azul-petroleo/50 hover:text-swapp-negro-azulado transition-colors">
+						className="text-swapp-azul-petroleo/50 hover:text-swapp-azul-oscuro transition-colors">
 						<X className="h-4 w-4" />
 					</button>
 				</div>
@@ -79,7 +79,7 @@ export default function NewAttributeValueModal({
 					<button
 						type="submit"
 						disabled={isSaving}
-						className="w-full bg-swapp-turquesa-oscuro text-swapp-blanco hover:bg-swapp-azul-oceano py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
+						className="w-full bg-swapp-verde-oscuro text-swapp-blanco hover:bg-swapp-azul-oceano py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
 						{isSaving ? "Guardando..." : "Añadir al Diccionario"}
 					</button>
 				</form>

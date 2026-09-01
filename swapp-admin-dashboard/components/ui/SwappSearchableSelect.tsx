@@ -51,7 +51,7 @@ export function SwappSearchableSelect({
 			<button
 				type="button"
 				onClick={() => setIsOpen(!isOpen)}
-				className={`w-full flex items-center justify-between rounded-md border border-swapp-tiza dark:border-swapp-azul-petroleo bg-transparent px-3 py-2 text-sm text-swapp-negro-azulado dark:text-swapp-blanco outline-none transition-colors focus:border-swapp-turquesa-oscuro dark:focus:border-swapp-menta focus:ring-1 focus:ring-swapp-turquesa-oscuro dark:focus:ring-swapp-menta`}>
+				className={`w-full flex items-center justify-between rounded-md border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-transparent px-3 py-2 text-sm text-swapp-azul-oscuro dark:text-swapp-blanco outline-none transition-colors focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta`}>
 				<span className={selectedOption ? "" : "text-swapp-azul-petroleo/50"}>
 					{selectedOption ? selectedOption.label : placeholder}
 				</span>
@@ -61,12 +61,13 @@ export function SwappSearchableSelect({
 			</button>
 
 			{isOpen && (
-				<div className="absolute z-[100] mt-1 w-full rounded-md border border-swapp-tiza dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-negro-azulado shadow-xl animate-in fade-in zoom-in-95">
-					<div className="p-2 border-b border-swapp-tiza dark:border-swapp-azul-petroleo flex items-center gap-2">
-						<Search className="h-4 w-4 text-swapp-azul-petroleo/50 dark:text-swapp-tiza/50 shrink-0" />
+				<div className="absolute z-[100] mt-1 w-full rounded-md border border-swapp-tiza-verdoso/50 dark:border-swapp-azul-petroleo/50 bg-swapp-blanco/85 dark:bg-swapp-azul-oscuro/85 backdrop-blur-md shadow-xl animate-in fade-in zoom-in-95">
+					{/* El contenido del buscador y la lista se mantienen intactos */}
+					<div className="p-2 border-b border-swapp-tiza-verdoso/50 dark:border-swapp-azul-petroleo/50 flex items-center gap-2">
+						<Search className="h-4 w-4 text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50 shrink-0" />
 						<input
 							type="text"
-							className="w-full bg-transparent text-sm text-swapp-negro-azulado dark:text-swapp-blanco outline-none placeholder:text-swapp-azul-petroleo/50 dark:placeholder:text-swapp-tiza/50"
+							className="w-full bg-transparent text-sm text-swapp-azul-oscuro dark:text-swapp-blanco outline-none placeholder:text-swapp-azul-petroleo/50 dark:placeholder:text-swapp-tiza-verdoso/50"
 							placeholder="Buscar..."
 							value={searchTerm}
 							onChange={(e) => setSearchTerm(e.target.value)}
@@ -75,7 +76,7 @@ export function SwappSearchableSelect({
 					</div>
 					<div className="max-h-48 overflow-y-auto custom-scrollbar p-1">
 						{filteredOptions.length === 0 ? (
-							<div className="p-3 text-sm text-swapp-azul-petroleo/50 dark:text-swapp-tiza/50 text-center">
+							<div className="p-3 text-sm text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50 text-center">
 								No se encontraron resultados
 							</div>
 						) : (
@@ -90,8 +91,8 @@ export function SwappSearchableSelect({
 									}}
 									className={`w-full flex items-center justify-between rounded-md px-3 py-2 text-sm transition-colors text-left ${
 										value === opt.value
-											? "bg-swapp-turquesa-oscuro/10 dark:bg-swapp-menta/10 text-swapp-turquesa-oscuro dark:text-swapp-menta font-medium"
-											: "text-swapp-negro-azulado dark:text-swapp-blanco hover:bg-swapp-tiza/50 dark:hover:bg-swapp-azul-petroleo/50"
+											? "bg-swapp-verde-oscuro/10 dark:bg-swapp-verde-menta/10 text-swapp-verde-oscuro dark:text-swapp-verde-menta font-medium"
+											: "text-swapp-azul-oscuro dark:text-swapp-blanco hover:bg-swapp-tiza-verdoso/50 dark:hover:bg-swapp-azul-petroleo/50"
 									}`}>
 									{opt.label}
 									{value === opt.value && (

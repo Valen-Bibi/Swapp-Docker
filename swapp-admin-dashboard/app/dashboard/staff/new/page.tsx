@@ -62,12 +62,12 @@ export default function NewStaffPage() {
 				/>
 			</div>
 
-			<div className="rounded-xl border border-swapp-tiza dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-negro-azulado p-6 shadow-sm max-w-2xl transition-colors">
+			<div className="rounded-xl border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro p-6 shadow-sm max-w-2xl transition-colors">
 				<form onSubmit={handleSubmit} className="space-y-6">
 					{/* NOMBRES */}
 					<div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
 						<div className="space-y-2">
-							<label className="text-sm font-medium text-swapp-azul-petroleo/80 dark:text-swapp-tiza/80 transition-colors">
+							<label className="text-sm font-medium text-swapp-azul-petroleo/80 dark:text-swapp-tiza-verdoso/80 transition-colors">
 								Nombre
 							</label>
 							<input
@@ -75,12 +75,12 @@ export default function NewStaffPage() {
 								name="first_name"
 								value={formData.first_name}
 								onChange={handleChange}
-								className="w-full rounded-lg border border-swapp-tiza dark:border-swapp-azul-petroleo bg-transparent px-4 py-2.5 text-swapp-negro-azulado dark:text-swapp-blanco placeholder:text-swapp-azul-petroleo/40 dark:placeholder:text-swapp-tiza/40 outline-none transition-all focus:border-swapp-turquesa-oscuro dark:focus:border-swapp-menta focus:ring-1 focus:ring-swapp-turquesa-oscuro dark:focus:ring-swapp-menta"
+								className="w-full rounded-lg border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-transparent px-4 py-2.5 text-swapp-azul-oscuro dark:text-swapp-blanco placeholder:text-swapp-azul-petroleo/40 dark:placeholder:text-swapp-tiza-verdoso/40 outline-none transition-all focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta"
 								placeholder="Ej. Juan"
 							/>
 						</div>
 						<div className="space-y-2">
-							<label className="text-sm font-medium text-swapp-azul-petroleo/80 dark:text-swapp-tiza/80 transition-colors">
+							<label className="text-sm font-medium text-swapp-azul-petroleo/80 dark:text-swapp-tiza-verdoso/80 transition-colors">
 								Apellido
 							</label>
 							<input
@@ -88,7 +88,7 @@ export default function NewStaffPage() {
 								name="last_name"
 								value={formData.last_name}
 								onChange={handleChange}
-								className="w-full rounded-lg border border-swapp-tiza dark:border-swapp-azul-petroleo bg-transparent px-4 py-2.5 text-swapp-negro-azulado dark:text-swapp-blanco placeholder:text-swapp-azul-petroleo/40 dark:placeholder:text-swapp-tiza/40 outline-none transition-all focus:border-swapp-turquesa-oscuro dark:focus:border-swapp-menta focus:ring-1 focus:ring-swapp-turquesa-oscuro dark:focus:ring-swapp-menta"
+								className="w-full rounded-lg border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-transparent px-4 py-2.5 text-swapp-azul-oscuro dark:text-swapp-blanco placeholder:text-swapp-azul-petroleo/40 dark:placeholder:text-swapp-tiza-verdoso/40 outline-none transition-all focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta"
 								placeholder="Ej. Pérez"
 							/>
 						</div>
@@ -96,7 +96,7 @@ export default function NewStaffPage() {
 
 					{/* CORREO */}
 					<div className="space-y-2">
-						<label className="text-sm font-medium text-swapp-azul-petroleo/80 dark:text-swapp-tiza/80 transition-colors">
+						<label className="text-sm font-medium text-swapp-azul-petroleo/80 dark:text-swapp-tiza-verdoso/80 transition-colors">
 							Correo Electrónico
 						</label>
 						<input
@@ -105,14 +105,14 @@ export default function NewStaffPage() {
 							name="email"
 							value={formData.email}
 							onChange={handleChange}
-							className="w-full rounded-lg border border-swapp-tiza dark:border-swapp-azul-petroleo bg-transparent px-4 py-2.5 text-swapp-negro-azulado dark:text-swapp-blanco placeholder:text-swapp-azul-petroleo/40 dark:placeholder:text-swapp-tiza/40 outline-none transition-all focus:border-swapp-turquesa-oscuro dark:focus:border-swapp-menta focus:ring-1 focus:ring-swapp-turquesa-oscuro dark:focus:ring-swapp-menta"
+							className="w-full rounded-lg border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-transparent px-4 py-2.5 text-swapp-azul-oscuro dark:text-swapp-blanco placeholder:text-swapp-azul-petroleo/40 dark:placeholder:text-swapp-tiza-verdoso/40 outline-none transition-all focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta"
 							placeholder="correo@swapp.com"
 						/>
 					</div>
 
 					{/* CONTRASEÑA TEMPORAL */}
 					<div className="space-y-2">
-						<label className="text-sm font-medium text-swapp-azul-petroleo/80 dark:text-swapp-tiza/80 transition-colors">
+						<label className="text-sm font-medium text-swapp-azul-petroleo/80 dark:text-swapp-tiza-verdoso/80 transition-colors">
 							Contraseña de Acceso
 						</label>
 						<input
@@ -121,32 +121,32 @@ export default function NewStaffPage() {
 							name="password"
 							value={formData.password}
 							onChange={handleChange}
-							className="w-full rounded-lg border border-swapp-tiza dark:border-swapp-azul-petroleo bg-transparent px-4 py-2.5 text-swapp-negro-azulado dark:text-swapp-blanco placeholder:text-swapp-azul-petroleo/40 dark:placeholder:text-swapp-tiza/40 outline-none transition-all focus:border-swapp-turquesa-oscuro dark:focus:border-swapp-menta focus:ring-1 focus:ring-swapp-turquesa-oscuro dark:focus:ring-swapp-menta"
+							className="w-full rounded-lg border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-transparent px-4 py-2.5 text-swapp-azul-oscuro dark:text-swapp-blanco placeholder:text-swapp-azul-petroleo/40 dark:placeholder:text-swapp-tiza-verdoso/40 outline-none transition-all focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta"
 							placeholder="Asigna una contraseña segura"
 						/>
 					</div>
 
 					{/* ROL */}
 					<div className="space-y-2">
-						<label className="text-sm font-medium text-swapp-azul-petroleo/80 dark:text-swapp-tiza/80 flex items-center gap-2 transition-colors">
-							<ShieldCheck className="h-4 w-4 text-swapp-menta" />
+						<label className="text-sm font-medium text-swapp-azul-petroleo/80 dark:text-swapp-tiza-verdoso/80 flex items-center gap-2 transition-colors">
+							<ShieldCheck className="h-4 w-4 text-swapp-verde-menta" />
 							Nivel de Permisos
 						</label>
 						<select
 							name="role"
 							value={formData.role}
 							onChange={handleChange}
-							className="w-full rounded-lg border border-swapp-tiza dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-negro-azulado px-4 py-2.5 text-swapp-negro-azulado dark:text-swapp-blanco outline-none transition-all focus:border-swapp-turquesa-oscuro dark:focus:border-swapp-menta focus:ring-1 focus:ring-swapp-turquesa-oscuro dark:focus:ring-swapp-menta cursor-pointer">
-							<option value="viewer" className="dark:bg-swapp-negro-azulado">
+							className="w-full rounded-lg border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro px-4 py-2.5 text-swapp-azul-oscuro dark:text-swapp-blanco outline-none transition-all focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta cursor-pointer">
+							<option value="viewer" className="dark:bg-swapp-azul-oscuro">
 								Viewer (Solo lectura)
 							</option>
-							<option value="editor" className="dark:bg-swapp-negro-azulado">
+							<option value="editor" className="dark:bg-swapp-azul-oscuro">
 								Editor (Puede modificar productos)
 							</option>
-							<option value="manager" className="dark:bg-swapp-negro-azulado">
+							<option value="manager" className="dark:bg-swapp-azul-oscuro">
 								Manager (Gestión de stock e inventario)
 							</option>
-							<option value="admin" className="dark:bg-swapp-negro-azulado">
+							<option value="admin" className="dark:bg-swapp-azul-oscuro">
 								Administrador (Gestión total)
 							</option>
 						</select>
@@ -157,7 +157,7 @@ export default function NewStaffPage() {
 						<button
 							type="submit"
 							disabled={isSubmitting}
-							className="inline-flex items-center gap-2 rounded-lg bg-swapp-turquesa-oscuro dark:bg-swapp-turquesa-oscuro px-6 py-2.5 font-medium text-swapp-blanco dark:text-swapp-negro-azulado shadow-sm transition-all hover:bg-swapp-azul-oceano dark:hover:bg-swapp-blanco disabled:opacity-50">
+							className="inline-flex items-center gap-2 rounded-lg bg-swapp-verde-oscuro dark:bg-swapp-verde-oscuro px-6 py-2.5 font-medium text-swapp-blanco dark:text-swapp-azul-oscuro shadow-sm transition-all hover:bg-swapp-azul-oceano dark:hover:bg-swapp-blanco disabled:opacity-50">
 							<Save className="h-4 w-4" />
 							{isSubmitting ? "Guardando..." : "Registrar Cuenta"}
 						</button>

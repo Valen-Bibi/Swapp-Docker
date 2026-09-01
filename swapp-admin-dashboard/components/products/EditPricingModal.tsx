@@ -90,20 +90,20 @@ export default function EditPricingModal({
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-swapp-negro/50 dark:bg-swapp-negro/70 backdrop-blur-sm p-4">
-			<div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-xl bg-swapp-blanco dark:bg-swapp-negro-azulado p-6 shadow-2xl border-t-4 border-swapp-turquesa-oscuro dark:border-swapp-menta transition-colors custom-scrollbar">
+			<div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-xl bg-swapp-blanco dark:bg-swapp-azul-oscuro p-6 shadow-2xl border-t-4 border-swapp-turquesa-oscuro dark:border-swapp-menta transition-colors custom-scrollbar">
 				<div className="mb-4 flex items-center justify-between">
-					<h2 className="text-xl font-bold text-swapp-negro-azulado dark:text-swapp-blanco">
+					<h2 className="text-xl font-bold text-swapp-azul-oscuro dark:text-swapp-blanco">
 						{variant ? "Ajustar Rentabilidad" : "Valores de Referencia"}
 					</h2>
 					<button
 						onClick={onClose}
-						className="text-swapp-azul-petroleo/50 hover:text-swapp-negro-azulado dark:hover:text-swapp-blanco transition-colors">
+						className="text-swapp-azul-petroleo/50 hover:text-swapp-azul-oscuro dark:hover:text-swapp-blanco transition-colors">
 						<X className="h-5 w-5" />
 					</button>
 				</div>
 
 				<div className="mb-6 pb-4 border-b border-swapp-tiza dark:border-swapp-azul-petroleo flex flex-col gap-1">
-					<p className="text-sm font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza/70">
+					<p className="text-sm font-medium text-swapp-azul-petroleo/70 dark:text-swapp-blanco">
 						{product.name}
 					</p>
 					{variant ? (
@@ -111,7 +111,7 @@ export default function EditPricingModal({
 							SKU: {variant.sku}
 						</span>
 					) : (
-						<span className="text-xs font-medium text-swapp-azul-petroleo/50 dark:text-swapp-tiza/50">
+						<span className="text-xs font-medium text-swapp-azul-petroleo/50 dark:text-swapp-blanco">
 							Estos valores se aplicarán por defecto al crear nuevas variantes
 							físicas.
 						</span>
@@ -120,7 +120,7 @@ export default function EditPricingModal({
 
 				<form onSubmit={handleSaveChanges} className="space-y-6">
 					<div className="space-y-4">
-						<h3 className="text-sm font-bold uppercase tracking-wider text-swapp-azul-petroleo dark:text-swapp-tiza flex items-center gap-2">
+						<h3 className="text-sm font-bold uppercase tracking-wider text-swapp-azul-petroleo dark:text-swapp-blanco flex items-center gap-2">
 							<Landmark className="h-4 w-4" /> Valores Base
 						</h3>
 
@@ -173,7 +173,7 @@ export default function EditPricingModal({
 						<button
 							type="submit"
 							disabled={isSaving}
-							className="rounded-lg bg-swapp-turquesa-oscuro dark:bg-swapp-menta px-4 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-negro-azulado transition-colors hover:opacity-90 disabled:opacity-50">
+							className="rounded-lg bg-swapp-turquesa-oscuro dark:bg-swapp-menta px-4 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro transition-colors hover:opacity-90 disabled:opacity-50">
 							{isSaving ? "Aplicando..." : "Guardar Cambios"}
 						</button>
 					</div>

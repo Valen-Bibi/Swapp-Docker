@@ -145,7 +145,7 @@ function CrossSellingContent() {
 
 	if (isLoading) {
 		return (
-			<div className="min-h-screen bg-swapp-tiza flex flex-col items-center justify-center">
+			<div className="min-h-screen bg-swapp-tiza-verdoso flex flex-col items-center justify-center">
 				<div className="w-12 h-12 border-4 border-swapp-azul-oceano/30 border-t-swapp-azul-oceano rounded-full animate-spin"></div>
 				<p className="mt-4 text-swapp-azul-petroleo font-bold">
 					Preparando tu producto...
@@ -155,9 +155,9 @@ function CrossSellingContent() {
 	}
 
 	return (
-		<div className="absolute inset-0 overflow-y-auto bg-swapp-tiza pb-[140px]">
+		<div className="absolute inset-0 overflow-y-auto bg-swapp-tiza-verdoso pb-[140px]">
 			{/* --- NUEVO HEADER: CON BARRA DE PROGRESO STICKY --- */}
-			<div className="bg-swapp-tiza px-5 py-3 flex items-center gap-4 sticky top-0 z-30pga">
+			<div className="bg-swapp-tiza-verdoso px-5 py-3 flex items-center gap-4 sticky top-0 z-30pga">
 				<button
 					onClick={() => router.back()}
 					className="text-swapp-azul-petroleo hover:bg-gray-200 p-1.5 rounded-full transition-colors flex-shrink-0">
@@ -188,7 +188,7 @@ function CrossSellingContent() {
 					</div>
 					<div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
 						<div
-							className={`h-full transition-all duration-700 ease-out ${progresoEnvio >= 100 ? "bg-swapp-verde-agua" : "bg-swapp-azul-oceano"}`}
+							className={`h-full transition-all duration-700 ease-out ${progresoEnvio >= 100 ? "bg-swapp-verde-pastel" : "bg-swapp-azul-oceano"}`}
 							style={{ width: `${progresoEnvio}%` }}></div>
 					</div>
 				</div>
@@ -252,11 +252,11 @@ function CrossSellingContent() {
 										</button>
 									</div>
 								</div>
-								<div className="flex-1 flex flex-col justify-center items-center bg-swapp-verde-agua/10 p-3 rounded-xl border border-swapp-verde-agua/30">
-									<span className="text-[10px] font-bold text-swapp-turquesa-oscuro uppercase tracking-wide mb-2">
+								<div className="flex-1 flex flex-col justify-center items-center bg-swapp-verde-pastel/10 p-3 rounded-xl border border-swapp-verde-pastel/30">
+									<span className="text-[10px] font-bold text-swapp-verde-oscuro uppercase tracking-wide mb-2">
 										Llenos (Llevás)
 									</span>
-									<div className="flex items-center justify-between w-full bg-white border border-swapp-verde-agua/30 rounded-lg px-2 py-1 shadow-sm">
+									<div className="flex items-center justify-between w-full bg-white border border-swapp-verde-pastel/30 rounded-lg px-2 py-1 shadow-sm">
 										<button
 											onClick={() => setReceiveQty(Math.max(1, receiveQty - 1))}
 											className="text-lg font-bold text-swapp-azul-oceano w-6 text-center">
@@ -274,7 +274,7 @@ function CrossSellingContent() {
 								</div>
 							</div>
 							{receiveQty > returnQty && (
-								<p className="text-[10px] text-swapp-turquesa-oscuro text-center font-bold mt-1">
+								<p className="text-[10px] text-swapp-verde-oscuro text-center font-bold mt-1">
 									⚠️ Se cobrarán {receiveQty - returnQty} envase(s) nuevo(s).
 								</p>
 							)}
@@ -316,14 +316,14 @@ function CrossSellingContent() {
 									<div
 										key={rec.product_uuid}
 										onClick={() => toggleRecommendation(rec.product_uuid)}
-										className={`bg-white rounded-xl p-4 relative flex flex-col items-center shadow-sm cursor-pointer transition-all duration-200 border-2 ${isAdded ? "border-swapp-menta bg-white" : "border-transparent hover:shadow-md"}`}>
+										className={`bg-white rounded-xl p-4 relative flex flex-col items-center shadow-sm cursor-pointer transition-all duration-200 border-2 ${isAdded ? "border-swapp-verde-menta bg-white" : "border-transparent hover:shadow-md"}`}>
 										{rec.sale_price && (
-											<span className="absolute top-2 left-2 bg-swapp-turquesa-oscuro text-white text-[9px] font-bold px-1.5 py-0.5 rounded z-10">
+											<span className="absolute top-2 left-2 bg-swapp-verde-oscuro text-white text-[9px] font-bold px-1.5 py-0.5 rounded z-10">
 												OFERTA
 											</span>
 										)}
 										<div
-											className={`absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center transition-colors z-10 ${isAdded ? "bg-swapp-menta text-swapp-azul-petroleo" : "bg-gray-100 text-gray-300"}`}>
+											className={`absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center transition-colors z-10 ${isAdded ? "bg-swapp-verde-menta text-swapp-azul-petroleo" : "bg-gray-100 text-gray-300"}`}>
 											<svg
 												className="w-4 h-4"
 												fill="none"
@@ -392,7 +392,7 @@ function CrossSellingContent() {
 							Continuar
 						</button>
 
-						<div className="flex flex-col items-center justify-center bg-swapp-menta text-swapp-azul-petroleo w-14 h-[44px] rounded-xl font-black shadow-sm border border-swapp-verde-agua/30">
+						<div className="flex flex-col items-center justify-center bg-swapp-verde-menta text-swapp-azul-petroleo w-14 h-[44px] rounded-xl font-black shadow-sm border border-swapp-verde-pastel/30">
 							<span className="text-lg leading-none">{totalItems}</span>
 							<span className="text-[9px] font-bold uppercase tracking-wide leading-none mt-0.5">
 								Ítems
@@ -409,7 +409,7 @@ export default function CrossSellingPage() {
 	return (
 		<Suspense
 			fallback={
-				<div className="min-h-screen bg-swapp-tiza flex items-center justify-center">
+				<div className="min-h-screen bg-swapp-tiza-verdoso flex items-center justify-center">
 					<div className="w-8 h-8 border-4 border-swapp-azul-oceano/30 border-t-swapp-azul-oceano rounded-full animate-spin"></div>
 				</div>
 			}>

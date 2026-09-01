@@ -37,7 +37,7 @@ const SiluetaAnimada = () => {
 
 	return (
 		<div className="w-20 h-32 flex items-center justify-center relative">
-			<div className="absolute inset-0 bg-swapp-verde-agua/10 blur-lg rounded-full"></div>
+			<div className="absolute inset-0 bg-swapp-verde-pastel/10 blur-lg rounded-full"></div>
 			<img
 				src={siluetas[index]}
 				alt="Silueta de envase"
@@ -165,7 +165,7 @@ export default function TutorialView() {
 
 				{/* Solo montamos la cámara si NO estamos en la pantalla de éxito, para dar lugar al 3D */}
 				{step !== "SUCCESS_5000" && (
-					<div className="absolute inset-0 bg-swapp-negro-azulado z-0">
+					<div className="absolute inset-0 bg-swapp-azul-oscuro z-0">
 						<Scanner
 							ref={scannerRef}
 							onScan={handleTutorialScan}
@@ -175,19 +175,19 @@ export default function TutorialView() {
 				)}
 
 				{step === "INTRO_SCAN" && (
-					<div className="absolute inset-0 bg-swapp-negro-azulado/90 backdrop-blur-sm z-40 pointer-events-none flex flex-col items-center justify-center">
+					<div className="absolute inset-0 bg-swapp-azul-oscuro/90 backdrop-blur-sm z-40 pointer-events-none flex flex-col items-center justify-center">
 						<div className="absolute top-[15%] px-8 text-center">
 							<h2 className="text-white text-4xl font-black mb-3 tracking-tight">
 								¡Empezá a ahorrar!
 							</h2>
-							<p className="text-swapp-tiza text-m mb-8 leading-relaxed">
+							<p className="text-swapp-tiza-verdoso text-m mb-8 leading-relaxed">
 								Tomá una foto de tu envase vacío o máquina para obtener un
 								descuento inmediato.
 							</p>
 						</div>
 						<div className="absolute bottom-[30%] z-50 pointer-events-none flex flex-col items-center">
 							<SiluetaAnimada />
-							<span className="text-swapp-menta text-xs text-center mt-20 font-bold tracking-[0.2em] uppercase opacity-80">
+							<span className="text-swapp-verde-menta text-xs text-center mt-20 font-bold tracking-[0.2em] uppercase opacity-80">
 								La IA detectará tu modelo
 							</span>
 						</div>
@@ -201,17 +201,17 @@ export default function TutorialView() {
 							<button
 								onClick={handleMainAction}
 								className={`w-20 h-20 rounded-full border-4 flex items-center justify-center transition-all duration-200 active:scale-90 bg-transparent
-                  ${step === "INTRO_SCAN" ? "border-swapp-verde-agua shadow-[0_0_15px_rgba(1,195,142,0.6)] hover:scale-105" : "border-swapp-tiza shadow-lg"}
+                  ${step === "INTRO_SCAN" ? "border-swapp-verde-pastel shadow-[0_0_15px_rgba(1,195,142,0.6)] hover:scale-105" : "border-swapp-tiza-verdoso shadow-lg"}
                 `}>
 								<div
-									className={`w-16 h-16 rounded-full backdrop-blur-md ${step === "INTRO_SCAN" ? "bg-swapp-tiza" : "bg-white/60"}`}></div>
+									className={`w-16 h-16 rounded-full backdrop-blur-md ${step === "INTRO_SCAN" ? "bg-swapp-tiza-verdoso" : "bg-white/60"}`}></div>
 							</button>
 						</div>
 						<div
 							className={`absolute bottom-6 left-1/2 -translate-x-1/2 w-full px-6 text-center ${step === "INTRO_SCAN" ? "z-50" : "z-30"}`}>
 							<button
 								onClick={() => handleFinishTutorial("/catalogo")}
-								className="text-sm font-medium text-swapp-tiza underline underline-offset-4 transition-colors cursor-pointer pointer-events-auto">
+								className="text-sm font-medium text-swapp-tiza-verdoso underline underline-offset-4 transition-colors cursor-pointer pointer-events-auto">
 								¿No tenés un envase? Ver catálogo
 							</button>
 						</div>
@@ -222,11 +222,11 @@ export default function TutorialView() {
 					<div className="absolute inset-0 z-50 flex flex-col items-center justify-center">
 						<div className="absolute inset-0 bg-swapp-azul-petroleo/60 backdrop-blur-sm"></div>
 						<div className="relative z-10 flex flex-col items-center">
-							<div className="w-16 h-16 border-4 border-swapp-verde-agua/30 border-t-swapp-verde-agua rounded-full animate-spin mb-6 drop-shadow-[0_0_8px_rgba(1,195,142,1)]"></div>
-							<p className="text-swapp-menta font-black text-lg tracking-[0.3em] animate-pulse drop-shadow-[0_0_5px_rgba(1,195,142,0.8)]">
+							<div className="w-16 h-16 border-4 border-swapp-verde-pastel/30 border-t-swapp-verde-pastel rounded-full animate-spin mb-6 drop-shadow-[0_0_8px_rgba(1,195,142,1)]"></div>
+							<p className="text-swapp-verde-menta font-black text-lg tracking-[0.3em] animate-pulse drop-shadow-[0_0_5px_rgba(1,195,142,0.8)]">
 								ANALIZANDO
 							</p>
-							<p className="text-swapp-tiza/60 text-xs mt-2 font-mono tracking-widest">
+							<p className="text-swapp-tiza-verdoso/60 text-xs mt-2 font-mono tracking-widest">
 								MOTOR IA ACTIVO
 							</p>
 						</div>
@@ -235,7 +235,7 @@ export default function TutorialView() {
 
 				{/* --- NUEVA VISTA DE ÉXITO CON 3D INTEGRADO --- */}
 				{step === "SUCCESS_5000" && capturedImageUrl && (
-					<div className="absolute inset-0 z-10 bg-swapp-negro-azulado flex flex-col items-center justify-start overflow-hidden pt-10 animate-fadeIn">
+					<div className="absolute inset-0 z-10 bg-swapp-azul-oscuro flex flex-col items-center justify-start overflow-hidden pt-10 animate-fadeIn">
 						{/* Imagen de fondo desenfocada */}
 						<img
 							src={capturedImageUrl}
@@ -249,8 +249,8 @@ export default function TutorialView() {
 						</div>
 
 						{/* Panel inferior */}
-						<div className="absolute bottom-0 left-0 w-full p-6 z-30 flex flex-col animate-slideUp bg-gradient-to-t from-swapp-negro-azulado via-swapp-negro-azulado/95 to-transparent pt-12 text-center">
-							<p className="text-swapp-menta text-sm font-bold uppercase tracking-widest mb-1">
+						<div className="absolute bottom-0 left-0 w-full p-6 z-30 flex flex-col animate-slideUp bg-gradient-to-t from-swapp-azul-oscuro via-swapp-azul-oscuro/95 to-transparent pt-12 text-center">
+							<p className="text-swapp-verde-menta text-sm font-bold uppercase tracking-widest mb-1">
 								¡Qué buena elección!
 							</p>
 							<h3 className="text-white text-2xl font-black mb-6 drop-shadow-md">
@@ -260,7 +260,7 @@ export default function TutorialView() {
 							<div className="flex flex-col gap-3 w-full">
 								<button
 									onClick={() => handleFinishTutorial("/registro")}
-									className="w-full bg-swapp-menta text-swapp-negro-azulado py-4 rounded-xl font-black text-lg shadow-[0_0_20px_rgba(128,225,199,0.3)] hover:scale-[1.02] active:scale-95 transition-all">
+									className="w-full bg-swapp-verde-menta text-swapp-azul-oscuro py-4 rounded-xl font-black text-lg shadow-[0_0_20px_rgba(128,225,199,0.3)] hover:scale-[1.02] active:scale-95 transition-all">
 									Guardar en mi cuenta
 								</button>
 								<button
@@ -274,26 +274,26 @@ export default function TutorialView() {
 				)}
 
 				{step === "ERROR_RETRY" && (
-					<div className="absolute inset-0 bg-swapp-negro-azulado/95 backdrop-blur-md z-50 flex flex-col items-center justify-center px-8 text-center animate-fadeIn">
+					<div className="absolute inset-0 bg-swapp-azul-oscuro/95 backdrop-blur-md z-50 flex flex-col items-center justify-center px-8 text-center animate-fadeIn">
 						<div className="bg-red-500/10 p-6 rounded-full mb-6 border border-red-500/20">
 							<span className="text-6xl opacity-80">🤔</span>
 						</div>
 						<h2 className="text-2xl font-black text-white mb-3">
 							No pudimos identificar tu producto
 						</h2>
-						<p className="text-swapp-tiza/80 mb-10 text-lg">
+						<p className="text-swapp-tiza-verdoso/80 mb-10 text-lg">
 							{failedAttempts >= 2
 								? "Parece que este producto no está en nuestra base de datos."
 								: "Intentá que el producto esté centrado y haya buena luz en la habitación."}
 						</p>
 						<button
 							onClick={handleRestartCamera}
-							className="bg-swapp-tiza text-swapp-negro-azulado w-full py-4 rounded-2xl font-black text-lg shadow-xl hover:scale-105 active:scale-95 transition-all mb-5">
+							className="bg-swapp-tiza-verdoso text-swapp-azul-oscuro w-full py-4 rounded-2xl font-black text-lg shadow-xl hover:scale-105 active:scale-95 transition-all mb-5">
 							Intentar de nuevo
 						</button>
 						<button
 							onClick={() => handleFinishTutorial("/catalogo")}
-							className="text-swapp-verde-agua font-bold tracking-wide pointer-events-auto">
+							className="text-swapp-verde-pastel font-bold tracking-wide pointer-events-auto">
 							Explorar catálogo manual
 						</button>
 					</div>

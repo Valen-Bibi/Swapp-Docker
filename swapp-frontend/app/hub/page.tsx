@@ -17,14 +17,14 @@ export default function HubPage() {
 
 	if (isLoading || !isAuthenticated) {
 		return (
-			<div className="flex-1 flex items-center justify-center h-[calc(100vh-115px)] bg-swapp-tiza">
-				<div className="w-8 h-8 border-4 border-swapp-verde-agua border-t-transparent rounded-full animate-spin"></div>
+			<div className="flex-1 flex items-center justify-center h-[calc(100vh-115px)] bg-swapp-tiza-verdoso">
+				<div className="w-8 h-8 border-4 border-swapp-verde-pastel border-t-transparent rounded-full animate-spin"></div>
 			</div>
 		);
 	}
 
 	return (
-		<div className="flex flex-col w-full h-[calc(100vh-195px)] bg-swapp-tiza px-5 pt-4 pb-2">
+		<div className="flex flex-col w-full h-[calc(100vh-195px)] bg-swapp-tiza-verdoso px-5 pt-4 pb-2">
 			<div className="flex-1 w-full bg-black rounded-[36px] overflow-hidden relative shadow-2xl">
 				{/* Simplemente instanciamos el componente sin pasarle propiedades */}
 				<MainScannerApp />

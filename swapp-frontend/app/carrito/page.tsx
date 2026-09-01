@@ -97,9 +97,9 @@ export default function CarritoPage() {
 	};
 
 	return (
-		<div className="absolute inset-0 overflow-y-auto bg-swapp-tiza pb-[140px] z-10">
+		<div className="absolute inset-0 overflow-y-auto bg-swapp-tiza-verdoso pb-[140px] z-10">
 			{/* HEADER STICKY CON BARRA DE PROGRESO */}
-			<div className="bg-swapp-tiza px-5 py-4 flex items-center gap-4 sticky top-0 z-30 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
+			<div className="bg-swapp-tiza-verdoso px-5 py-4 flex items-center gap-4 sticky top-0 z-30 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
 				<button
 					onClick={() => router.back()}
 					className="text-swapp-azul-petroleo hover:bg-gray-200 p-1.5 rounded-full transition-colors flex-shrink-0">
@@ -130,7 +130,7 @@ export default function CarritoPage() {
 					</div>
 					<div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
 						<div
-							className={`h-full transition-all duration-700 ease-out ${progresoEnvio >= 100 ? "bg-swapp-verde-agua" : "bg-swapp-azul-oceano"}`}
+							className={`h-full transition-all duration-700 ease-out ${progresoEnvio >= 100 ? "bg-swapp-verde-pastel" : "bg-swapp-azul-oceano"}`}
 							style={{ width: `${progresoEnvio}%` }}></div>
 					</div>
 				</div>
@@ -267,11 +267,11 @@ export default function CarritoPage() {
 														</div>
 													</div>
 
-													<div className="flex-1 flex flex-col justify-center items-center bg-swapp-verde-agua/10 p-3 rounded-xl border border-swapp-verde-agua/30">
-														<span className="text-[10px] font-bold text-swapp-turquesa-oscuro uppercase tracking-wide mb-2">
+													<div className="flex-1 flex flex-col justify-center items-center bg-swapp-verde-pastel/10 p-3 rounded-xl border border-swapp-verde-pastel/30">
+														<span className="text-[10px] font-bold text-swapp-verde-oscuro uppercase tracking-wide mb-2">
 															Llenos (Llevás)
 														</span>
-														<div className="flex items-center justify-between w-full bg-white border border-swapp-verde-agua/30 rounded-lg px-2 py-1 shadow-sm">
+														<div className="flex items-center justify-between w-full bg-white border border-swapp-verde-pastel/30 rounded-lg px-2 py-1 shadow-sm">
 															<button
 																onClick={() =>
 																	updateReturnableQty?.(
@@ -280,7 +280,7 @@ export default function CarritoPage() {
 																		Math.max(1, item.receiveQty - 1),
 																	)
 																}
-																className="text-lg font-bold text-swapp-azul-oceano w-6 text-center hover:bg-swapp-verde-agua/10 rounded active:scale-90 transition-transform">
+																className="text-lg font-bold text-swapp-azul-oceano w-6 text-center hover:bg-swapp-verde-pastel/10 rounded active:scale-90 transition-transform">
 																-
 															</button>
 															<span className="font-bold text-sm text-swapp-azul-petroleo">
@@ -294,7 +294,7 @@ export default function CarritoPage() {
 																		item.receiveQty + 1,
 																	)
 																}
-																className="text-lg font-bold text-swapp-azul-oceano w-6 text-center hover:bg-swapp-verde-agua/10 rounded active:scale-90 transition-transform">
+																className="text-lg font-bold text-swapp-azul-oceano w-6 text-center hover:bg-swapp-verde-pastel/10 rounded active:scale-90 transition-transform">
 																+
 															</button>
 														</div>
@@ -317,7 +317,7 @@ export default function CarritoPage() {
 																</div>
 															)}
 															{details.extras > 0 && (
-																<div className="flex justify-between text-xs text-swapp-turquesa-oscuro font-medium mb-1">
+																<div className="flex justify-between text-xs text-swapp-verde-oscuro font-medium mb-1">
 																	<span>{details.extras}x Envases Nuevos</span>
 																	<span>
 																		$
@@ -410,7 +410,7 @@ export default function CarritoPage() {
 										</p>
 										<button
 											onClick={() => handleAddRelatedToCart(prod)}
-											className="w-full bg-swapp-verde-agua/10 hover:bg-swapp-verde-agua hover:text-white text-swapp-azul-petroleo text-xs font-bold py-2.5 rounded-xl transition-colors border border-swapp-verde-agua/20">
+											className="w-full bg-swapp-verde-pastel/10 hover:bg-swapp-verde-pastel hover:text-white text-swapp-azul-petroleo text-xs font-bold py-2.5 rounded-xl transition-colors border border-swapp-verde-pastel/20">
 											+ Agregar
 										</button>
 									</div>
@@ -429,7 +429,7 @@ export default function CarritoPage() {
 							</div>
 							<div className="flex justify-between text-sm text-gray-300 relative z-10">
 								<span>Envío</span>
-								<span className="text-swapp-verde-agua font-semibold">
+								<span className="text-swapp-verde-pastel font-semibold">
 									{progresoEnvio >= 100 ? "¡Gratis!" : "Calculado en checkout"}
 								</span>
 							</div>

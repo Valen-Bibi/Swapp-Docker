@@ -31,7 +31,7 @@ export default function BottomNav() {
 					{/* BOTÓN IZQUIERDO: Inicio (Home) */}
 					<Link
 						href="/hub"
-						className="text-swapp-azul-petroleo hover:text-swapp-turquesa-oscuro transition p-2">
+						className="text-swapp-azul-petroleo hover:text-swapp-verde-oscuro transition p-2">
 						<svg
 							className="w-8 h-8"
 							fill="none"
@@ -49,7 +49,7 @@ export default function BottomNav() {
 					{/* BOTÓN CENTRAL FLOTANTE (El carrito) */}
 					{/* Si el botón no queda centrado exactamente en la "montañita", ajuste el valor de '-top-8' */}
 					<div className="absolute left-1/2 -translate-x-1/2 -top-8">
-						<button className="w-16 h-16 rounded-full bg-gradient-to-tr from-swapp-turquesa-oscuro to-swapp-azul-petroleo shadow-xl flex items-center justify-center text-white hover:scale-105 transition-transform">
+						<button className="w-16 h-16 rounded-full bg-gradient-to-tr from-swapp-verde-oscuro to-swapp-azul-petroleo shadow-xl flex items-center justify-center text-white hover:scale-105 transition-transform">
 							<svg
 								className="w-8 h-8"
 								fill="none"
@@ -66,7 +66,7 @@ export default function BottomNav() {
 					</div>
 
 					{/* BOTÓN DERECHO: Menú */}
-					<button className="text-swapp-azul-petroleo hover:text-swapp-turquesa-oscuro transition p-2">
+					<button className="text-swapp-azul-petroleo hover:text-swapp-verde-oscuro transition p-2">
 						<svg
 							className="w-8 h-8"
 							fill="none"

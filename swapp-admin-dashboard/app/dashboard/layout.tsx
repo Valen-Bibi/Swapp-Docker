@@ -7,11 +7,11 @@ export default function DashboardLayout({
 	children: React.ReactNode;
 }) {
 	return (
-		<div className="flex h-screen w-full bg-swapp-tiza dark:bg-swapp-azul-petroleo overflow-hidden transition-colors duration-300">
+		<div className="flex h-screen w-full bg-swapp-tiza-verdoso dark:bg-swapp-azul-petroleo overflow-hidden transition-colors duration-300">
 			{/* Sidebar Modularizado */}
 			<Sidebar />
 
-			<main className="flex-1 overflow-y-auto bg-swapp-blanco dark:bg-swapp-negro-azulado relative transition-colors duration-300">
+			<main className="flex-1 overflow-y-auto bg-swapp-tiza-verdoso dark:bg-swapp-azul-oscuro relative transition-colors duration-300">
 				{children}
 			</main>
 

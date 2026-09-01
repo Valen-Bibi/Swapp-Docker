@@ -86,7 +86,7 @@ export default function AdminPage() {
 
 	if (loading)
 		return (
-			<div className="p-10 text-center text-swapp-verde-agua">
+			<div className="p-10 text-center text-swapp-verde-pastel">
 				Verificando permisos...
 			</div>
 		);
@@ -94,7 +94,7 @@ export default function AdminPage() {
 
 	return (
 		<div className="p-6 pb-24">
-			<h1 className="text-2xl font-bold text-swapp-negro-azulado mb-6">
+			<h1 className="text-2xl font-bold text-swapp-azul-oscuro mb-6">
 				Panel de Control 🛠️
 			</h1>
 

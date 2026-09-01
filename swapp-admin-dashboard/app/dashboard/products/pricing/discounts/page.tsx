@@ -6,6 +6,7 @@ import { Tag, Plus, Edit, Power, Layers } from "lucide-react";
 import TableSkeleton from "@/components/tables/TableSkeleton";
 import PageHeader from "@/components/layout/PageHeader";
 import SearchBar from "@/components/ui/SearchBar";
+import { SwappTooltip } from "@/components/ui/SwappTooltip";
 import { SwappToggle } from "@/components/ui/SwappToggle";
 import { toast } from "sonner";
 import { Product } from "@/types/product";
@@ -176,26 +177,38 @@ export default function OffersPage() {
 					description="Administración de descuentos temporales e híbridos"
 					icon={Tag}
 				/>
-				<div className="flex gap-4 items-center">
-					<SwappToggle
-						checked={showHistory}
-						onChange={setShowHistory}
-						label="Ver historial"
-						id="history-toggle"
+				<div className="flex items-center gap-4">
+					{/* Contenedor del Toggle estandarizado */}
+					<div className="flex items-center gap-2 bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/30 px-3 py-1.5 rounded-lg border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo transition-colors">
+						<span className="text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
+							Ver Historial de Ofertas
+						</span>
+						<SwappToggle
+							checked={showHistory}
+							onChange={setShowHistory}
+							id="history-toggle"
+						/>
+					</div>
+
+					<SearchBar
+						searchTerm={searchTerm}
+						onSearchChange={setSearchTerm}
+						placeholder="Buscar producto u oferta..."
 					/>
 
-					<SearchBar searchTerm={searchTerm} onSearchChange={setSearchTerm} />
-					<button
-						onClick={() => openModal()}
-						className="flex items-center gap-2 rounded-lg bg-swapp-turquesa-oscuro dark:bg-swapp-menta px-4 py-2.5 text-sm font-medium text-swapp-blanco dark:text-swapp-negro-azulado hover:bg-swapp-azul-oceano transition-colors whitespace-nowrap">
-						<Plus className="h-4 w-4" /> Nueva Oferta
-					</button>
+					<SwappTooltip text="Crear una nueva oferta">
+						<button
+							onClick={() => openModal()}
+							className="inline-flex items-center gap-2 rounded-lg bg-swapp-verde-oscuro dark:bg-swapp-verde-menta px-4 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro hover:bg-swapp-azul-oceano dark:hover:bg-swapp-verde-pastel transition-colors whitespace-nowrap">
+							<Plus className="h-4 w-4" /> Nueva Oferta
+						</button>
+					</SwappTooltip>
 				</div>
 			</div>
 
-			<div className="overflow-hidden rounded-xl border border-swapp-tiza dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-negro-azulado shadow-sm transition-colors">
-				<table className="w-full text-left text-sm text-swapp-azul-petroleo dark:text-swapp-tiza">
-					<thead className="bg-swapp-tiza/50 dark:bg-swapp-azul-petroleo/30 text-swapp-negro-azulado dark:text-swapp-tiza select-none">
+			<div className="overflow-hidden rounded-xl border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro shadow-sm transition-colors">
+				<table className="w-full text-left text-sm text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
+					<thead className="bg-swapp-tiza-verdoso/50 dark:bg-swapp-azul-petroleo/30 text-swapp-azul-oscuro dark:text-swapp-tiza-verdoso select-none">
 						<tr>
 							<th className="px-6 py-4 font-semibold">Producto / Alcance</th>
 							<th className="px-6 py-4 font-semibold">Campaña</th>
@@ -205,12 +218,12 @@ export default function OffersPage() {
 							<th className="px-6 py-4 font-semibold text-right">Acciones</th>
 						</tr>
 					</thead>
-					<tbody className="divide-y divide-swapp-tiza dark:divide-swapp-azul-petroleo">
+					<tbody className="divide-y divide-swapp-tiza-verdoso dark:divide-swapp-azul-petroleo">
 						{filteredDiscounts.length === 0 ? (
 							<tr>
 								<td
 									colSpan={6}
-									className="px-6 py-8 text-center text-swapp-azul-petroleo/50 dark:text-swapp-tiza/50">
+									className="px-6 py-8 text-center text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50">
 									No se encontraron ofertas.
 								</td>
 							</tr>
@@ -222,11 +235,11 @@ export default function OffersPage() {
 								return (
 									<tr
 										key={d.discount_id}
-										className={`transition-colors hover:bg-swapp-tiza/30 dark:hover:bg-swapp-azul-petroleo/30 ${new Date(d.end_date) < new Date() ? "opacity-60" : ""}`}>
+										className={`transition-colors hover:bg-swapp-tiza-verdoso/30 dark:hover:bg-swapp-azul-petroleo/30 ${new Date(d.end_date) < new Date() ? "opacity-60" : ""}`}>
 										{/* NUEVA COLUMNA CON BADGES DE ALCANCE */}
 										<td className="px-6 py-4">
 											<div className="flex flex-col gap-1.5">
-												<span className="font-medium text-swapp-negro-azulado dark:text-swapp-blanco">
+												<span className="font-medium text-swapp-azul-oscuro dark:text-swapp-blanco">
 													{d.product_name || `ID: ${d.product_id}`}
 												</span>
 												{isGlobal ? (
@@ -248,7 +261,7 @@ export default function OffersPage() {
 															return (
 																<span
 																	key={uuid}
-																	className="inline-flex items-center rounded-md bg-swapp-tiza/50 dark:bg-swapp-azul-petroleo/40 px-2 py-0.5 text-[10px] font-mono font-medium text-swapp-azul-petroleo dark:text-swapp-tiza border border-swapp-tiza dark:border-swapp-azul-petroleo/50">
+																	className="inline-flex items-center rounded-md bg-swapp-tiza-verdoso/50 dark:bg-swapp-azul-petroleo/40 px-2 py-0.5 text-[10px] font-mono font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo/50">
 																	SKU: {sku}
 																</span>
 															);
@@ -260,7 +273,7 @@ export default function OffersPage() {
 
 										<td className="px-6 py-4 font-medium">{d.name}</td>
 										<td className="px-6 py-4">
-											<span className="inline-flex items-center gap-1 font-bold text-swapp-turquesa-oscuro dark:text-swapp-menta bg-swapp-turquesa-oscuro/10 dark:bg-swapp-menta/10 px-2 py-1 rounded-md">
+											<span className="inline-flex items-center gap-1 font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta bg-swapp-verde-oscuro/10 dark:bg-swapp-verde-menta/10 px-2 py-1 rounded-md">
 												<Tag className="h-3.5 w-3.5" />
 												{d.discount_type === "percentage"
 													? `${d.value}% OFF`
@@ -268,7 +281,7 @@ export default function OffersPage() {
 											</span>
 										</td>
 										<td className="px-6 py-4 text-xs">
-											<div className="flex flex-col gap-1 text-swapp-azul-petroleo/80 dark:text-swapp-tiza/80">
+											<div className="flex flex-col gap-1 text-swapp-azul-petroleo/80 dark:text-swapp-tiza-verdoso/80">
 												<span>
 													<span className="font-medium">Inicio:</span>{" "}
 													{new Date(d.start_date).toLocaleDateString()}
@@ -280,25 +293,28 @@ export default function OffersPage() {
 											</div>
 										</td>
 										<td className="px-6 py-4 text-center">
-											<button
-												onClick={() => handleToggleActive(d)}
-												title={d.is_active ? "Desactivar" : "Activar"}
-												disabled={new Date(d.end_date) < new Date()}
-												className={`inline-flex items-center justify-center p-2 rounded-full transition-all duration-300 ${
-													d.is_active
-														? "bg-emerald-100 text-emerald-600 hover:bg-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400"
-														: "bg-swapp-tiza text-swapp-azul-petroleo/40 hover:bg-swapp-tiza/80 dark:bg-swapp-azul-petroleo dark:text-swapp-tiza/40"
-												} disabled:cursor-not-allowed`}>
-												<Power className="h-4 w-4" />
-											</button>
+											<SwappTooltip
+												text={d.is_active ? "Desactivar" : "Activar"}>
+												<button
+													onClick={() => handleToggleActive(d)}
+													disabled={new Date(d.end_date) < new Date()}
+													className={`inline-flex items-center justify-center p-2 rounded-full transition-all duration-300 ${
+														d.is_active
+															? "bg-emerald-100 text-emerald-600 hover:bg-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400"
+															: "bg-swapp-tiza-verdoso text-swapp-azul-petroleo/40 hover:bg-swapp-tiza-verdoso/80 dark:bg-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/40"
+													} disabled:cursor-not-allowed`}>
+													<Power className="h-4 w-4" />
+												</button>
+											</SwappTooltip>
 										</td>
 										<td className="px-6 py-4 text-right">
-											<button
-												onClick={() => openModal(d)}
-												title="Editar Oferta"
-												className="p-2 text-swapp-azul-petroleo/40 dark:text-swapp-tiza/40 hover:text-swapp-turquesa-oscuro dark:hover:text-swapp-menta transition-colors">
-												<Edit className="h-4 w-4" />
-											</button>
+											<SwappTooltip text="Editar Oferta">
+												<button
+													onClick={() => openModal(d)}
+													className="p-1.5 rounded-md text-swapp-azul-petroleo/50 hover:text-swapp-verde-oscuro dark:text-swapp-tiza-verdoso/50 dark:hover:text-swapp-verde-menta hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo transition-colors">
+													<Edit className="h-4 w-4" />
+												</button>
+											</SwappTooltip>
 										</td>
 									</tr>
 								);

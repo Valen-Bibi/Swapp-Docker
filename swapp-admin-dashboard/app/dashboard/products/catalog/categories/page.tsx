@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FolderTree, Plus, Edit, PlusCircle } from "lucide-react";
+import { FolderTree, Plus, Edit, PlusSquare } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import PageHeader from "@/components/layout/PageHeader";
@@ -122,17 +122,11 @@ export default function CategoriesPage() {
 					description="Clasificación jerárquica del catálogo y nodos finales"
 					icon={FolderTree}
 				/>
-				<div className="flex flex-wrap items-center gap-3">
-					<SearchBar
-						searchTerm={searchTerm}
-						onSearchChange={setSearchTerm}
-						placeholder="Buscar categoría..."
-					/>
-
-					{/* --- EL NUEVO TOGGLE VISUAL --- */}
-					<div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-swapp-tiza dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-negro-azulado transition-colors">
-						<span className="text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza">
-							Ver Archivadas
+				<div className="flex items-center gap-4">
+					{/* Contenedor del Toggle estandarizado */}
+					<div className="flex items-center gap-2 bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/30 px-3 py-1.5 rounded-lg border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo transition-colors">
+						<span className="text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
+							Ver Categorías Archivadas
 						</span>
 						<SwappToggle
 							checked={showInactive}
@@ -141,26 +135,34 @@ export default function CategoriesPage() {
 						/>
 					</div>
 
-					<button
-						onClick={() => {
-							setEditingCat({
-								name: "",
-								slug: "",
-								parent_id: null,
-								display_order: 0,
-								is_active: true,
-							});
-							setIsModalOpen(true);
-						}}
-						className="inline-flex items-center gap-2 rounded-lg bg-swapp-turquesa-oscuro dark:bg-swapp-menta px-4 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-negro-azulado hover:bg-swapp-azul-oceano dark:hover:bg-swapp-verde-agua transition-colors">
-						<Plus className="h-4 w-4" /> Nueva Categoría Principal
-					</button>
+					<SearchBar
+						searchTerm={searchTerm}
+						onSearchChange={setSearchTerm}
+						placeholder="Buscar categoría..."
+					/>
+
+					<SwappTooltip text="Crear una nueva categoría principal">
+						<button
+							onClick={() => {
+								setEditingCat({
+									name: "",
+									slug: "",
+									parent_id: null,
+									display_order: 0,
+									is_active: true,
+								});
+								setIsModalOpen(true);
+							}}
+							className="inline-flex items-center gap-2 rounded-lg bg-swapp-verde-oscuro dark:bg-swapp-verde-menta px-4 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro hover:bg-swapp-azul-oceano dark:hover:bg-swapp-verde-pastel transition-colors whitespace-nowrap">
+							<Plus className="h-4 w-4" /> Nueva Categoría
+						</button>
+					</SwappTooltip>
 				</div>
 			</div>
 
-			<div className="overflow-hidden rounded-xl border border-swapp-tiza dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-negro-azulado shadow-sm transition-colors">
-				<table className="w-full text-left text-sm text-swapp-azul-petroleo dark:text-swapp-tiza">
-					<thead className="bg-swapp-tiza/50 dark:bg-swapp-azul-petroleo/30 text-swapp-negro-azulado dark:text-swapp-tiza select-none">
+			<div className="overflow-hidden rounded-xl border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro shadow-sm transition-colors">
+				<table className="w-full text-left text-sm text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
+					<thead className="bg-swapp-tiza-verdoso/50 dark:bg-swapp-azul-petroleo/30 text-swapp-azul-oscuro dark:text-swapp-tiza-verdoso select-none">
 						<tr>
 							<th className="px-6 py-4 font-semibold">Categoría (Slug)</th>
 							<th className="px-6 py-4 font-semibold">Jerarquía</th>
@@ -169,12 +171,12 @@ export default function CategoriesPage() {
 							<th className="px-6 py-4 font-semibold text-right">Acciones</th>
 						</tr>
 					</thead>
-					<tbody className="divide-y divide-swapp-tiza dark:divide-swapp-azul-petroleo">
+					<tbody className="divide-y divide-swapp-tiza-verdoso dark:divide-swapp-azul-petroleo">
 						{filteredCategories.length === 0 ? (
 							<tr>
 								<td
 									colSpan={5}
-									className="px-6 py-12 text-center text-swapp-azul-petroleo/50 dark:text-swapp-tiza/50">
+									className="px-6 py-12 text-center text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50">
 									No se encontraron categorías.
 								</td>
 							</tr>
@@ -184,27 +186,27 @@ export default function CategoriesPage() {
 								return (
 									<tr
 										key={c.category_id}
-										className={`transition-colors hover:bg-swapp-tiza/30 dark:hover:bg-swapp-azul-petroleo/30 ${isChild ? "bg-swapp-tiza/10 dark:bg-swapp-azul-petroleo/10" : ""}`}>
+										className={`transition-colors hover:bg-swapp-tiza-verdoso/30 dark:hover:bg-swapp-azul-petroleo/30 ${isChild ? "bg-swapp-tiza-verdoso/10 dark:bg-swapp-azul-petroleo/10" : ""}`}>
 										<td className="px-6 py-4">
 											<div
-												className={`font-medium flex items-center gap-2 text-swapp-negro-azulado dark:text-swapp-blanco ${isChild ? "pl-6 border-l-2 border-swapp-turquesa-oscuro dark:border-swapp-menta" : ""}`}>
+												className={`font-medium flex items-center gap-2 text-swapp-azul-oscuro dark:text-swapp-blanco ${isChild ? "pl-6 border-l-2 border-swapp-verde-oscuro dark:border-swapp-verde-menta" : ""}`}>
 												{isChild && (
-													<span className="text-swapp-menta/60">↳</span>
+													<span className="text-swapp-verde-menta/60">↳</span>
 												)}
 												{c.name}
 											</div>
 											<div
-												className={`text-xs text-swapp-azul-petroleo/50 dark:text-swapp-tiza/50 ${isChild ? "pl-6" : ""}`}>
+												className={`text-xs text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50 ${isChild ? "pl-6" : ""}`}>
 												/{c.slug}
 											</div>
 										</td>
 										<td className="px-6 py-4 text-xs">
 											{isChild ? (
-												<span className="inline-flex items-center gap-1 rounded-full bg-swapp-turquesa-oscuro/10 dark:bg-swapp-menta/10 px-2.5 py-1 font-semibold text-swapp-turquesa-oscuro dark:text-swapp-menta">
+												<span className="inline-flex items-center gap-1 rounded-full bg-swapp-verde-oscuro/10 dark:bg-swapp-verde-menta/10 px-2.5 py-1 font-semibold text-swapp-verde-oscuro dark:text-swapp-verde-menta">
 													Subcategoría
 												</span>
 											) : (
-												<span className="inline-flex items-center gap-1 rounded-full bg-swapp-azul-petroleo/10 dark:bg-swapp-tiza/10 px-2.5 py-1 font-semibold text-swapp-azul-petroleo dark:text-swapp-tiza">
+												<span className="inline-flex items-center gap-1 rounded-full bg-swapp-azul-petroleo/10 dark:bg-swapp-tiza-verdoso/10 px-2.5 py-1 font-semibold text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
 													Principal
 												</span>
 											)}
@@ -212,7 +214,7 @@ export default function CategoriesPage() {
 										<td className="px-6 py-4">{c.display_order}</td>
 										<td className="px-6 py-4">
 											<span
-												className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${c.is_active ? "bg-swapp-verde-agua/10 dark:bg-swapp-menta/10 text-swapp-turquesa-oscuro dark:text-swapp-menta" : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"}`}>
+												className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${c.is_active ? "bg-swapp-verde-pastel/10 dark:bg-swapp-verde-menta/10 text-swapp-verde-oscuro dark:text-swapp-verde-menta" : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"}`}>
 												{c.is_active ? "Activa" : "Oculta"}
 											</span>
 										</td>
@@ -228,7 +230,7 @@ export default function CategoriesPage() {
 																});
 																setIsLockModalOpen(true);
 															}}
-															className="p-2 text-swapp-turquesa-oscuro dark:text-swapp-menta hover:bg-swapp-turquesa-oscuro/10 dark:hover:bg-swapp-menta/10 rounded-md transition-colors">
+															className="p-1.5 rounded-md text-swapp-azul-petroleo/50 hover:text-swapp-verde-oscuro dark:text-swapp-tiza-verdoso/50 dark:hover:text-swapp-verde-menta hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo transition-colors">
 															<Lock className="h-4 w-4" />
 														</button>
 													</SwappTooltip>
@@ -243,8 +245,8 @@ export default function CategoriesPage() {
 																});
 																setIsSubModalOpen(true);
 															}}
-															className="p-2 text-swapp-azul-petroleo/40 dark:text-swapp-tiza/40 hover:text-swapp-turquesa-oscuro dark:hover:text-swapp-menta transition-colors">
-															<PlusCircle className="h-4 w-4" />
+															className="p-1.5 rounded-md text-swapp-azul-petroleo/50 hover:text-swapp-verde-oscuro dark:text-swapp-tiza-verdoso/50 dark:hover:text-swapp-verde-menta hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo transition-colors">
+															<PlusSquare className="h-4 w-4" />
 														</button>
 													</SwappTooltip>
 												)}
@@ -254,7 +256,7 @@ export default function CategoriesPage() {
 															setEditingCat(c);
 															setIsModalOpen(true);
 														}}
-														className="p-2 text-swapp-azul-petroleo/40 dark:text-swapp-tiza/40 hover:text-swapp-turquesa-oscuro dark:hover:text-swapp-menta transition-colors">
+														className="p-1.5 rounded-md text-swapp-azul-petroleo/50 hover:text-swapp-verde-oscuro dark:text-swapp-tiza-verdoso/50 dark:hover:text-swapp-verde-menta hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo transition-colors">
 														<Edit className="h-4 w-4" />
 													</button>
 												</SwappTooltip>

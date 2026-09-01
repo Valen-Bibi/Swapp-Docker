@@ -101,24 +101,24 @@ export default function CategoryAttributesModal({
 
 	return (
 		<div className="fixed inset-0 z-[100] flex items-center justify-center bg-swapp-negro/50 dark:bg-swapp-negro/70 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95">
-			<div className="w-full max-w-2xl max-h-[85vh] flex flex-col rounded-xl bg-swapp-blanco dark:bg-swapp-negro-azulado shadow-2xl border-t-4 border-swapp-turquesa-oscuro dark:border-swapp-menta overflow-hidden">
+			<div className="w-full max-w-2xl max-h-[85vh] flex flex-col rounded-xl bg-swapp-blanco dark:bg-swapp-azul-oscuro shadow-2xl border-t-4 border-swapp-verde-oscuro dark:border-swapp-menta overflow-hidden">
 				{/* HEADER */}
 				<div className="p-6 border-b border-swapp-tiza dark:border-swapp-azul-petroleo flex items-center justify-between shrink-0">
 					<div>
-						<h2 className="text-xl font-bold text-swapp-negro-azulado dark:text-swapp-blanco flex items-center gap-2">
-							<Lock className="h-5 w-5 text-swapp-turquesa-oscuro dark:text-swapp-menta" />
+						<h2 className="text-xl font-bold text-swapp-azul-oscuro dark:text-swapp-blanco flex items-center gap-2">
+							<Lock className="h-5 w-5 text-swapp-verde-oscuro dark:text-swapp-menta" />
 							Candado de Atributos
 						</h2>
 						<p className="text-sm text-swapp-azul-petroleo/70 dark:text-swapp-tiza/70 mt-1">
 							Atributos exigidos para la subcategoría:{" "}
-							<span className="font-semibold text-swapp-turquesa-oscuro dark:text-swapp-menta">
+							<span className="font-semibold text-swapp-verde-oscuro dark:text-swapp-menta">
 								{category.name}
 							</span>
 						</p>
 					</div>
 					<button
 						onClick={onClose}
-						className="text-swapp-azul-petroleo/50 hover:text-swapp-negro-azulado dark:text-swapp-tiza/50 dark:hover:text-swapp-blanco transition-colors">
+						className="text-swapp-azul-petroleo/50 hover:text-swapp-azul-oscuro dark:text-swapp-tiza/50 dark:hover:text-swapp-blanco transition-colors">
 						<X className="h-5 w-5" />
 					</button>
 				</div>
@@ -127,7 +127,7 @@ export default function CategoryAttributesModal({
 				<div className="p-6 overflow-y-auto flex-1">
 					{loading ? (
 						<div className="flex justify-center py-8">
-							<div className="animate-spin h-6 w-6 border-2 border-swapp-turquesa-oscuro border-t-transparent rounded-full"></div>
+							<div className="animate-spin h-6 w-6 border-2 border-swapp-verde-oscuro border-t-transparent rounded-full"></div>
 						</div>
 					) : allAttributes.length === 0 ? (
 						<div className="text-center py-8 text-swapp-azul-petroleo/50 dark:text-swapp-tiza/50 text-sm">
@@ -145,9 +145,9 @@ export default function CategoryAttributesModal({
 								return (
 									<div
 										key={attr.attribute_id}
-										className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${isLinked ? "border-swapp-turquesa-oscuro bg-swapp-turquesa-oscuro/5 dark:border-swapp-menta dark:bg-swapp-menta/5" : "border-swapp-tiza dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-negro-azulado hover:bg-swapp-tiza/20 dark:hover:bg-swapp-azul-petroleo/30"}`}>
+										className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${isLinked ? "border-swapp-verde-oscuro bg-swapp-verde-oscuro/5 dark:border-swapp-menta dark:bg-swapp-menta/5" : "border-swapp-tiza dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro hover:bg-swapp-tiza/20 dark:hover:bg-swapp-azul-petroleo/30"}`}>
 										<div className="flex flex-col">
-											<span className="font-medium text-sm text-swapp-negro-azulado dark:text-swapp-blanco">
+											<span className="font-medium text-sm text-swapp-azul-oscuro dark:text-swapp-blanco">
 												{attr.name}
 											</span>
 											<span className="text-xs text-swapp-azul-petroleo/60 dark:text-swapp-tiza/60">
@@ -179,7 +179,7 @@ export default function CategoryAttributesModal({
 												onClick={() =>
 													toggleLink(attr.attribute_id, isLinked, false)
 												}
-												className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${isLinked ? "bg-swapp-turquesa-oscuro text-swapp-blanco hover:bg-red-500" : "bg-swapp-tiza dark:bg-swapp-azul-petroleo text-swapp-azul-petroleo dark:text-swapp-tiza hover:bg-swapp-turquesa-oscuro hover:text-swapp-blanco dark:hover:bg-swapp-menta dark:hover:text-swapp-negro-azulado"}`}>
+												className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${isLinked ? "bg-swapp-verde-oscuro text-swapp-blanco hover:bg-red-500" : "bg-swapp-tiza dark:bg-swapp-azul-petroleo text-swapp-azul-petroleo dark:text-swapp-tiza hover:bg-swapp-verde-oscuro hover:text-swapp-blanco dark:hover:bg-swapp-menta dark:hover:text-swapp-azul-oscuro"}`}>
 												{isLinked ? (
 													<>
 														Vincular <CheckCircle2 className="h-3.5 w-3.5" />

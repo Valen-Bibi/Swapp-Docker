@@ -50,7 +50,7 @@ export function SwappDropzone({
 	return (
 		<div className={`space-y-2 ${className}`}>
 			{label && (
-				<label className="block text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza transition-colors">
+				<label className="block text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso transition-colors">
 					{label}
 				</label>
 			)}
@@ -59,25 +59,25 @@ export function SwappDropzone({
 				className={`relative flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-xl outline-none transition-all duration-200 ease-in-out
 				${
 					isUploading
-						? "bg-swapp-tiza/50 border-swapp-azul-petroleo/20 dark:bg-swapp-azul-petroleo/30 dark:border-swapp-tiza/20 cursor-not-allowed"
+						? "bg-swapp-tiza-verdoso/50 border-swapp-azul-petroleo/20 dark:bg-swapp-azul-petroleo/30 dark:border-swapp-tiza-verdoso/20 cursor-not-allowed"
 						: isDragReject
 							? "bg-red-50 border-red-500 dark:bg-red-900/10"
 							: isDragActive
-								? "bg-swapp-turquesa-oscuro/10 border-swapp-turquesa-oscuro dark:bg-swapp-menta/10 dark:border-swapp-menta cursor-copy"
-								: "bg-swapp-blanco border-swapp-azul-petroleo/30 dark:bg-swapp-negro-azulado dark:border-swapp-tiza/30 hover:bg-swapp-tiza/50 dark:hover:bg-swapp-azul-petroleo/50 hover:border-swapp-turquesa-oscuro dark:hover:border-swapp-menta cursor-pointer"
+								? "bg-swapp-verde-oscuro/10 border-swapp-verde-oscuro dark:bg-swapp-verde-menta/10 dark:border-swapp-verde-menta cursor-copy"
+								: "bg-swapp-blanco border-swapp-azul-petroleo/30 dark:bg-swapp-azul-oscuro dark:border-swapp-tiza-verdoso/30 hover:bg-swapp-tiza-verdoso/50 dark:hover:bg-swapp-azul-petroleo/50 hover:border-swapp-verde-oscuro dark:hover:border-swapp-verde-menta cursor-pointer"
 				}
 				`}>
 				<input {...getInputProps()} />
 
 				{isUploading ? (
-					<div className="flex flex-col items-center text-swapp-turquesa-oscuro dark:text-swapp-menta">
+					<div className="flex flex-col items-center text-swapp-verde-oscuro dark:text-swapp-verde-menta">
 						<Loader2 className="h-10 w-10 animate-spin mb-3" />
 						<p className="text-sm font-medium">Optimizando y subiendo...</p>
 					</div>
 				) : (
-					<div className="flex flex-col items-center text-swapp-azul-petroleo/60 dark:text-swapp-tiza/60">
+					<div className="flex flex-col items-center text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
 						{isDragActive && !isDragReject ? (
-							<UploadCloud className="h-10 w-10 mb-3 text-swapp-turquesa-oscuro dark:text-swapp-menta animate-bounce" />
+							<UploadCloud className="h-10 w-10 mb-3 text-swapp-verde-oscuro dark:text-swapp-verde-menta animate-bounce" />
 						) : (
 							<FileImage className="h-10 w-10 mb-3" />
 						)}

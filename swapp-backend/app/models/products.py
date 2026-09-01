@@ -180,6 +180,7 @@ class Product(Base):
     related_to = relationship("ProductRelationship", foreign_keys="[ProductRelationship.source_product_id]", back_populates="source_product")
     related_from = relationship("ProductRelationship", foreign_keys="[ProductRelationship.target_product_id]", back_populates="target_product")
     inventory_movements = relationship("InventoryMovement", back_populates="product", cascade="all, delete")
+    order_items = relationship("OrderItem", back_populates="product")
 
 class ProductVariant(Base):
     __tablename__ = "product_variants"
@@ -205,6 +206,7 @@ class ProductVariant(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     product = relationship("Product", back_populates="variants")
+    order_items = relationship("OrderItem", back_populates="variant")
 
 
 class ProductMedia(Base):

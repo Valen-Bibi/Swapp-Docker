@@ -93,28 +93,28 @@ export default function LoginPage() {
 
 				<form onSubmit={handleSubmit} className="space-y-5">
 					<div className="space-y-1.5">
-						<label className="text-sm font-medium text-swapp-verde-agua ml-1">
+						<label className="text-sm font-medium text-swapp-verde-pastel ml-1">
 							Email
 						</label>
 						<input
 							type="email"
 							value={email}
 							onChange={(e) => setEmail(e.target.value)}
-							className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-swapp-verde-agua transition placeholder-gray-600"
+							className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-swapp-verde-pastel transition placeholder-gray-600"
 							placeholder="tu@swapp.com.ar"
 							required
 						/>
 					</div>
 
 					<div className="space-y-1.5">
-						<label className="text-sm font-medium text-swapp-verde-agua ml-1">
+						<label className="text-sm font-medium text-swapp-verde-pastel ml-1">
 							Contraseña
 						</label>
 						<input
 							type="password"
 							value={password}
 							onChange={(e) => setPassword(e.target.value)}
-							className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-swapp-verde-agua transition placeholder-gray-600"
+							className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-swapp-verde-pastel transition placeholder-gray-600"
 							placeholder="••••••••"
 							required
 						/>
@@ -123,7 +123,7 @@ export default function LoginPage() {
 					<button
 						type="submit"
 						disabled={loading}
-						className="w-full mt-4 bg-gradient-to-r from-swapp-turquesa-oscuro to-swapp-verde-agua text-swapp-negro-azulado font-bold py-4 rounded-xl hover:scale-[1.02] transition-transform shadow-lg disabled:opacity-50 disabled:scale-100 text-lg">
+						className="w-full mt-4 bg-gradient-to-r from-swapp-verde-oscuro to-swapp-verde-pastel text-swapp-azul-oscuro font-bold py-4 rounded-xl hover:scale-[1.02] transition-transform shadow-lg disabled:opacity-50 disabled:scale-100 text-lg">
 						{loadingText}
 					</button>
 				</form>
@@ -133,7 +133,7 @@ export default function LoginPage() {
 						¿Aún no tienes cuenta?{" "}
 						<Link
 							href="/registro"
-							className="text-swapp-verde-agua font-semibold hover:underline">
+							className="text-swapp-verde-pastel font-semibold hover:underline">
 							Regístrate aquí
 						</Link>
 					</p>

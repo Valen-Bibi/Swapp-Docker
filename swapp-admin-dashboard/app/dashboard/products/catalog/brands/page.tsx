@@ -99,15 +99,15 @@ export default function BrandsPage() {
 							});
 							setIsModalOpen(true);
 						}}
-						className="inline-flex items-center gap-2 rounded-lg bg-swapp-turquesa-oscuro dark:bg-swapp-menta px-4 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-negro-azulado hover:bg-swapp-azul-oceano dark:hover:bg-swapp-verde-agua transition-colors">
+						className="inline-flex items-center gap-2 rounded-lg bg-swapp-verde-oscuro dark:bg-swapp-verde-menta px-4 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro hover:bg-swapp-azul-oceano dark:hover:bg-swapp-verde-pastel transition-colors">
 						<Plus className="h-4 w-4" /> Nueva Marca
 					</button>
 				</div>
 			</div>
 
-			<div className="overflow-hidden rounded-xl border border-swapp-tiza dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-negro-azulado shadow-sm transition-colors">
-				<table className="w-full text-left text-sm text-swapp-azul-petroleo dark:text-swapp-tiza">
-					<thead className="bg-swapp-tiza/50 dark:bg-swapp-azul-petroleo/30 text-swapp-negro-azulado dark:text-swapp-tiza select-none">
+			<div className="overflow-hidden rounded-xl border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro shadow-sm transition-colors">
+				<table className="w-full text-left text-sm text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
+					<thead className="bg-swapp-tiza-verdoso/50 dark:bg-swapp-azul-petroleo/30 text-swapp-azul-oscuro dark:text-swapp-tiza-verdoso select-none">
 						<tr>
 							<th className="px-6 py-4 font-semibold">Logo</th>
 							<th className="px-6 py-4 font-semibold">Nombre y Slug</th>
@@ -116,40 +116,40 @@ export default function BrandsPage() {
 							<th className="px-6 py-4 font-semibold text-right">Acciones</th>
 						</tr>
 					</thead>
-					<tbody className="divide-y divide-swapp-tiza dark:divide-swapp-azul-petroleo">
+					<tbody className="divide-y divide-swapp-tiza-verdoso dark:divide-swapp-azul-petroleo">
 						{filteredBrands.map((b) => (
 							<tr
 								key={b.brand_id}
-								className="transition-colors hover:bg-swapp-tiza/30 dark:hover:bg-swapp-azul-petroleo/30">
+								className="transition-colors hover:bg-swapp-tiza-verdoso/30 dark:hover:bg-swapp-azul-petroleo/30">
 								<td className="px-6 py-4">
 									{b.logo_url ? (
 										<img
 											src={b.logo_url}
-											className="h-10 w-10 rounded-md object-contain bg-white border border-swapp-tiza"
+											className="h-10 w-10 rounded-md object-contain bg-white border border-swapp-tiza-verdoso"
 										/>
 									) : (
-										<div className="h-10 w-10 rounded-md bg-swapp-tiza dark:bg-swapp-azul-petroleo flex items-center justify-center text-swapp-azul-petroleo/30 dark:text-swapp-tiza/30">
+										<div className="h-10 w-10 rounded-md bg-swapp-tiza-verdoso dark:bg-swapp-azul-petroleo flex items-center justify-center text-swapp-azul-petroleo/30 dark:text-swapp-tiza-verdoso/30">
 											<ImageIcon className="h-5 w-5" />
 										</div>
 									)}
 								</td>
 								<td className="px-6 py-4">
-									<div className="font-medium text-swapp-negro-azulado dark:text-swapp-blanco flex items-center gap-2">
+									<div className="font-medium text-swapp-azul-oscuro dark:text-swapp-blanco flex items-center gap-2">
 										{b.name}
 										{b.featured && (
-											<span className="text-[10px] bg-swapp-turquesa-oscuro/20 text-swapp-turquesa-oscuro dark:text-swapp-menta px-2 py-0.5 rounded-full uppercase font-bold">
+											<span className="text-[10px] bg-swapp-verde-oscuro/20 text-swapp-verde-oscuro dark:text-swapp-verde-menta px-2 py-0.5 rounded-full uppercase font-bold">
 												Destacada
 											</span>
 										)}
 									</div>
-									<div className="text-xs text-swapp-azul-petroleo/50 dark:text-swapp-tiza/50">
+									<div className="text-xs text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50">
 										/{b.slug}
 									</div>
 								</td>
 								<td className="px-6 py-4">{b.display_order}</td>
 								<td className="px-6 py-4">
 									<span
-										className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${b.is_active ? "bg-swapp-verde-agua/10 dark:bg-swapp-menta/10 text-swapp-turquesa-oscuro dark:text-swapp-menta" : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"}`}>
+										className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${b.is_active ? "bg-swapp-verde-pastel/10 dark:bg-swapp-verde-menta/10 text-swapp-verde-oscuro dark:text-swapp-verde-menta" : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"}`}>
 										{b.is_active ? "Activa" : "Inactiva"}
 									</span>
 								</td>
@@ -159,7 +159,7 @@ export default function BrandsPage() {
 											setEditingBrand(b);
 											setIsModalOpen(true);
 										}}
-										className="p-2 text-swapp-azul-petroleo/40 dark:text-swapp-tiza/40 hover:text-swapp-turquesa-oscuro dark:hover:text-swapp-menta transition-colors">
+										className="p-1.5 rounded-md text-swapp-azul-petroleo/50 hover:text-swapp-verde-oscuro dark:text-swapp-tiza-verdoso/50 dark:hover:text-swapp-verde-menta hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo transition-colors">
 										<Edit className="h-4 w-4" />
 									</button>
 								</td>

@@ -107,6 +107,7 @@ class ProductVariantResponse(BaseModel):
     image_url: Optional[str] = None
 
 class ProductoResponse(BaseModel):
+    product_id: int
     product_uuid: uuid.UUID
     name: str
     is_returnable: bool
@@ -114,6 +115,7 @@ class ProductoResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class ProductoCatalogoResponse(BaseModel):
+    product_id: int
     product_uuid: uuid.UUID
     name: str
     slug: str

@@ -79,6 +79,11 @@ export const ProductService = {
     const { data } = await api.delete(`/api/products/admin/attributes/values/${valueId}`);
     return data;
   },
+  
+  deleteAttribute: async (attributeId: number) => {
+    const { data } = await api.delete(`/api/products/admin/attributes/${attributeId}`);
+    return data;
+  },
 
  getPriceHistory: async (productUuid: string, variantUuid: string): Promise<any[]> => {
 		const { data } = await api.get(`/api/products/admin/${productUuid}/variants/${variantUuid}/price-history`);

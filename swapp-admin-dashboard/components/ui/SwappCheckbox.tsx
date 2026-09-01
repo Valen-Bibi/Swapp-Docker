@@ -14,11 +14,11 @@ export function SwappCheckbox({
 			<input
 				{...props}
 				type="checkbox"
-				className="h-4 w-4 rounded border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo text-swapp-turquesa-oscuro dark:text-swapp-menta focus:ring-swapp-turquesa-oscuro dark:focus:ring-swapp-menta bg-swapp-blanco dark:bg-swapp-negro-azulado transition-colors cursor-pointer"
+				className="h-4 w-4 rounded border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo text-swapp-verde-oscuro dark:text-swapp-verde-menta focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta bg-swapp-blanco dark:bg-swapp-azul-oscuro transition-colors cursor-pointer"
 			/>
 			<label
 				htmlFor={props.id}
-				className="ml-2 text-sm text-swapp-azul-petroleo dark:text-swapp-tiza font-medium cursor-pointer select-none transition-colors">
+				className="ml-2 text-sm text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso font-medium cursor-pointer select-none transition-colors">
 				{label}
 			</label>
 		</div>

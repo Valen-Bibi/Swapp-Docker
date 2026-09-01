@@ -26,7 +26,6 @@ export interface TaxClass {
   is_active: boolean;
 }
 
-// --- NUEVA INTERFAZ: LA VARIANTE FÍSICA ---
 export interface ProductVariant {
   variant_id?: number;
   variant_uuid?: string;
@@ -40,8 +39,8 @@ export interface ProductVariant {
   is_active: boolean;
 }
 
-// --- INTERFAZ ACTUALIZADA: LA PLANTILLA (PADRE) ---
 export interface Product {
+  product_id: number
   product_uuid: string;
   name: string;
   slug: string;

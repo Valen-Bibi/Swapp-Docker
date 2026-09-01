@@ -38,7 +38,7 @@ export default function Header() {
 					onClick={() => setIsDropdownOpen(!isDropdownOpen)}
 					className="flex items-center gap-3 text-left focus:outline-none hover:opacity-80 transition-opacity">
 					{/* Avatar / Icono */}
-					<div className="w-10 h-10 rounded-full border-2 border-swapp-verde-agua bg-swapp-verde-agua/10 flex items-center justify-center transition-colors">
+					<div className="w-10 h-10 rounded-full border-2 border-swapp-verde-pastel bg-swapp-verde-pastel/10 flex items-center justify-center transition-colors">
 						<svg
 							className="w-5 h-5"
 							fill="none"

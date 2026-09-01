@@ -115,29 +115,29 @@ export default function StockMovementModal({
 				];
 
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center bg-swapp-negro-azulado/50 dark:bg-swapp-negro/70 backdrop-blur-sm p-4">
+		<div className="fixed inset-0 z-50 flex items-center justify-center bg-swapp-azul-oscuro/50 dark:bg-swapp-negro/70 backdrop-blur-sm p-4">
 			<div
-				className={`w-full max-w-md max-h-[90vh] overflow-y-auto custom-scrollbar rounded-xl bg-swapp-blanco dark:bg-swapp-negro-azulado p-6 shadow-2xl border-t-4 transition-colors ${
+				className={`w-full max-w-md max-h-[90vh] overflow-y-auto custom-scrollbar rounded-xl bg-swapp-blanco dark:bg-swapp-azul-oscuro p-6 shadow-2xl border-t-4 transition-colors ${
 					movementType === "ingreso"
-						? "border-swapp-turquesa-oscuro dark:border-swapp-menta"
+						? "border-swapp-verde-oscuro dark:border-swapp-verde-menta"
 						: "border-red-500 dark:border-red-500"
 				}`}>
 				<div className="mb-2 flex items-center justify-between">
-					<h2 className="text-xl font-bold text-swapp-negro-azulado dark:text-swapp-blanco">
+					<h2 className="text-xl font-bold text-swapp-azul-oscuro dark:text-swapp-blanco">
 						{movementType === "ingreso"
 							? "Registrar Ingreso de Stock"
 							: "Registrar Descarte / Egreso"}
 					</h2>
 					<button
 						onClick={onClose}
-						className="text-swapp-azul-petroleo/50 dark:text-swapp-tiza/50 hover:text-swapp-negro-azulado dark:hover:text-swapp-blanco transition-colors">
+						className="text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50 hover:text-swapp-azul-oscuro dark:hover:text-swapp-blanco transition-colors">
 						<X className="h-5 w-5" />
 					</button>
 				</div>
-				<p className="text-sm text-swapp-azul-petroleo/70 dark:text-swapp-tiza/70 mb-1 transition-colors">
+				<p className="text-sm text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 mb-1 transition-colors">
 					{product.name}
 				</p>
-				<p className="text-xs font-mono text-swapp-turquesa-oscuro dark:text-swapp-menta mb-6 bg-swapp-verde-agua/10 dark:bg-swapp-menta/10 inline-block px-2 py-1 rounded">
+				<p className="text-xs font-mono text-swapp-verde-oscuro dark:text-swapp-verde-menta mb-6 bg-swapp-verde-pastel/10 dark:bg-swapp-verde-menta/10 inline-block px-2 py-1 rounded">
 					SKU: {variant.sku}
 				</p>
 
@@ -161,15 +161,15 @@ export default function StockMovementModal({
 					/>
 
 					{reason === "Compra a proveedor" && (
-						<div className="bg-swapp-tiza/30 dark:bg-swapp-azul-petroleo/20 p-4 rounded-lg border border-swapp-tiza dark:border-swapp-azul-petroleo/50 animate-in fade-in slide-in-from-top-2">
+						<div className="bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/20 p-4 rounded-lg border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo/50 animate-in fade-in slide-in-from-top-2">
 							<div className="flex items-center justify-between mb-4">
 								<div className="flex items-center gap-2">
 									{isCostEditable ? (
-										<Unlock className="h-4 w-4 text-swapp-turquesa-oscuro dark:text-swapp-menta" />
+										<Unlock className="h-4 w-4 text-swapp-verde-oscuro dark:text-swapp-verde-menta" />
 									) : (
-										<Lock className="h-4 w-4 text-swapp-azul-petroleo/50 dark:text-swapp-tiza/50" />
+										<Lock className="h-4 w-4 text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50" />
 									)}
-									<p className="text-sm font-semibold text-swapp-azul-petroleo dark:text-swapp-tiza">
+									<p className="text-sm font-semibold text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
 										Actualizar costo de variante
 									</p>
 								</div>
@@ -208,17 +208,17 @@ export default function StockMovementModal({
 						value={notes}
 						onChange={(e) => setNotes(e.target.value)}
 					/>
-					<div className="mt-6 flex justify-end gap-3 border-t border-swapp-tiza dark:border-swapp-azul-petroleo pt-4 transition-colors">
+					<div className="mt-6 flex justify-end gap-3 border-t border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo pt-4 transition-colors">
 						<button
 							type="button"
 							onClick={onClose}
-							className="rounded-lg px-4 py-2 text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza hover:bg-swapp-tiza dark:hover:bg-swapp-azul-petroleo transition-colors">
+							className="rounded-lg px-4 py-2 text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo transition-colors">
 							Cancelar
 						</button>
 						<button
 							type="submit"
 							disabled={isSaving || quantity <= 0}
-							className={`rounded-lg px-4 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-negro-azulado transition-colors disabled:opacity-50 ${movementType === "ingreso" ? "bg-swapp-turquesa-oscuro dark:bg-swapp-menta hover:bg-swapp-azul-oceano dark:hover:bg-swapp-verde-agua" : "bg-red-600 dark:bg-red-500 dark:text-swapp-blanco hover:bg-red-700 dark:hover:bg-red-600"}`}>
+							className={`rounded-lg px-4 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro transition-colors disabled:opacity-50 ${movementType === "ingreso" ? "bg-swapp-verde-oscuro dark:bg-swapp-verde-menta hover:bg-swapp-azul-oceano dark:hover:bg-swapp-verde-pastel" : "bg-red-600 dark:bg-red-500 dark:text-swapp-blanco hover:bg-red-700 dark:hover:bg-red-600"}`}>
 							{isSaving ? "Registrando..." : "Confirmar Ajuste"}
 						</button>
 					</div>

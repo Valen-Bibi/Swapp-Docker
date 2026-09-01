@@ -218,14 +218,14 @@ export default function EditStructureModal({
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-swapp-negro/50 dark:bg-swapp-negro/70 backdrop-blur-sm p-4">
-			<div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto custom-scrollbar rounded-xl bg-swapp-blanco dark:bg-swapp-negro-azulado p-6 shadow-2xl border-t-4 border-swapp-turquesa-oscuro dark:border-swapp-menta transition-colors">
+			<div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto custom-scrollbar rounded-xl bg-swapp-blanco dark:bg-swapp-azul-oscuro p-6 shadow-2xl border-t-4 border-swapp-verde-oscuro dark:border-swapp-menta transition-colors">
 				<div className="mb-6 flex items-center justify-between">
-					<h2 className="text-xl font-bold text-swapp-negro-azulado dark:text-swapp-blanco">
+					<h2 className="text-xl font-bold text-swapp-azul-oscuro dark:text-swapp-blanco">
 						Editar Estructura: {editingProduct.name}
 					</h2>
 					<button
 						onClick={onClose}
-						className="text-swapp-azul-petroleo/50 dark:text-swapp-tiza/50 hover:text-swapp-negro-azulado dark:hover:text-swapp-blanco transition-colors">
+						className="text-swapp-azul-petroleo/50 dark:text-swapp-tiza/50 hover:text-swapp-azul-oscuro dark:hover:text-swapp-blanco transition-colors">
 						<X className="h-5 w-5" />
 					</button>
 				</div>
@@ -266,7 +266,7 @@ export default function EditStructureModal({
 									<span className="text-red-500">*</span>
 								</label>
 								<select
-									className="w-full rounded-md border border-swapp-tiza dark:border-swapp-azul-petroleo bg-transparent px-3 py-2.5 text-sm text-swapp-negro-azulado dark:text-swapp-blanco outline-none transition-colors focus:border-swapp-turquesa-oscuro dark:focus:border-swapp-menta focus:ring-1 focus:ring-swapp-turquesa-oscuro dark:focus:ring-swapp-menta"
+									className="w-full rounded-md border border-swapp-tiza dark:border-swapp-azul-petroleo bg-transparent px-3 py-2.5 text-sm text-swapp-azul-oscuro dark:text-swapp-blanco outline-none transition-colors focus:border-swapp-verde-oscuro dark:focus:border-swapp-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-menta"
 									required
 									value={editingProduct.category_id || ""}
 									onChange={(e) =>
@@ -279,7 +279,7 @@ export default function EditStructureModal({
 									}>
 									<option
 										value=""
-										className="dark:bg-swapp-negro-azulado"
+										className="dark:bg-swapp-azul-oscuro"
 										disabled>
 										Seleccione una subcategoría...
 									</option>
@@ -287,14 +287,14 @@ export default function EditStructureModal({
 										<optgroup
 											key={parent.category_id}
 											label={parent.name}
-											className="dark:bg-swapp-negro-azulado font-bold text-swapp-turquesa-oscuro dark:text-swapp-menta">
+											className="dark:bg-swapp-azul-oscuro font-bold text-swapp-verde-oscuro dark:text-swapp-menta">
 											{subCategories
 												.filter((sub) => sub.parent_id === parent.category_id)
 												.map((sub) => (
 													<option
 														key={sub.category_id}
 														value={sub.category_id}
-														className="dark:bg-swapp-negro-azulado font-normal text-swapp-negro-azulado dark:text-swapp-blanco">
+														className="dark:bg-swapp-azul-oscuro font-normal text-swapp-azul-oscuro dark:text-swapp-blanco">
 														{sub.name}
 													</option>
 												))}
@@ -308,7 +308,7 @@ export default function EditStructureModal({
 									Marca Registrada
 								</label>
 								<select
-									className="w-full rounded-md border border-swapp-tiza dark:border-swapp-azul-petroleo bg-transparent px-3 py-2.5 text-sm text-swapp-negro-azulado dark:text-swapp-blanco outline-none transition-colors focus:border-swapp-turquesa-oscuro dark:focus:border-swapp-menta focus:ring-1 focus:ring-swapp-turquesa-oscuro dark:focus:ring-swapp-menta"
+									className="w-full rounded-md border border-swapp-tiza dark:border-swapp-azul-petroleo bg-transparent px-3 py-2.5 text-sm text-swapp-azul-oscuro dark:text-swapp-blanco outline-none transition-colors focus:border-swapp-verde-oscuro dark:focus:border-swapp-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-menta"
 									value={editingProduct.brand_id || ""}
 									onChange={(e) =>
 										setEditingProduct({
@@ -318,14 +318,14 @@ export default function EditStructureModal({
 												: null,
 										})
 									}>
-									<option value="" className="dark:bg-swapp-negro-azulado">
+									<option value="" className="dark:bg-swapp-azul-oscuro">
 										Sin marca
 									</option>
 									{brands.map((b) => (
 										<option
 											key={b.brand_id}
 											value={b.brand_id}
-											className="dark:bg-swapp-negro-azulado">
+											className="dark:bg-swapp-azul-oscuro">
 											{b.name}
 										</option>
 									))}
@@ -337,7 +337,7 @@ export default function EditStructureModal({
 									Clase de Impuesto
 								</label>
 								<select
-									className="w-full rounded-md border border-swapp-tiza dark:border-swapp-azul-petroleo bg-transparent px-3 py-2.5 text-sm text-swapp-negro-azulado dark:text-swapp-blanco outline-none transition-colors focus:border-swapp-turquesa-oscuro dark:focus:border-swapp-menta focus:ring-1 focus:ring-swapp-turquesa-oscuro dark:focus:ring-swapp-menta"
+									className="w-full rounded-md border border-swapp-tiza dark:border-swapp-azul-petroleo bg-transparent px-3 py-2.5 text-sm text-swapp-azul-oscuro dark:text-swapp-blanco outline-none transition-colors focus:border-swapp-verde-oscuro dark:focus:border-swapp-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-menta"
 									value={editingProduct.tax_class_id || ""}
 									onChange={(e) =>
 										setEditingProduct({
@@ -347,14 +347,14 @@ export default function EditStructureModal({
 												: null,
 										})
 									}>
-									<option value="" className="dark:bg-swapp-negro-azulado">
+									<option value="" className="dark:bg-swapp-azul-oscuro">
 										Sin impuesto
 									</option>
 									{taxClasses.map((t) => (
 										<option
 											key={t.tax_class_id}
 											value={t.tax_class_id}
-											className="dark:bg-swapp-negro-azulado">
+											className="dark:bg-swapp-azul-oscuro">
 											{t.name} ({t.rate}%)
 										</option>
 									))}
@@ -365,7 +365,7 @@ export default function EditStructureModal({
 
 					<div className="flex items-center justify-between border-t border-swapp-tiza dark:border-swapp-azul-petroleo pt-6 transition-colors">
 						<div>
-							<h3 className="text-lg font-semibold text-swapp-negro-azulado dark:text-swapp-blanco">
+							<h3 className="text-lg font-semibold text-swapp-azul-oscuro dark:text-swapp-blanco">
 								Detalles y Configuración Adicional
 							</h3>
 							<p className="text-sm text-swapp-azul-petroleo/70 dark:text-swapp-tiza/70 mt-1">
@@ -422,7 +422,7 @@ export default function EditStructureModal({
 												<img
 													src={previewUrl}
 													alt="Principal"
-													className="h-32 w-32 object-cover rounded-xl border-2 border-swapp-turquesa-oscuro dark:border-swapp-menta shadow-sm"
+													className="h-32 w-32 object-cover rounded-xl border-2 border-swapp-verde-oscuro dark:border-swapp-menta shadow-sm"
 												/>
 												<button
 													type="button"
@@ -453,7 +453,7 @@ export default function EditStructureModal({
 														className="relative inline-block">
 														<img
 															src={m.file_url}
-															className="h-20 w-20 object-cover rounded-lg border border-swapp-turquesa-oscuro/50 opacity-80"
+															className="h-20 w-20 object-cover rounded-lg border border-swapp-verde-oscuro/50 opacity-80"
 														/>
 														<button
 															type="button"
@@ -471,9 +471,9 @@ export default function EditStructureModal({
 														className="relative inline-block">
 														<img
 															src={url}
-															className="h-20 w-20 object-cover rounded-lg border-2 border-swapp-turquesa-oscuro"
+															className="h-20 w-20 object-cover rounded-lg border-2 border-swapp-verde-oscuro"
 														/>
-														<span className="absolute bottom-1 left-1 bg-swapp-turquesa-oscuro text-white text-[9px] px-1.5 py-0.5 rounded shadow-sm">
+														<span className="absolute bottom-1 left-1 bg-swapp-verde-oscuro text-white text-[9px] px-1.5 py-0.5 rounded shadow-sm">
 															NUEVA
 														</span>
 														<button
@@ -574,22 +574,16 @@ export default function EditStructureModal({
 													weight_unit: e.target.value,
 												})
 											}>
-											<option
-												value="kg"
-												className="dark:bg-swapp-negro-azulado">
+											<option value="kg" className="dark:bg-swapp-azul-oscuro">
 												kg
 											</option>
-											<option value="g" className="dark:bg-swapp-negro-azulado">
+											<option value="g" className="dark:bg-swapp-azul-oscuro">
 												g
 											</option>
-											<option
-												value="lb"
-												className="dark:bg-swapp-negro-azulado">
+											<option value="lb" className="dark:bg-swapp-azul-oscuro">
 												lb
 											</option>
-											<option
-												value="oz"
-												className="dark:bg-swapp-negro-azulado">
+											<option value="oz" className="dark:bg-swapp-azul-oscuro">
 												oz
 											</option>
 										</select>
@@ -720,7 +714,7 @@ export default function EditStructureModal({
 						<button
 							type="submit"
 							disabled={isSaving}
-							className="rounded-lg bg-swapp-turquesa-oscuro dark:bg-swapp-menta px-6 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-negro-azulado transition-colors hover:bg-swapp-azul-oceano dark:hover:bg-swapp-verde-agua disabled:opacity-50">
+							className="rounded-lg bg-swapp-verde-oscuro dark:bg-swapp-menta px-6 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro transition-colors hover:bg-swapp-azul-oceano dark:hover:bg-swapp-verde-agua disabled:opacity-50">
 							{isSaving ? "Guardando..." : "Guardar Estructura"}
 						</button>
 					</div>

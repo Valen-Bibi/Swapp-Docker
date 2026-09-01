@@ -21,6 +21,7 @@ import PageHeader from "@/components/layout/PageHeader";
 import SearchBar from "@/components/ui/SearchBar";
 import SortableHeader from "@/components/tables/SortableHeader";
 import { useTableSort } from "@/hooks/useTableSort";
+import { SwappTooltip } from "@/components/ui/SwappTooltip";
 import StockMovementModal from "@/components/products/StockMovementModal";
 import { Product, ProductVariant } from "@/types/product";
 
@@ -28,7 +29,6 @@ export default function StockPage() {
 	const [products, setProducts] = useState<Product[]>([]);
 	const [loading, setLoading] = useState(true);
 
-	// Estados del Modal de Movimientos
 	const [isModalOpen, setIsModalOpen] = useState(false);
 	const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 	const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
@@ -38,12 +38,10 @@ export default function StockPage() {
 		"ingreso",
 	);
 
-	// Estados de Filtros y Acordeón
 	const [searchTerm, setSearchTerm] = useState("");
 	const [showLowStockOnly, setShowLowStockOnly] = useState(false);
 	const [expandedRows, setExpandedRows] = useState<string[]>([]);
 
-	// --- ESTADOS PARA EDICIÓN INLINE DEL UMBRAL ---
 	const [editingThresholdId, setEditingThresholdId] = useState<string | null>(
 		null,
 	);
@@ -167,10 +165,10 @@ export default function StockPage() {
 						className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors border ${
 							showLowStockOnly
 								? "bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400"
-								: "bg-swapp-blanco dark:bg-swapp-negro-azulado border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo text-swapp-azul-petroleo dark:text-swapp-tiza hover:bg-swapp-tiza dark:hover:bg-swapp-azul-petroleo"
+								: "bg-swapp-blanco dark:bg-swapp-azul-oscuro border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo"
 						}`}>
 						<AlertTriangle
-							className={`h-4 w-4 ${showLowStockOnly ? "text-red-600 dark:text-red-400" : "text-swapp-azul-petroleo/50 dark:text-swapp-tiza/50"}`}
+							className={`h-4 w-4 ${showLowStockOnly ? "text-red-600 dark:text-red-400" : "text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50"}`}
 						/>
 						{showLowStockOnly ? "Viendo Stock Crítico" : "Filtrar Stock Bajo"}
 					</button>
@@ -178,12 +176,11 @@ export default function StockPage() {
 				</div>
 			</div>
 
-			<div className="overflow-hidden rounded-xl border border-swapp-tiza dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-negro-azulado shadow-sm transition-colors">
-				<table className="w-full text-left text-sm text-swapp-azul-petroleo dark:text-swapp-tiza">
-					<thead className="bg-swapp-tiza/50 dark:bg-swapp-azul-petroleo/30 text-swapp-negro-azulado dark:text-swapp-tiza select-none">
+			<div className="overflow-hidden rounded-xl border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro shadow-sm transition-colors">
+				<table className="w-full text-left text-sm text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
+					<thead className="bg-swapp-tiza-verdoso/50 dark:bg-swapp-azul-petroleo/30 text-swapp-azul-oscuro dark:text-swapp-tiza-verdoso select-none">
 						<tr>
 							<th className="px-6 py-4 font-semibold w-16">Imagen</th>{" "}
-							{/* 2. Nueva columna */}
 							<SortableHeader
 								label="Producto Padre"
 								columnKey="name"
@@ -208,7 +205,7 @@ export default function StockPage() {
 							/>
 						</tr>
 					</thead>
-					<tbody className="divide-y divide-swapp-tiza dark:divide-swapp-azul-petroleo">
+					<tbody className="divide-y divide-swapp-tiza-verdoso dark:divide-swapp-azul-petroleo">
 						{processedProducts.map((product) => {
 							// 3. Extracción de la URL de la imagen principal
 							const mainImageUrl = product.media?.find(
@@ -232,7 +229,7 @@ export default function StockPage() {
 								<React.Fragment key={product.product_uuid}>
 									{/* FILA PRINCIPAL (PADRE) */}
 									<tr
-										className={`transition-colors hover:bg-swapp-tiza/30 dark:hover:bg-swapp-azul-petroleo/30 ${isExpanded ? "bg-swapp-tiza/10 dark:bg-swapp-azul-petroleo/10" : ""}`}>
+										className={`transition-colors hover:bg-swapp-tiza-verdoso/30 dark:hover:bg-swapp-azul-petroleo/30 ${isExpanded ? "bg-swapp-tiza-verdoso/10 dark:bg-swapp-azul-petroleo/10" : ""}`}>
 										<td className="px-6 py-4">
 											{" "}
 											{/* 3. Renderizado de la imagen */}
@@ -240,22 +237,22 @@ export default function StockPage() {
 												<img
 													src={mainImageUrl}
 													alt={`Imagen de ${product.name}`}
-													className="h-10 w-10 rounded-md object-cover border border-swapp-tiza dark:border-swapp-azul-petroleo"
+													className="h-10 w-10 rounded-md object-cover border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo"
 												/>
 											) : (
-												<div className="h-10 w-10 rounded-md bg-swapp-tiza dark:bg-swapp-azul-petroleo flex items-center justify-center text-swapp-azul-petroleo/30 dark:text-swapp-tiza/30 transition-colors">
+												<div className="h-10 w-10 rounded-md bg-swapp-tiza-verdoso dark:bg-swapp-azul-petroleo flex items-center justify-center text-swapp-azul-petroleo/30 dark:text-swapp-tiza-verdoso/30 transition-colors">
 													<ImageIcon className="h-5 w-5" />
 												</div>
 											)}
 										</td>
-										<td className="px-6 py-4 font-medium text-swapp-negro-azulado dark:text-swapp-blanco">
+										<td className="px-6 py-4 font-medium text-swapp-azul-oscuro dark:text-swapp-blanco">
 											{product.name}
 										</td>
-										<td className="px-6 py-4 font-mono text-xs text-swapp-azul-petroleo dark:text-swapp-tiza">
+										<td className="px-6 py-4 font-mono text-xs text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
 											{variantsCount > 0 ? (
 												<button
 													onClick={() => toggleRow(product.product_uuid)}
-													className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-swapp-tiza dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-negro-azulado hover:bg-swapp-tiza dark:hover:bg-swapp-azul-petroleo transition-colors text-swapp-turquesa-oscuro dark:text-swapp-menta font-sans font-medium">
+													className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo transition-colors text-swapp-verde-oscuro dark:text-swapp-verde-menta font-sans font-medium">
 													<Layers className="h-3.5 w-3.5" />
 													{variantsCount === 1
 														? "1 Variante"
@@ -267,20 +264,20 @@ export default function StockPage() {
 													)}
 												</button>
 											) : (
-												<span className="italic text-swapp-azul-petroleo/40">
+												<span className="text-swapp-azul-petroleo/60">
 													Sin variantes
 												</span>
 											)}
 										</td>
 										<td className="px-6 py-4">
 											<span
-												className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${product.is_returnable ? "bg-swapp-azul-oceano/10 dark:bg-swapp-menta/10 text-swapp-azul-oceano dark:text-swapp-menta" : "bg-swapp-tiza dark:bg-swapp-azul-petroleo text-swapp-azul-petroleo dark:text-swapp-tiza"}`}>
+												className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${product.is_returnable ? "bg-swapp-verde-oscuro/10 dark:bg-swapp-verde-menta/10 px-2.5 py-1 font-semibold text-swapp-verde-oscuro dark:text-swapp-verde-menta" : "bg-swapp-tiza-verdoso dark:bg-swapp-azul-petroleo text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso"}`}>
 												{product.is_returnable ? "Retornable" : "Estándar"}
 											</span>
 										</td>
 										<td className="px-6 py-4">
 											<span
-												className={`inline-flex items-center rounded-full px-2.5 py-1 text-sm font-semibold ${!hasAnyLowStock ? "bg-swapp-verde-agua/10 dark:bg-swapp-menta/10 text-swapp-turquesa-oscuro dark:text-swapp-menta" : "bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400"}`}>
+												className={`inline-flex items-center rounded-full px-2.5 py-1 text-sm font-semibold ${!hasAnyLowStock ? "bg-swapp-verde-pastel/10 dark:bg-swapp-verde-menta/10 text-swapp-verde-oscuro dark:text-swapp-verde-menta" : "bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400"}`}>
 												{totalStock} unidades globales
 											</span>
 										</td>
@@ -288,13 +285,13 @@ export default function StockPage() {
 
 									{/* ACORDEÓN DESPLEGABLE (VARIANTES) */}
 									{isExpanded && variantsCount > 0 && (
-										<tr className="bg-swapp-tiza/10 dark:bg-swapp-negro-azulado border-b border-swapp-tiza dark:border-swapp-azul-petroleo">
+										<tr className="bg-swapp-tiza-verdoso/10 dark:bg-swapp-azul-oscuro border-b border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo">
 											<td colSpan={5} className="px-6 py-4">
 												{" "}
 												{/* 4. Ajuste del colSpan a 5 */}
-												<div className="rounded-lg border border-swapp-tiza/50 dark:border-swapp-azul-petroleo/50 overflow-hidden bg-swapp-blanco dark:bg-swapp-negro-azulado/50">
+												<div className="rounded-lg border border-swapp-tiza-verdoso/50 dark:border-swapp-azul-petroleo/50 overflow-hidden bg-swapp-blanco dark:bg-swapp-azul-oscuro/50">
 													<table className="w-full text-xs text-left">
-														<thead className="bg-swapp-tiza/30 dark:bg-swapp-azul-petroleo/20 text-swapp-azul-petroleo/70 dark:text-swapp-tiza/70">
+														<thead className="bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/20 text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
 															<tr>
 																<th className="px-4 py-3 font-medium w-1/5">
 																	SKU Físico
@@ -313,7 +310,7 @@ export default function StockPage() {
 																</th>
 															</tr>
 														</thead>
-														<tbody className="divide-y divide-swapp-tiza/30 dark:divide-swapp-azul-petroleo/30">
+														<tbody className="divide-y divide-swapp-tiza-verdoso/30 dark:divide-swapp-azul-petroleo/30">
 															{product.variants?.map((v) => {
 																const isEditing =
 																	editingThresholdId === v.variant_uuid;
@@ -324,8 +321,8 @@ export default function StockPage() {
 																return (
 																	<tr
 																		key={v.variant_uuid}
-																		className="hover:bg-swapp-tiza/20 dark:hover:bg-swapp-azul-petroleo/20">
-																		<td className="px-4 py-3 font-mono text-swapp-negro-azulado dark:text-swapp-blanco font-medium">
+																		className="hover:bg-swapp-tiza-verdoso/20 dark:hover:bg-swapp-azul-petroleo/20">
+																		<td className="px-4 py-3 font-mono text-swapp-azul-oscuro dark:text-swapp-blanco font-medium">
 																			{v.sku}
 																		</td>
 																		<td className="px-4 py-3">
@@ -336,13 +333,13 @@ export default function StockPage() {
 																					).map(([key, val]) => (
 																						<span
 																							key={key}
-																							className="inline-block bg-swapp-tiza dark:bg-swapp-azul-petroleo text-swapp-azul-petroleo dark:text-swapp-tiza px-1.5 py-0.5 rounded text-[10px] font-medium border border-swapp-tiza/50 dark:border-swapp-azul-petroleo/50">
+																							className="inline-block bg-swapp-tiza-verdoso dark:bg-swapp-azul-petroleo text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso px-1.5 py-0.5 rounded text-[10px] font-medium border border-swapp-tiza-verdoso/50 dark:border-swapp-azul-petroleo/50">
 																							{key}: {String(val)}
 																						</span>
 																					))}
 																				</div>
 																			) : (
-																				<span className="text-swapp-azul-petroleo/40 dark:text-swapp-tiza/40 italic">
+																				<span className="text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40 italic">
 																					Sin atributos
 																				</span>
 																			)}
@@ -352,7 +349,7 @@ export default function StockPage() {
 																				<input
 																					type="number"
 																					min="0"
-																					className="w-20 rounded-md border border-swapp-turquesa-oscuro dark:border-swapp-menta bg-swapp-blanco dark:bg-swapp-negro-azulado px-2 py-1 text-xs text-swapp-negro-azulado dark:text-swapp-blanco outline-none shadow-sm focus:ring-1 focus:ring-swapp-turquesa-oscuro dark:focus:ring-swapp-menta transition-all"
+																					className="w-20 rounded-md border border-swapp-verde-oscuro dark:border-swapp-verde-menta bg-swapp-blanco dark:bg-swapp-azul-oscuro px-2 py-1 text-xs text-swapp-azul-oscuro dark:text-swapp-blanco outline-none shadow-sm focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta transition-all"
 																					value={draftThreshold}
 																					onChange={(e) =>
 																						setDraftThreshold(
@@ -363,75 +360,80 @@ export default function StockPage() {
 																					}
 																				/>
 																			) : (
-																				<span className="text-swapp-azul-petroleo/70 dark:text-swapp-tiza/70">
+																				<span className="text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
 																					{v.low_stock_threshold ?? 5} un.
 																				</span>
 																			)}
 																		</td>
 																		<td className="px-4 py-3">
 																			<span
-																				className={`font-semibold ${!isLowStock ? "text-swapp-verde-agua dark:text-swapp-menta" : "text-red-600 dark:text-red-400"}`}>
+																				className={`font-semibold ${!isLowStock ? "text-swapp-verde-pastel dark:text-swapp-verde-menta" : "text-red-600 dark:text-red-400"}`}>
 																				{v.stock_quantity} un.
 																			</span>
 																		</td>
 																		<td className="px-4 py-2 text-right">
 																			{isEditing ? (
 																				<div className="flex items-center justify-end gap-1.5">
-																					<button
-																						onClick={() =>
-																							saveThreshold(
-																								product.product_uuid,
-																								v.variant_uuid!,
-																							)
-																						}
-																						disabled={isSavingThreshold}
-																						className="p-1.5 rounded-md bg-swapp-verde-agua/20 text-swapp-turquesa-oscuro dark:bg-swapp-menta/20 dark:text-swapp-menta hover:bg-swapp-verde-agua/40 transition-colors"
-																						title="Guardar">
-																						<Check className="h-4 w-4" />
-																					</button>
-																					<button
-																						onClick={cancelEditingThreshold}
-																						disabled={isSavingThreshold}
-																						className="p-1.5 rounded-md bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
-																						title="Cancelar">
-																						<X className="h-4 w-4" />
-																					</button>
+																					<SwappTooltip text="Guardar">
+																						<button
+																							onClick={() =>
+																								saveThreshold(
+																									product.product_uuid,
+																									v.variant_uuid!,
+																								)
+																							}
+																							disabled={isSavingThreshold}
+																							className="p-1.5 rounded-md bg-swapp-verde-pastel/20 text-swapp-verde-oscuro dark:bg-swapp-verde-menta/20 dark:text-swapp-verde-menta hover:bg-swapp-verde-pastel/40 transition-colors">
+																							<Check className="h-4 w-4" />
+																						</button>
+																					</SwappTooltip>
+																					<SwappTooltip text="Cancelar">
+																						<button
+																							onClick={cancelEditingThreshold}
+																							disabled={isSavingThreshold}
+																							className="p-1.5 rounded-md bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors">
+																							<X className="h-4 w-4" />
+																						</button>
+																					</SwappTooltip>
 																				</div>
 																			) : (
 																				<div className="flex items-center justify-end gap-2">
-																					<button
-																						onClick={() =>
-																							startEditingThreshold(v)
-																						}
-																						className="p-1.5 text-swapp-azul-petroleo/50 hover:text-swapp-turquesa-oscuro dark:text-swapp-tiza/50 dark:hover:text-swapp-menta transition-colors"
-																						title="Editar Umbral Mínimo">
-																						<Edit className="h-3.5 w-3.5" />
-																					</button>
-																					<div className="w-px h-4 bg-swapp-tiza dark:bg-swapp-azul-petroleo mx-1" />
-																					<button
-																						onClick={() =>
-																							handleMovementClick(
-																								product,
-																								v,
-																								"ingreso",
-																							)
-																						}
-																						className="p-1.5 text-swapp-turquesa-oscuro dark:text-swapp-menta bg-swapp-verde-agua/10 dark:bg-swapp-menta/10 rounded-md hover:bg-swapp-verde-agua/20 dark:hover:bg-swapp-menta/20 transition-colors"
-																						title="Registrar Ingreso">
-																						<Plus className="h-4 w-4" />
-																					</button>
-																					<button
-																						onClick={() =>
-																							handleMovementClick(
-																								product,
-																								v,
-																								"egreso",
-																							)
-																						}
-																						className="p-1.5 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 rounded-md hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors"
-																						title="Registrar Egreso / Descarte">
-																						<Minus className="h-4 w-4" />
-																					</button>
+																					<SwappTooltip text="Editar Umbral Mínimo">
+																						<button
+																							onClick={() =>
+																								startEditingThreshold(v)
+																							}
+																							className="p-1.5 rounded-md text-swapp-azul-petroleo/50 hover:text-swapp-verde-oscuro dark:text-swapp-tiza-verdoso/50 dark:hover:text-swapp-verde-menta hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo transition-colors">
+																							<Edit className="h-3.5 w-3.5" />
+																						</button>
+																					</SwappTooltip>
+																					<div className="w-px h-4 bg-swapp-tiza-verdoso dark:bg-swapp-azul-petroleo mx-1" />
+																					<SwappTooltip text="Registrar Ingreso">
+																						<button
+																							onClick={() =>
+																								handleMovementClick(
+																									product,
+																									v,
+																									"ingreso",
+																								)
+																							}
+																							className="p-1.5 text-swapp-verde-oscuro dark:text-swapp-verde-menta bg-swapp-verde-pastel/10 dark:bg-swapp-verde-menta/10 rounded-md hover:bg-swapp-verde-pastel/20 dark:hover:bg-swapp-verde-menta/20 transition-colors">
+																							<Plus className="h-4 w-4" />
+																						</button>
+																					</SwappTooltip>
+																					<SwappTooltip text="Registrar Egreso / Descarte">
+																						<button
+																							onClick={() =>
+																								handleMovementClick(
+																									product,
+																									v,
+																									"egreso",
+																								)
+																							}
+																							className="p-1.5 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 rounded-md hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors">
+																							<Minus className="h-4 w-4" />
+																						</button>
+																					</SwappTooltip>
 																				</div>
 																			)}
 																		</td>

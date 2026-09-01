@@ -4,13 +4,13 @@
 @theme {
   /* Tu Paleta Oficial de Swapp intacta */
   --color-swapp-negro: #000000;
-  --color-swapp-negro-azulado: #10131B;
+  --color-swapp-azul-oscuro: #10131B;
   --color-swapp-azul-petroleo: #172638;
   --color-swapp-azul-oceano: #132D46;
-  --color-swapp-turquesa-oscuro: #0A786A;
-  --color-swapp-verde-agua: #01C38E;
-  --color-swapp-menta: #80E1C7;
-  --color-swapp-tiza: #EDEAE5;
+  --color-swapp-verde-oscuro: #2F6F4E;
+  --color-swapp-verde-pastel: #5FA878;
+  --color-swapp-verde-menta: #9BD6B3;
+  --color-swapp-tiza-verdoso: #F6F8FF;
   --color-swapp-blanco: #FFFFFF;
 
   /* Conectamos el fondo y texto a Tailwind */
@@ -23,15 +23,47 @@
 :root {
   --background: #FFFFFF;
   --foreground: #172638;
+  --scrollbar-thumb: #17263860;
+  --scrollbar-thumb-hover: #2F6F4E;
 }
 
 .dark {
   --background: #10131B;
   --foreground: #EDEAE5;
+  --scrollbar-thumb: #F6F8FF40;
+  --scrollbar-thumb-hover: #9BD6B3;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer base {
+
+  /* Para Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border-radius: 10px;
+    transition: background-color 0.2s ease-in-out;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
+  }
 }

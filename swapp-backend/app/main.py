@@ -19,7 +19,7 @@ from PIL import Image
 
 from . import models, database, auth, schemas
 from .database import engine, get_db, Base
-from .routers import products, auth_routes, staff
+from .routers import products, auth_routes, staff, orders
 
 Base.metadata.create_all(bind=engine)
 
@@ -78,6 +78,7 @@ app.add_middleware(
 app.include_router(products.router)
 app.include_router(auth_routes.router)
 app.include_router(staff.router)
+app.include_router(orders.router)
 
 @app.post("/register", response_model=schemas.UsuarioResponse, status_code=status.HTTP_201_CREATED)
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):

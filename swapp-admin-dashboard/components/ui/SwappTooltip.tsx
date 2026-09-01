@@ -35,6 +35,9 @@ export function SwappTooltip({ children, text, shortcut }: SwappTooltipProps) {
 	};
 
 	const handleMouseEnter = () => {
+		// BLOQUEO: Si el texto está vacío, no disparamos el tooltip
+		if (!text || text.trim() === "") return;
+
 		updatePosition();
 		setIsVisible(true);
 	};
@@ -60,6 +63,14 @@ export function SwappTooltip({ children, text, shortcut }: SwappTooltipProps) {
 		};
 	}, [isVisible]);
 
+	// Efecto de seguridad: Si el tooltip está abierto pero el padre cambia
+	// el prop "text" a vacío de forma reactiva, lo ocultamos inmediatamente.
+	useEffect(() => {
+		if (isVisible && (!text || text.trim() === "")) {
+			setIsVisible(false);
+		}
+	}, [text, isVisible]);
+
 	return (
 		<>
 			{/* Elemento Disparador (El botón) */}
@@ -76,20 +87,21 @@ export function SwappTooltip({ children, text, shortcut }: SwappTooltipProps) {
 			{/* El Tooltip Flotante (Renderizado mágicamente en el <body>) */}
 			{mounted &&
 				isVisible &&
+				text &&
+				text.trim() !== "" &&
 				createPortal(
 					<div
-						className="pointer-events-none fixed z-[99999] flex -translate-x-1/2 -translate-y-full items-center gap-2 whitespace-nowrap rounded-md bg-swapp-negro-azulado dark:bg-swapp-tiza px-2.5 py-1.5 text-xs text-swapp-blanco dark:text-swapp-negro-azulado shadow-lg animate-in fade-in zoom-in-95 duration-200"
+						className="pointer-events-none fixed z-[99999] flex -translate-x-1/2 -translate-y-full items-center gap-2 whitespace-nowrap rounded-md bg-swapp-blanco/70 dark:bg-swapp-azul-oscuro/70 backdrop-blur-md border border-swapp-azul-petroleo/10 dark:border-swapp-tiza-verdoso/10 px-2.5 py-1.5 text-xs text-swapp-azul-oscuro dark:text-swapp-blanco shadow-lg animate-in fade-in zoom-in-95 duration-200"
 						style={{
 							left: coords.left,
 							top: coords.top,
 						}}>
 						<span>{text}</span>
 						{shortcut && (
-							<kbd className="rounded border border-swapp-tiza/20 dark:border-swapp-azul-petroleo/20 bg-swapp-azul-petroleo/50 dark:bg-swapp-azul-petroleo/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-swapp-tiza dark:text-swapp-azul-petroleo">
+							<kbd className="rounded border border-swapp-azul-petroleo/20 dark:border-swapp-tiza-verdoso/20 bg-swapp-azul-petroleo/5 dark:bg-swapp-tiza-verdoso/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-swapp-azul-oscuro dark:text-swapp-tiza-verdoso">
 								{shortcut}
 							</kbd>
 						)}
-						<div className="absolute left-1/2 top-full -mt-px -translate-x-1/2 border-4 border-transparent border-t-swapp-negro-azulado dark:border-t-swapp-tiza"></div>
 					</div>,
 					document.body,
 				)}

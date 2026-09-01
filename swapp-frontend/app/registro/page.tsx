@@ -115,27 +115,27 @@ export default function RegistroPage() {
 				<form onSubmit={handleSubmit} className="space-y-5">
 					<div className="flex gap-4">
 						<div className="space-y-1.5 w-1/2">
-							<label className="text-sm font-medium text-swapp-verde-agua ml-1">
+							<label className="text-sm font-medium text-swapp-verde-pastel ml-1">
 								Nombre
 							</label>
 							<input
 								type="text"
 								value={firstName}
 								onChange={(e) => setFirstName(e.target.value)}
-								className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-swapp-verde-agua transition placeholder-gray-600"
+								className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-swapp-verde-pastel transition placeholder-gray-600"
 								placeholder="Juan"
 								required
 							/>
 						</div>
 						<div className="space-y-1.5 w-1/2">
-							<label className="text-sm font-medium text-swapp-verde-agua ml-1">
+							<label className="text-sm font-medium text-swapp-verde-pastel ml-1">
 								Apellido
 							</label>
 							<input
 								type="text"
 								value={lastName}
 								onChange={(e) => setLastName(e.target.value)}
-								className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-swapp-verde-agua transition placeholder-gray-600"
+								className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-swapp-verde-pastel transition placeholder-gray-600"
 								placeholder="Pérez"
 								required
 							/>
@@ -143,28 +143,28 @@ export default function RegistroPage() {
 					</div>
 
 					<div className="space-y-1.5">
-						<label className="text-sm font-medium text-swapp-verde-agua ml-1">
+						<label className="text-sm font-medium text-swapp-verde-pastel ml-1">
 							Email de tu equipo
 						</label>
 						<input
 							type="email"
 							value={email}
 							onChange={(e) => setEmail(e.target.value)}
-							className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-swapp-verde-agua transition placeholder-gray-600"
+							className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-swapp-verde-pastel transition placeholder-gray-600"
 							placeholder="tu@swapp.com.ar"
 							required
 						/>
 					</div>
 
 					<div className="space-y-1.5">
-						<label className="text-sm font-medium text-swapp-verde-agua ml-1">
+						<label className="text-sm font-medium text-swapp-verde-pastel ml-1">
 							Contraseña
 						</label>
 						<input
 							type="password"
 							value={password}
 							onChange={(e) => setPassword(e.target.value)}
-							className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-swapp-verde-agua transition placeholder-gray-600"
+							className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-swapp-verde-pastel transition placeholder-gray-600"
 							placeholder="••••••••"
 							required
 						/>
@@ -173,7 +173,7 @@ export default function RegistroPage() {
 					<button
 						type="submit"
 						disabled={loading}
-						className="w-full mt-4 bg-gradient-to-r from-swapp-turquesa-oscuro to-swapp-verde-agua text-swapp-negro-azulado font-bold py-4 rounded-xl hover:scale-[1.02] transition-transform shadow-lg disabled:opacity-50 disabled:scale-100 text-lg">
+						className="w-full mt-4 bg-gradient-to-r from-swapp-verde-oscuro to-swapp-verde-pastel text-swapp-azul-oscuro font-bold py-4 rounded-xl hover:scale-[1.02] transition-transform shadow-lg disabled:opacity-50 disabled:scale-100 text-lg">
 						{loadingText}
 					</button>
 				</form>
@@ -183,7 +183,7 @@ export default function RegistroPage() {
 						¿Ya tienes una cuenta?{" "}
 						<Link
 							href="/login"
-							className="text-swapp-verde-agua font-semibold hover:underline">
+							className="text-swapp-verde-pastel font-semibold hover:underline">
 							Inicia sesión aquí
 						</Link>
 					</p>
