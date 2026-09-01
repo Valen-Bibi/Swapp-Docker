@@ -34,5 +34,7 @@ from .ai import (
 
 from .orders import (
     Order,
-    OrderItem
+    OrderItem,
+    OrderStatusHistory,
+    Payment
 )

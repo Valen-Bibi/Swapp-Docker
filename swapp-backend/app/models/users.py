@@ -65,7 +65,7 @@ class staff_users(Base):
     __tablename__ = "staff_users"
     __table_args__ = {"schema": "swapp"}
 
-    staff_id = Column(BigInteger, primary_key=True, index=True)
+    staff_id = Column(BigInteger, primary_key=True, autoincrement=True)
     staff_uuid = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, nullable=False)
     
     email = Column(String(255), unique=True, index=True, nullable=False)
