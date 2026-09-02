@@ -21,8 +21,6 @@ from . import models, database, auth, schemas
 from .database import engine, get_db, Base
 from .routers import products, auth_routes, staff, orders
 
-Base.metadata.create_all(bind=engine)
-
 ml_models = {}
 
 @asynccontextmanager
@@ -40,7 +38,6 @@ async def lifespan(app: FastAPI):
 
 entorno = os.getenv("ENVIRONMENT", "development")
 
-# 3. Inicializamos FastAPI pasándole el lifespan
 if entorno == "production":
     print("🔒 Iniciando en modo PRODUCCIÓN: Documentación desactivada.")
     app = FastAPI(
