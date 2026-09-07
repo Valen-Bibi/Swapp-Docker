@@ -23,7 +23,6 @@ import PriceHistoryModal from "@/components/products/PriceHistoryModal";
 import { Product, ProductVariant } from "@/types/product";
 import { formatCurrency } from "@/lib/utils";
 
-// Expandimos el tipo para inyectar TODAS las ofertas activas correspondientes al producto
 type ProductWithOffer = Product & { active_discounts?: any[] };
 
 export default function CostsPage() {
@@ -51,7 +50,6 @@ export default function CostsPage() {
 	const fetchProducts = async () => {
 		setLoading(true);
 		try {
-			// Usamos Promise.all como en la vista de Ofertas para traer todo en paralelo
 			const [productsData, discountsRes] = await Promise.all([
 				ProductService.getAll(),
 				api.get("/api/products/admin/discounts").catch(() => ({ data: [] })),
@@ -61,7 +59,6 @@ export default function CostsPage() {
 			const now = new Date();
 
 			const mergedProducts = productsData.map((p: Product) => {
-				// Filtramos todas las ofertas vigentes que le pertenezcan a este producto padre
 				const activeDiscounts = discountsData.filter(
 					(d: any) =>
 						d.product_uuid === p.product_uuid &&
@@ -139,31 +136,35 @@ export default function CostsPage() {
 
 	return (
 		<div className="p-6 relative">
+			{/* CONTROLES Y HEADER */}
 			<div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<PageHeader
 					title="Costos y Precios"
 					description="Gestión de rentabilidad atómica (SKU) y márgenes"
 					icon={DollarSign}
 				/>
-				<SearchBar
-					searchTerm={searchTerm}
-					onSearchChange={setSearchTerm}
-					placeholder="Buscar por producto o SKU..."
-				/>
+				<div className="flex items-center gap-4">
+					<SearchBar
+						searchTerm={searchTerm}
+						onSearchChange={setSearchTerm}
+						placeholder="Buscar por producto o SKU..."
+					/>
+				</div>
 			</div>
 
-			<div className="overflow-hidden rounded-xl border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro shadow-sm transition-colors">
+			{/* CONTENEDOR DE TABLA (GLASSMORPHISM) */}
+			<div className="rounded-xl border border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 bg-swapp-blanco/40 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm shadow-sm transition-all duration-300 overflow-visible sm:overflow-auto">
 				<table className="w-full text-left text-sm text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
-					<thead className="bg-swapp-tiza-verdoso/50 dark:bg-swapp-azul-petroleo/30 text-swapp-azul-oscuro dark:text-swapp-tiza-verdoso select-none">
+					<thead className="bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/20 border-b border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 select-none">
 						<tr>
-							<th className="px-6 py-4 font-semibold w-16">Imagen</th>
-							<th className="px-6 py-4 font-semibold">Producto General</th>
-							<th className="px-6 py-4 font-semibold">Variantes Físicas</th>
-							<th className="px-6 py-4 font-semibold">Costo / Margen Ref.</th>
-							<th className="px-6 py-4 font-semibold text-right">Acciones</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 w-16">Imagen</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">Producto General</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">Variantes Físicas</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">Costo / Margen Ref.</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 text-right">Acciones</th>
 						</tr>
 					</thead>
-					<tbody className="divide-y divide-swapp-tiza-verdoso dark:divide-swapp-azul-petroleo">
+					<tbody className="">
 						{filteredProducts.map((p) => {
 							const mainImageUrl = p.media?.find(
 								(m: any) =>
@@ -173,13 +174,11 @@ export default function CostsPage() {
 							const variantsCount = p.variants?.length || 0;
 							const isExpanded = expandedRows.includes(p.product_uuid);
 
-							// --- LÓGICA DE REFERENCIA PADRE ---
 							const refCost =
 								(p as any).reference_cost ?? p.variants?.[0]?.cost_price ?? 0;
 							const refPriceBase =
 								(p as any).reference_price ?? p.variants?.[0]?.price ?? 0;
 
-							// Determinamos si la primera variante tiene una oferta para calcular el margen de referencia realista
 							let refPriceFinal = refPriceBase;
 							if (p.variants?.[0] && p.active_discounts) {
 								const refDiscount = p.active_discounts.find((d: any) => {
@@ -200,11 +199,16 @@ export default function CostsPage() {
 
 							const refMargin = calculateMargin(refCost, refPriceFinal);
 
+							// Lógica visual estandarizada para filas
+							const baseRowClasses = "border-b border-swapp-tiza-verdoso/40 dark:border-swapp-azul-petroleo/40 last:border-0 transition-colors duration-200";
+							const rowStatusStyle = p.is_active !== false
+								? `hover:bg-swapp-blanco/60 dark:hover:bg-swapp-azul-petroleo/20 ${isExpanded ? "bg-swapp-blanco/60 dark:bg-swapp-azul-petroleo/20" : ""}`
+								: "opacity-60 bg-swapp-tiza-verdoso/40 dark:bg-swapp-azul-oscuro/80 grayscale filter mix-blend-multiply dark:mix-blend-normal hover:bg-swapp-tiza-verdoso/50 dark:hover:bg-swapp-azul-oscuro/90";
+
 							return (
 								<React.Fragment key={p.product_uuid}>
 									{/* Fila Principal (Padre) */}
-									<tr
-										className={`transition-colors hover:bg-swapp-tiza-verdoso/30 dark:hover:bg-swapp-azul-petroleo/30 ${isExpanded ? "bg-swapp-tiza-verdoso/10 dark:bg-swapp-azul-petroleo/10" : ""}`}>
+									<tr className={`${baseRowClasses} ${rowStatusStyle}`}>
 										<td className="px-6 py-4">
 											{mainImageUrl ? (
 												<img
@@ -268,37 +272,34 @@ export default function CostsPage() {
 
 									{/* Fila Desplegable (Hijos / Variantes Físicas) */}
 									{isExpanded && variantsCount > 0 && (
-										<tr className="bg-swapp-tiza-verdoso/10 dark:bg-swapp-azul-oscuro border-b border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo">
-											{/* Ahora colSpan es 5 para cubrir toda la tabla */}
+										<tr className="bg-swapp-tiza-verdoso/10 dark:bg-swapp-azul-oscuro border-b border-swapp-tiza-verdoso/40 dark:border-swapp-azul-petroleo/40">
 											<td colSpan={5} className="px-6 py-4">
-												<div className="rounded-lg border border-swapp-tiza-verdoso/50 dark:border-swapp-azul-petroleo/50 overflow-hidden bg-swapp-blanco dark:bg-swapp-azul-oscuro/50">
+												<div className="rounded-lg border border-swapp-tiza-verdoso/50 dark:border-swapp-azul-petroleo/50 overflow-hidden bg-swapp-blanco dark:bg-swapp-azul-oscuro/50 shadow-sm">
 													<table className="w-full text-xs text-left">
-														<thead className="bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/20 text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+														<thead className="bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/20 border-b border-swapp-tiza-verdoso/50 dark:border-swapp-azul-petroleo/50">
 															<tr>
-																<th className="px-4 py-2 font-medium">
+																<th className="px-4 py-3 text-[10px] tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
 																	SKU Específico
 																</th>
-																<th className="px-4 py-2 font-medium">
+																<th className="px-4 py-3 text-[10px] tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
 																	Costo Interno
 																</th>
-																<th className="px-4 py-2 font-medium">
+																<th className="px-4 py-3 text-[10px] tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
 																	Precio Base
 																</th>
-																{/* NUEVA COLUMNA DE OFERTA */}
-																<th className="px-4 py-2 font-medium">
+																<th className="px-4 py-3 text-[10px] tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
 																	Precio Oferta
 																</th>
-																<th className="px-4 py-2 font-medium">
+																<th className="px-4 py-3 text-[10px] tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
 																	Margen Neto
 																</th>
-																<th className="px-4 py-2 font-medium text-right">
+																<th className="px-4 py-3 text-[10px] tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 text-right">
 																	Acciones
 																</th>
 															</tr>
 														</thead>
-														<tbody className="divide-y divide-swapp-tiza-verdoso/30 dark:divide-swapp-azul-petroleo/30">
+														<tbody className="">
 															{p.variants?.map((v) => {
-																// --- CÁLCULO DE OFERTA HÍBRIDA POR SKU ---
 																const activeDiscount = p.active_discounts?.find(
 																	(d: any) => {
 																		const isGlobal =
@@ -328,16 +329,20 @@ export default function CostsPage() {
 																	}
 																}
 
-																// El margen ahora se calcula sobre el precio FINAL que pagará el cliente
 																const marg = calculateMargin(
 																	v.cost_price,
 																	finalPrice,
 																);
 
+																const baseVariantRowClasses = "border-b border-swapp-tiza-verdoso/30 dark:border-swapp-azul-petroleo/30 last:border-0 transition-all duration-200";
+																const variantRowStatusStyle = v.is_active !== false
+																	? "hover:bg-swapp-tiza-verdoso/30 dark:hover:bg-swapp-azul-petroleo/30"
+																	: "opacity-60 bg-swapp-tiza-verdoso/40 dark:bg-swapp-azul-oscuro/80 grayscale filter mix-blend-multiply dark:mix-blend-normal";
+
 																return (
 																	<tr
 																		key={v.variant_uuid}
-																		className="hover:bg-swapp-tiza-verdoso/20 dark:hover:bg-swapp-azul-petroleo/20 transition-colors">
+																		className={`${baseVariantRowClasses} ${variantRowStatusStyle}`}>
 																		<td className="px-4 py-3 font-mono font-medium text-swapp-azul-oscuro dark:text-swapp-blanco">
 																			{v.sku}
 																		</td>
@@ -347,13 +352,11 @@ export default function CostsPage() {
 																				: "-"}
 																		</td>
 
-																		{/* COLUMNA: Precio Base (tachado si hay oferta) */}
 																		<td
 																			className={`px-4 py-3 font-semibold ${activeDiscount ? "text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40 line-through text-[10px]" : "text-swapp-verde-oscuro dark:text-swapp-verde-menta"}`}>
 																			{formatCurrency(v.price)}
 																		</td>
 
-																		{/* NUEVA COLUMNA: Precio Oferta */}
 																		<td className="px-4 py-3">
 																			{activeDiscount ? (
 																				<div className="flex flex-col items-start gap-0.5">

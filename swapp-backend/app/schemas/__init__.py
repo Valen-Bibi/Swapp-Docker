@@ -1,6 +1,6 @@
 from .users import (
     UserCreate,
-    UsuarioResponse,
+    UserResponse,
     Token,
     StaffCreate
 )
@@ -18,7 +18,7 @@ from .inventory import (
 )
 
 from .ai import (
-    SolicitudResponse
+    AnalysisResponse
 )
 
 from.orders import (

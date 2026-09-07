@@ -1,6 +1,6 @@
 import uuid
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 class BrandCreate(BaseModel):
     name: str
@@ -44,7 +44,7 @@ class CategoryUpdate(BaseModel):
     display_order: Optional[int] = None
     is_active: Optional[bool] = None
 
-class CategoriaResponse(BaseModel):
+class CategoryResponse(BaseModel):
     category_id: int
     category_uuid: uuid.UUID
     name: str
@@ -80,7 +80,7 @@ class ProductVariantCreate(BaseModel):
     price: float
     cost_price: float
     stock_quantity: int = 0
-    variant_attributes: Optional[Dict[str, Any]] = {}
+    variant_attributes: Optional[Dict[str, Any]] = Field(default_factory=dict)
     low_stock_threshold: Optional[int] = None
 
 class ProductVariantUpdate(BaseModel):
@@ -106,7 +106,7 @@ class ProductVariantResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     image_url: Optional[str] = None
 
-class ProductoResponse(BaseModel):
+class ProductResponse(BaseModel):
     product_id: int
     product_uuid: uuid.UUID
     name: str
@@ -114,7 +114,7 @@ class ProductoResponse(BaseModel):
     
     model_config = ConfigDict(from_attributes=True)
 
-class ProductoCatalogoResponse(BaseModel):
+class ProductCatalogResponse(BaseModel):
     product_id: int
     product_uuid: uuid.UUID
     name: str
@@ -135,12 +135,12 @@ class ProductoCatalogoResponse(BaseModel):
     brand_id: Optional[int] = None
     brand: Optional[BrandResponse] = None
 
-    variants: List[ProductVariantResponse] = []
-    media: List[ProductMediaResponse] = []
+    variants: List[ProductVariantResponse] = Field(default_factory=list)
+    media: List[ProductMediaResponse] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
 
-class ProductCreateSchema(BaseModel):
+class ProductCreate(BaseModel):
     name: str
     slug: str
     category_id: int
@@ -171,7 +171,7 @@ class ProductCreateSchema(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-class ProductUpdateSchema(BaseModel):
+class ProductUpdate(BaseModel):
     name: Optional[str] = None
     slug: Optional[str] = None
     
@@ -223,7 +223,7 @@ class AttributeBase(BaseModel):
     is_variant: bool = False
 
 class AttributeCreate(AttributeBase):
-    values: List[str] = [] 
+    values: List[str] = Field(default_factory=list) 
 
 class AttributeUpdate(BaseModel):
     name: Optional[str] = None
@@ -234,7 +234,7 @@ class AttributeResponse(AttributeBase):
     attribute_id: int
     attribute_uuid: uuid.UUID
     is_active: bool
-    values: List[AttributeValueResponse] = []
+    values: List[AttributeValueResponse] = Field(default_factory=list)
     
     model_config = ConfigDict(from_attributes=True)
 

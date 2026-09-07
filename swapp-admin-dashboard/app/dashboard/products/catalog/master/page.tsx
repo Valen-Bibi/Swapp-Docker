@@ -382,12 +382,12 @@ export default function MasterCatalogPage() {
 			</div>
 
 			<div
-				className="rounded-xl border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro shadow-sm transition-all duration-300 overflow-visible sm:overflow-auto"
+				className="rounded-xl border border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 bg-swapp-blanco/40 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm shadow-sm transition-all duration-300 overflow-visible sm:overflow-auto"
 				style={{ paddingBottom: editingVariantId ? "12rem" : "0" }}>
 				<table className="w-full text-left text-sm text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
-					<thead className="bg-swapp-tiza-verdoso/50 dark:bg-swapp-azul-petroleo/30 text-swapp-azul-oscuro dark:text-swapp-tiza-verdoso select-none">
+					<thead className="bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/20 border-b border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 select-none">
 						<tr>
-							<th className="px-6 py-4 font-semibold">Imagen</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">Imagen</th>
 							<SortableHeader
 								label="Producto e Identidad"
 								columnKey="name"
@@ -416,10 +416,11 @@ export default function MasterCatalogPage() {
 								currentDirection={sortDirection}
 								onSort={handleSort}
 							/>
-							<th className="px-6 py-4 font-semibold text-right">Acciones</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 text-right">Acciones</th>
 						</tr>
 					</thead>
-					<tbody className="divide-y divide-swapp-tiza-verdoso dark:divide-swapp-azul-petroleo">
+					{/* Eliminamos divide-y para manejar bordes fila por fila */}
+					<tbody className="">
 						{processedProducts.length === 0 ? (
 							<tr>
 								<td
@@ -442,13 +443,17 @@ export default function MasterCatalogPage() {
 									[];
 								const isExpanded = expandedRows.includes(p.product_uuid);
 
+								// Base para todas las filas
+								const baseRowClasses = "border-b border-swapp-tiza-verdoso/40 dark:border-swapp-azul-petroleo/40 last:border-0 transition-colors duration-200";
+								
+								// Comportamiento del Hover y Active states
 								const parentRowStatusStyle = p.is_active
-									? `hover:bg-swapp-tiza-verdoso/30 dark:hover:bg-swapp-azul-petroleo/30 ${isExpanded ? "bg-swapp-tiza-verdoso/10 dark:bg-swapp-azul-petroleo/10" : ""}`
-									: "opacity-60 bg-swapp-tiza-verdoso/40 dark:bg-swapp-azul-oscuro/80 grayscale filter mix-blend-multiply dark:mix-blend-normal";
+									? `hover:bg-swapp-blanco/60 dark:hover:bg-swapp-azul-petroleo/20 ${isExpanded ? "bg-swapp-blanco/60 dark:bg-swapp-azul-petroleo/20" : ""}`
+									: "opacity-60 bg-swapp-tiza-verdoso/40 dark:bg-swapp-azul-oscuro/80 grayscale filter mix-blend-multiply dark:mix-blend-normal hover:bg-swapp-tiza-verdoso/50 dark:hover:bg-swapp-azul-oscuro/90";
 
 								return (
 									<React.Fragment key={p.product_uuid}>
-										<tr className={`transition-colors ${parentRowStatusStyle}`}>
+										<tr className={`${baseRowClasses} ${parentRowStatusStyle}`}>
 											<td className="px-6 py-4">
 												{mainImageUrl ? (
 													<img
@@ -470,7 +475,7 @@ export default function MasterCatalogPage() {
 												<div className="text-xs text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50 flex items-center gap-1 mt-0.5">
 													{p.brand?.name && (
 														<>
-															<span className="font-semibold text-swapp-verde-oscuro dark:text-swapp-verde-menta">
+															<span className="text-swapp-verde-oscuro dark:text-swapp-verde-menta">
 																{p.brand.name}
 															</span>
 															<span>•</span>
@@ -507,11 +512,11 @@ export default function MasterCatalogPage() {
 											<td className="px-6 py-4">
 												<div className="flex flex-col gap-2.5 items-start">
 													<span
-														className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${p.is_published ? "bg-swapp-verde-pastel/10 dark:bg-swapp-verde-menta/10 text-swapp-verde-oscuro dark:text-swapp-verde-menta" : "bg-swapp-tiza-verdoso dark:bg-swapp-azul-petroleo text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso"}`}>
+														className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${p.is_published ? "bg-swapp-verde-pastel/10 dark:bg-swapp-verde-menta/10 text-swapp-verde-oscuro dark:text-swapp-verde-menta" : "bg-swapp-tiza-verdoso dark:bg-swapp-azul-petroleo text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso"}`}>
 														{p.is_published ? "Publicado" : "Borrador"}
 													</span>
-
-													{/* BARRA DE SCORING - UN SOLO COLOR */}
+													
+													{/* BARRA DE SCORING */}
 													<SwappTooltip text="Nivel de completitud de la Ficha Técnica">
 														<div className="flex items-center gap-2 w-24">
 															<div className="h-1.5 w-full bg-swapp-tiza-verdoso dark:bg-swapp-azul-petroleo rounded-full overflow-hidden">
@@ -585,16 +590,16 @@ export default function MasterCatalogPage() {
 										</tr>
 
 										{isExpanded && totalVariantsCount > 0 && (
-											<tr className="bg-swapp-tiza-verdoso/10 dark:bg-swapp-azul-oscuro border-b border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo">
+											<tr className="bg-swapp-tiza-verdoso/10 dark:bg-swapp-azul-oscuro border-b border-swapp-tiza-verdoso/40 dark:border-swapp-azul-petroleo/40">
 												<td colSpan={6} className="px-6 py-4">
-													<div className="rounded-lg border border-swapp-tiza-verdoso/50 dark:border-swapp-azul-petroleo/50 overflow-visible bg-swapp-blanco dark:bg-swapp-azul-oscuro/50">
+													<div className="rounded-lg border border-swapp-tiza-verdoso/50 dark:border-swapp-azul-petroleo/50 overflow-visible bg-swapp-blanco dark:bg-swapp-azul-oscuro/50 shadow-sm">
 														<table className="w-full text-xs text-left">
-															<thead className="bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/20 text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+															<thead className="bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/20 border-b border-swapp-tiza-verdoso/50 dark:border-swapp-azul-petroleo/50">
 																<tr>
-																	<th className="px-4 py-2 font-medium w-12 text-center">
+																	<th className="px-4 py-3 text-[10px] tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 w-12 text-center">
 																		Img
 																	</th>
-																	<th className="px-4 py-2 font-medium w-1/4">
+																	<th className="px-4 py-3 text-[10px] tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 w-1/4">
 																		<div className="flex items-center gap-2">
 																			<SwappTooltip
 																				text={
@@ -620,21 +625,21 @@ export default function MasterCatalogPage() {
 																			<span>SKU Específico</span>
 																		</div>
 																	</th>
-																	<th className="px-4 py-2 font-medium w-2/4">
+																	<th className="px-4 py-3 text-[10px] tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 w-2/4">
 																		Atributos (PIM)
 																	</th>
-																	<th className="px-4 py-2 font-medium">
+																	<th className="px-4 py-3 text-[10px] tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
 																		Precio
 																	</th>
-																	<th className="px-4 py-2 font-medium">
+																	<th className="px-4 py-3 text-[10px] tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
 																		Stock Físico
 																	</th>
-																	<th className="px-4 py-2 font-medium text-right">
+																	<th className="px-4 py-3 text-[10px] tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 text-right">
 																		Acciones
 																	</th>
 																</tr>
 															</thead>
-															<tbody className="divide-y divide-swapp-tiza-verdoso/30 dark:divide-swapp-azul-petroleo/30">
+															<tbody className="">
 																{visibleVariants.length === 0 ? (
 																	<tr>
 																		<td
@@ -648,14 +653,17 @@ export default function MasterCatalogPage() {
 																	visibleVariants.map((v: any) => {
 																		const isEditing =
 																			editingVariantId === v.variant_uuid;
+																		
+																		// Clases para el hover de las variantes anidadas
+																		const baseVariantRowClasses = "border-b border-swapp-tiza-verdoso/30 dark:border-swapp-azul-petroleo/30 last:border-0 transition-all duration-200";
 																		const rowStatusStyle = v.is_active
-																			? "hover:bg-swapp-tiza-verdoso/20 dark:hover:bg-swapp-azul-petroleo/20"
+																			? "hover:bg-swapp-tiza-verdoso/30 dark:hover:bg-swapp-azul-petroleo/30"
 																			: "opacity-60 bg-swapp-tiza-verdoso/40 dark:bg-swapp-azul-oscuro/80 grayscale filter mix-blend-multiply dark:mix-blend-normal";
 
 																		return (
 																			<tr
 																				key={v.variant_uuid}
-																				className={`transition-all ${rowStatusStyle}`}>
+																				className={`${baseVariantRowClasses} ${rowStatusStyle}`}>
 																				<td className="px-4 py-2 align-middle text-center">
 																					<SwappTooltip text="Asignar fotografía">
 																						<button
@@ -751,7 +759,7 @@ export default function MasterCatalogPage() {
 																										<div
 																											key={attr.attribute_id}
 																											className="flex flex-col gap-1">
-																											<span className="text-[10px] font-semibold text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 uppercase">
+																											<span className="text-[10px] text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 uppercase">
 																												{attr.name}{" "}
 																												{attr.is_required && (
 																													<span className="text-red-500">

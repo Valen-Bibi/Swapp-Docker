@@ -53,7 +53,6 @@ export default function OffersPage() {
 
 			// 2. Intentamos cargar los productos de forma aislada
 			try {
-				// ProductService ya devuelve Product[], por lo que no lleva .data
 				fetchedProducts = await ProductService.getAll();
 			} catch (err) {
 				console.error("Error cargando catálogo de productos:", err);
@@ -171,6 +170,7 @@ export default function OffersPage() {
 
 	return (
 		<div className="p-6 relative">
+			{/* CONTROLES Y HEADER */}
 			<div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<PageHeader
 					title="Gestión de Ofertas"
@@ -178,7 +178,6 @@ export default function OffersPage() {
 					icon={Tag}
 				/>
 				<div className="flex items-center gap-4">
-					{/* Contenedor del Toggle estandarizado */}
 					<div className="flex items-center gap-2 bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/30 px-3 py-1.5 rounded-lg border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo transition-colors">
 						<span className="text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
 							Ver Historial de Ofertas
@@ -206,19 +205,20 @@ export default function OffersPage() {
 				</div>
 			</div>
 
-			<div className="overflow-hidden rounded-xl border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro shadow-sm transition-colors">
+			{/* CONTENEDOR DE TABLA (GLASSMORPHISM) */}
+			<div className="rounded-xl border border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 bg-swapp-blanco/40 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm shadow-sm transition-all duration-300 overflow-visible sm:overflow-auto">
 				<table className="w-full text-left text-sm text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
-					<thead className="bg-swapp-tiza-verdoso/50 dark:bg-swapp-azul-petroleo/30 text-swapp-azul-oscuro dark:text-swapp-tiza-verdoso select-none">
+					<thead className="bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/20 border-b border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 select-none">
 						<tr>
-							<th className="px-6 py-4 font-semibold">Producto / Alcance</th>
-							<th className="px-6 py-4 font-semibold">Campaña</th>
-							<th className="px-6 py-4 font-semibold">Descuento</th>
-							<th className="px-6 py-4 font-semibold">Validez</th>
-							<th className="px-6 py-4 font-semibold text-center">Estado</th>
-							<th className="px-6 py-4 font-semibold text-right">Acciones</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">Producto / Alcance</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">Campaña</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">Descuento</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">Validez</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 text-center">Estado</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 text-right">Acciones</th>
 						</tr>
 					</thead>
-					<tbody className="divide-y divide-swapp-tiza-verdoso dark:divide-swapp-azul-petroleo">
+					<tbody className="">
 						{filteredDiscounts.length === 0 ? (
 							<tr>
 								<td
@@ -229,14 +229,21 @@ export default function OffersPage() {
 							</tr>
 						) : (
 							filteredDiscounts.map((d) => {
-								const isGlobal =
-									!d.variant_uuids || d.variant_uuids.length === 0;
+								const isGlobal = !d.variant_uuids || d.variant_uuids.length === 0;
+								const isExpired = new Date(d.end_date) < new Date();
+
+								// Lógica visual estandarizada para filas
+								const baseRowClasses = "border-b border-swapp-tiza-verdoso/40 dark:border-swapp-azul-petroleo/40 last:border-0 transition-colors duration-200";
+								
+								// Si está inactiva o vencida, aplicamos el filtro grisáceo
+								const rowStatusStyle = (!d.is_active || isExpired)
+									? "opacity-60 bg-swapp-tiza-verdoso/40 dark:bg-swapp-azul-oscuro/80 grayscale filter mix-blend-multiply dark:mix-blend-normal hover:bg-swapp-tiza-verdoso/50 dark:hover:bg-swapp-azul-oscuro/90"
+									: "hover:bg-swapp-blanco/60 dark:hover:bg-swapp-azul-petroleo/20";
 
 								return (
 									<tr
 										key={d.discount_id}
-										className={`transition-colors hover:bg-swapp-tiza-verdoso/30 dark:hover:bg-swapp-azul-petroleo/30 ${new Date(d.end_date) < new Date() ? "opacity-60" : ""}`}>
-										{/* NUEVA COLUMNA CON BADGES DE ALCANCE */}
+										className={`${baseRowClasses} ${rowStatusStyle}`}>
 										<td className="px-6 py-4">
 											<div className="flex flex-col gap-1.5">
 												<span className="font-medium text-swapp-azul-oscuro dark:text-swapp-blanco">
@@ -249,7 +256,6 @@ export default function OffersPage() {
 												) : (
 													<div className="flex flex-wrap gap-1">
 														{d.variant_uuids?.map((uuid) => {
-															// Buscamos el SKU cruzando datos con el catálogo maestro
 															const product = products.find(
 																(p) => p.product_uuid === d.product_uuid,
 															);
@@ -297,7 +303,7 @@ export default function OffersPage() {
 												text={d.is_active ? "Desactivar" : "Activar"}>
 												<button
 													onClick={() => handleToggleActive(d)}
-													disabled={new Date(d.end_date) < new Date()}
+													disabled={isExpired}
 													className={`inline-flex items-center justify-center p-2 rounded-full transition-all duration-300 ${
 														d.is_active
 															? "bg-emerald-100 text-emerald-600 hover:bg-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400"

@@ -19,7 +19,7 @@ from PIL import Image
 
 from . import models, database, auth, schemas
 from .database import engine, get_db, Base
-from .routers import products, auth_routes, staff, orders
+from .routers import products, auth_routes, staff, orders, dashboard_routes
 
 ml_models = {}
 
@@ -76,8 +76,9 @@ app.include_router(products.router)
 app.include_router(auth_routes.router)
 app.include_router(staff.router)
 app.include_router(orders.router)
+app.include_router(dashboard_routes.router)
 
-@app.post("/register", response_model=schemas.UsuarioResponse, status_code=status.HTTP_201_CREATED)
+@app.post("/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     if db.query(models.User).filter(models.User.email == user.email).first():
         raise HTTPException(status_code=400, detail="Email ya registrado")

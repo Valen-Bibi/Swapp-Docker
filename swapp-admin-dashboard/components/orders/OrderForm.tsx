@@ -24,10 +24,9 @@ export default function OrderForm() {
 	);
 
 	// 3. Inyectamos silenciosamente el total en el estado del formulario
-	// para que el submit y la validación de Zod funcionen perfecto.
 	useEffect(() => {
 		setValue("total_amount", totalAmount, {
-			shouldValidate: true, // Avisa a Zod que re-evalúe
+			shouldValidate: true,
 			shouldDirty: true,
 		});
 	}, [totalAmount, setValue]);
@@ -43,9 +42,9 @@ export default function OrderForm() {
 			<OrderItemsList />
 
 			{/* Footer: Totales y Botón Submit */}
-			<div className="sticky bottom-0 mt-4 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-xl border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/30 p-4 backdrop-blur-sm">
+			<div className="sticky bottom-0 mt-4 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-xl border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-tiza-verdoso/50 dark:bg-swapp-azul-petroleo/50 p-4 backdrop-blur-md">
 				<div className="flex flex-col">
-					<span className="text-sm font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+					<span className="text-sm font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/80">
 						Total a Cobrar
 					</span>
 					<span className="text-2xl font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta">
@@ -56,7 +55,7 @@ export default function OrderForm() {
 				<button
 					type="submit"
 					disabled={isSubmitting || totalAmount === 0}
-					className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-lg bg-swapp-verde-oscuro dark:bg-swapp-verde-menta px-6 py-3 text-sm font-bold text-swapp-blanco dark:text-swapp-azul-oscuro hover:bg-swapp-azul-oceano dark:hover:bg-swapp-verde-pastel transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg">
+					className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-lg bg-swapp-verde-oscuro dark:bg-swapp-verde-menta px-6 py-3 text-sm font-bold text-swapp-blanco dark:text-swapp-azul-oscuro hover:bg-swapp-verde-pastel dark:hover:bg-swapp-tiza-verdoso transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg">
 					{isSubmitting ? (
 						<>
 							<Loader2 className="h-4 w-4 animate-spin" />

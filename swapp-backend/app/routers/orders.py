@@ -30,7 +30,7 @@ def create_order_admin(
             created_by=admin_user.staff_id
         )
         db.add(new_order)
-        db.flush()
+        db.flush() # Flush nos da el new_order.order_id sin cerrar la transacción
 
         for item in order_data.items:
             product = db.query(models.Product).filter(models.Product.product_id == item.product_id).first()
@@ -54,11 +54,29 @@ def create_order_admin(
             db.add(new_item)
 
             if item.variant_id:
+                # 1. Buscamos la variante y BLOQUEAMOS LA FILA hasta que termine la transacción
+                variant = db.query(models.ProductVariant).filter(
+                    models.ProductVariant.variant_id == item.variant_id
+                ).with_for_update().first()
+
+                if not variant:
+                    raise HTTPException(status_code=400, detail=f"La variante con ID {item.variant_id} no existe.")
+
+                # 2. Calculamos los valores de stock
+                stock_before = variant.stock_quantity
+                stock_after = stock_before - item.quantity
+
+                # 3. Aplicamos el descuento FÍSICO al stock real
+                variant.stock_quantity = stock_after
+
+                # 4. Registramos el movimiento con el historial perfecto
                 sale_movement = models.InventoryMovement(
                     product_id=item.product_id,
                     variant_id=item.variant_id,
                     movement_type='sale',
                     quantity=-(item.quantity),
+                    stock_before=stock_before,       # <--- DATO SOLUCIONADO
+                    stock_after=stock_after,         # <--- DATO SOLUCIONADO
                     reference_id=new_order.order_id,
                     reference_type='order',
                     reason=f"Venta reservada en pedido {new_order.order_uuid}",
@@ -70,10 +88,12 @@ def create_order_admin(
         db.refresh(new_order)
         return new_order
         
+    except HTTPException as e:
+        db.rollback()
+        raise e
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error al registrar pedido: {str(e)}")
-
 
 @router.get("", response_model=List[schemas.OrderResponse])
 def get_orders(
@@ -125,20 +145,37 @@ def update_order_status(
     old_status = order.status
     order.status = new_status
 
+    # Lógica de devolución de stock por Cancelación
     if new_status == 'cancelled' and old_status != 'cancelled':
         for item in order.items:
             if item.variant_id:
-                return_movement = models.InventoryMovement(
-                    product_id=item.product_id,
-                    variant_id=item.variant_id,
-                    movement_type='return',
-                    quantity=item.quantity,
-                    reference_id=order.order_id,
-                    reference_type='order_cancellation',
-                    reason=f"Reintegro por cancelación de pedido {order.order_uuid}",
-                    created_by=admin_user.staff_id
-                )
-                db.add(return_movement)
+                # 1. Buscamos la variante con bloqueo
+                variant = db.query(models.ProductVariant).filter(
+                    models.ProductVariant.variant_id == item.variant_id
+                ).with_for_update().first()
+
+                if variant:
+                    # 2. Calculamos devolviendo el stock
+                    stock_before = variant.stock_quantity
+                    stock_after = stock_before + item.quantity
+
+                    # 3. Restauramos el stock físico
+                    variant.stock_quantity = stock_after
+
+                    # 4. Registramos el historial de la devolución
+                    return_movement = models.InventoryMovement(
+                        product_id=item.product_id,
+                        variant_id=item.variant_id,
+                        movement_type='return',
+                        quantity=item.quantity, # Cantidad en positivo porque es un ingreso
+                        stock_before=stock_before,
+                        stock_after=stock_after,
+                        reference_id=order.order_id,
+                        reference_type='order_cancellation',
+                        reason=f"Reintegro por cancelación de pedido {order.order_uuid}",
+                        created_by=admin_user.staff_id
+                    )
+                    db.add(return_movement)
 
     db.commit()
     return {"message": f"Estado actualizado a {new_status}. El inventario se ajustó automáticamente si fue necesario."}

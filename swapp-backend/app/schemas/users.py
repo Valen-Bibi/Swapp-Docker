@@ -9,7 +9,7 @@ class UserCreate(BaseModel):
     password: str
     role: str = "user"
 
-class UsuarioResponse(BaseModel):
+class UserResponse(BaseModel):
     user_uuid: uuid.UUID
     first_name: str
     last_name: str

@@ -2,19 +2,22 @@
 
 import React, { useEffect, useState } from "react";
 import { useFieldArray, useFormContext, Controller } from "react-hook-form";
-import { Plus, Trash2, Recycle, Loader2 } from "lucide-react";
+import { Plus, Trash2, Recycle, Loader2, Tag } from "lucide-react";
 import { ProductService } from "@/services/product.service";
 import { Product } from "@/types/product";
 import { formatCurrency } from "@/lib/utils";
+import { api } from "@/lib/api";
 
 const OrderItemRow = ({
 	index,
 	remove,
 	products,
+	discounts,
 }: {
 	index: number;
 	remove: (index: number) => void;
 	products: Product[];
+	discounts: any[];
 }) => {
 	const { control, setValue, getValues, watch } = useFormContext();
 
@@ -25,10 +28,16 @@ const OrderItemRow = ({
 	const expectedReturnQty = watch(`items.${index}.expected_return_qty`);
 	const quantity = watch(`items.${index}.quantity`);
 
+	// Observamos la campaña aplicada para la UI
+	const campaignName = watch(`items.${index}.campaign_name`);
+
 	const selectedProduct = products.find((p) => p.product_id === productId);
 
+	// CENTRALIZAMOS LAS CLASES DEL INPUT USANDO TU PALETA ESTRICTA
+	const inputStyles = "w-full rounded-md border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro px-3 py-2 text-sm text-swapp-azul-oscuro dark:text-swapp-tiza-verdoso outline-none focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta transition-colors disabled:opacity-50";
+
 	return (
-		<tr className="border-b border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo transition-colors hover:bg-swapp-tiza-verdoso/10 dark:hover:bg-swapp-azul-petroleo/10">
+		<tr className="border-b border-swapp-tiza-verdoso/40 dark:border-swapp-azul-petroleo/40 last:border-0 transition-colors duration-200 hover:bg-swapp-blanco/60 dark:hover:bg-swapp-azul-petroleo/20">
 			{/* Selector de Producto */}
 			<td className="px-4 py-3">
 				<Controller
@@ -36,7 +45,7 @@ const OrderItemRow = ({
 					name={`items.${index}.product_id`}
 					render={({ field }) => (
 						<select
-							className="w-full rounded-md border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta"
+							className={inputStyles}
 							value={field.value || ""}
 							onChange={(e) => {
 								const val = e.target.value;
@@ -49,9 +58,13 @@ const OrderItemRow = ({
 								);
 								const currentQty = getValues(`items.${index}.quantity`) || 1;
 
+								// Reset de todos los campos asociados
 								setValue(`items.${index}.variant_id`, null);
 								setValue(`items.${index}.unit_price`, 0);
 								setValue(`items.${index}.subtotal`, 0);
+								setValue(`items.${index}.discount_id`, null);
+								setValue(`items.${index}.campaign_name`, null);
+								setValue(`items.${index}.discount_amount`, 0);
 
 								if (product?.is_returnable) {
 									setValue(`items.${index}.requires_return`, true);
@@ -65,7 +78,6 @@ const OrderItemRow = ({
 								Seleccione un producto...
 							</option>
 							{products.map((p) => (
-								// USAMOS UUID COMO KEY PARA EVITAR EL CRASH DE REACT
 								<option key={p.product_uuid} value={p.product_id || ""}>
 									{p.name} {p.is_returnable ? "♻️" : ""}
 								</option>
@@ -82,7 +94,7 @@ const OrderItemRow = ({
 					name={`items.${index}.variant_id`}
 					render={({ field }) => (
 						<select
-							className="w-full rounded-md border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta disabled:opacity-50"
+							className={inputStyles}
 							value={field.value === null ? "" : field.value}
 							disabled={!selectedProduct || !selectedProduct.variants?.length}
 							onChange={(e) => {
@@ -95,18 +107,51 @@ const OrderItemRow = ({
 									(v) => v.variant_id === newVariantId,
 								);
 
-								if (variant) {
-									const price = Number(variant.price);
+								// Validación estricta para TypeScript y lógica de descuentos
+								if (variant && selectedProduct) {
+									const basePrice = Number(variant.price);
+									let finalPrice = basePrice;
+									let dId = null;
+									let dName = null;
+									let dAmount = 0;
+
+									const activeDiscount = discounts.find((d) => {
+										if (d.product_uuid !== selectedProduct.product_uuid)
+											return false;
+
+										const isGlobal =
+											!d.variant_uuids || d.variant_uuids.length === 0;
+										if (isGlobal) return true;
+
+										return d.variant_uuids.includes(variant.variant_uuid);
+									});
+
+									if (activeDiscount) {
+										dId = activeDiscount.discount_id;
+										dName = activeDiscount.name;
+
+										if (activeDiscount.discount_type === "percentage") {
+											dAmount =
+												basePrice * (Number(activeDiscount.value) / 100);
+										} else {
+											dAmount = Number(activeDiscount.value);
+										}
+										finalPrice = basePrice - dAmount;
+									}
+
 									const currentQty = getValues(`items.${index}.quantity`) || 1;
-									setValue(`items.${index}.unit_price`, price);
-									setValue(`items.${index}.subtotal`, price * currentQty);
+
+									setValue(`items.${index}.unit_price`, finalPrice);
+									setValue(`items.${index}.subtotal`, finalPrice * currentQty);
+									setValue(`items.${index}.discount_id`, dId);
+									setValue(`items.${index}.campaign_name`, dName);
+									setValue(`items.${index}.discount_amount`, dAmount);
 								}
 							}}>
 							<option value="" disabled>
 								Variante...
 							</option>
 							{selectedProduct?.variants?.map((v) => (
-								// USAMOS UUID COMO KEY PARA EVITAR EL CRASH DE REACT
 								<option
 									key={v.variant_uuid || v.variant_id}
 									value={v.variant_id || ""}>
@@ -128,11 +173,10 @@ const OrderItemRow = ({
 							<input
 								type="number"
 								min="1"
-								className="w-20 rounded-md border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-swapp-verde-oscuro"
+								className={`${inputStyles} w-20 text-center`}
 								value={field.value || ""}
 								onChange={(e) => {
 									const newQty = parseInt(e.target.value) || 0;
-
 									field.onChange(newQty);
 
 									const currentUnitPrice =
@@ -155,7 +199,7 @@ const OrderItemRow = ({
 					/>
 
 					{requiresReturn && (
-						<div className="flex items-center gap-1 text-[10px] text-swapp-verde-pastel dark:text-swapp-verde-menta font-medium bg-swapp-verde-pastel/10 dark:bg-swapp-verde-menta/10 px-2 py-1 rounded-full w-max">
+						<div className="flex items-center gap-1 text-[10px] text-swapp-verde-oscuro dark:text-swapp-verde-menta font-medium bg-swapp-verde-pastel/10 dark:bg-swapp-verde-menta/10 px-2 py-1 rounded-full w-max border border-swapp-verde-pastel/20 dark:border-swapp-verde-menta/20">
 							<Recycle className="h-3 w-3" />
 							Recoger: {expectedReturnQty}
 						</div>
@@ -166,11 +210,20 @@ const OrderItemRow = ({
 			{/* Precio Unitario y Subtotal (Solo Lectura) */}
 			<td className="px-4 py-3 align-top">
 				<div className="flex flex-col gap-1">
-					<span className="text-sm font-medium text-swapp-azul-oscuro dark:text-swapp-blanco">
+					<span className="text-sm font-semibold text-swapp-azul-oscuro dark:text-swapp-blanco">
 						{formatCurrency(subtotal || 0)}
 					</span>
+
+					{/* Badge de Oferta si aplica */}
+					{campaignName && (
+						<span className="inline-flex items-center gap-1 text-[9px] font-medium text-swapp-verde-oscuro dark:text-swapp-verde-menta bg-swapp-verde-pastel/20 dark:bg-swapp-verde-menta/10 px-1.5 py-0.5 rounded uppercase tracking-wider w-max mt-0.5 border border-swapp-verde-pastel/20 dark:border-swapp-verde-menta/20">
+							<Tag className="h-2.5 w-2.5" />
+							{campaignName}
+						</span>
+					)}
+
 					{unitPrice > 0 && quantity > 1 && (
-						<span className="text-xs text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
+						<span className="text-xs text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/60">
 							{formatCurrency(unitPrice)} c/u
 						</span>
 					)}
@@ -199,24 +252,28 @@ export default function OrderItemsList() {
 	});
 
 	const [products, setProducts] = useState<Product[]>([]);
+	const [discounts, setDiscounts] = useState<any[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 
 	useEffect(() => {
-		const loadProducts = async () => {
+		const loadData = async () => {
 			try {
-				const data = await ProductService.getAll();
-				const activeProducts = data.filter((p) => p.is_active);
+				const [productsData, discountsRes] = await Promise.all([
+					ProductService.getAll(),
+					api.get("/api/products/admin/discounts"),
+				]);
+
+				const activeProducts = productsData.filter((p) => p.is_active);
 				setProducts(activeProducts);
+				setDiscounts(discountsRes.data);
 			} catch (error) {
-				console.error("Error al cargar productos", error);
+				console.error("Error al cargar datos", error);
 			} finally {
 				setIsLoading(false);
 			}
 		};
-		loadProducts();
+		loadData();
 	}, []);
-
-	const currentItems = watch("items");
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -240,23 +297,24 @@ export default function OrderItemsList() {
 							discount_amount: 0,
 						})
 					}
-					className="inline-flex items-center gap-2 rounded-lg bg-swapp-verde-oscuro dark:bg-swapp-verde-menta px-3 py-1.5 text-xs font-medium text-swapp-blanco dark:text-swapp-azul-oscuro hover:bg-swapp-azul-oceano dark:hover:bg-swapp-verde-pastel transition-colors">
+					className="inline-flex items-center gap-2 rounded-lg bg-swapp-verde-oscuro dark:bg-swapp-verde-menta px-3 py-1.5 text-xs font-medium text-swapp-blanco dark:text-swapp-azul-oscuro hover:bg-swapp-verde-pastel dark:hover:bg-swapp-tiza-verdoso transition-colors">
 					<Plus className="h-4 w-4" /> Agregar Ítem
 				</button>
 			</div>
 
-			<div className="rounded-xl border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo overflow-hidden">
+			{/* TABLA ESTANDARIZADA (GLASSMORPHISM) */}
+			<div className="rounded-xl border border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 bg-swapp-blanco/40 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm shadow-sm transition-all duration-300 overflow-visible sm:overflow-auto">
 				<table className="w-full text-left text-sm text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
-					<thead className="bg-swapp-tiza-verdoso/50 dark:bg-swapp-azul-petroleo/30 font-semibold text-swapp-azul-oscuro dark:text-swapp-tiza-verdoso">
+					<thead className="bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/20 border-b border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 select-none">
 						<tr>
-							<th className="px-4 py-3 w-1/3">Producto</th>
-							<th className="px-4 py-3 w-1/4">Variante (SKU)</th>
-							<th className="px-4 py-3 w-1/6">Cantidad</th>
-							<th className="px-4 py-3 w-1/6">Total</th>
+							<th className="px-4 py-3 text-xs uppercase tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 w-1/3">Producto</th>
+							<th className="px-4 py-3 text-xs uppercase tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 w-1/4">Variante (SKU)</th>
+							<th className="px-4 py-3 text-xs uppercase tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 w-1/6">Cantidad</th>
+							<th className="px-4 py-3 text-xs uppercase tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 w-1/6">Total</th>
 							<th className="px-4 py-3 w-16 text-right"></th>
 						</tr>
 					</thead>
-					<tbody>
+					<tbody className="">
 						{isLoading ? (
 							<tr>
 								<td colSpan={5} className="px-4 py-8 text-center">
@@ -267,9 +325,8 @@ export default function OrderItemsList() {
 							<tr>
 								<td
 									colSpan={5}
-									className="px-4 py-8 text-center text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50 italic">
-									No hay ítems en el pedido. Presiona "Agregar Ítem" para
-									comenzar.
+									className="px-4 py-8 text-center text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/50 italic">
+									No hay ítems en el pedido. Presiona "Agregar Ítem" para comenzar.
 								</td>
 							</tr>
 						) : (
@@ -279,6 +336,7 @@ export default function OrderItemsList() {
 									index={index}
 									remove={remove}
 									products={products}
+									discounts={discounts}
 								/>
 							))
 						)}

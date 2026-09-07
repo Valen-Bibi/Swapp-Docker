@@ -207,7 +207,7 @@ def get_active_discounts(db: Session = Depends(get_db), admin_user = Depends(get
     return result
 
 # --- CATÁLOGO PRINCIPAL ---
-@router.get("", response_model=List[schemas.ProductoCatalogoResponse], status_code=status.HTTP_200_OK)
+@router.get("", response_model=List[schemas.ProductCatalogResponse], status_code=status.HTTP_200_OK)
 def get_all_products_admin(
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
@@ -224,14 +224,14 @@ def get_all_products_admin(
                  
     result = []
     for p in products:
-        prod_schema = schemas.ProductoCatalogoResponse.model_validate(p)
+        prod_schema = schemas.ProductCatalogResponse.model_validate(p)
         prod_schema.media = [m for m in p.media if m.is_active] 
         result.append(prod_schema)
         
     return result
 
 # --- CATEGORÍAS Y MARCAS ---
-@router.get("/categories", response_model=List[schemas.CategoriaResponse])
+@router.get("/categories", response_model=List[schemas.CategoryResponse])
 def get_categories(include_inactive: bool = False, db: Session = Depends(get_db)):
     """Obtiene el árbol de categorías, con opción de incluir las archivadas"""
     query = db.query(models.ProductCategory)
@@ -256,7 +256,7 @@ def get_brands(db: Session = Depends(get_db)):
 @router.put("/{product_uuid}")
 def update_product_admin(
     product_uuid: UUID,
-    product_update: schemas.ProductUpdateSchema,
+    product_update: schemas.ProductUpdate,
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
@@ -633,7 +633,7 @@ def delete_product_media(
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 def create_product_admin(
-    product_in: schemas.ProductCreateSchema,
+    product_in: schemas.ProductCreate,
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
@@ -771,13 +771,13 @@ def get_attributes(db: Session = Depends(get_db), admin_user = Depends(get_curre
                    .all()
     return attributes
 
-
 @router.post("/attributes")
 def create_attribute(
     payload: schemas.AttributeCreate,
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
+    # 1. Buscamos si ya existe (ignorando mayúsculas/minúsculas)
     existing_attr = db.query(models.ProductAttribute).filter(
         func.lower(models.ProductAttribute.name) == payload.name.lower()
     ).first()
@@ -789,6 +789,7 @@ def create_attribute(
                 detail="Ya existe un atributo activo con este nombre."
             )
         else:
+            # Está archivado. Validamos que no intenten cambiar su naturaleza
             if existing_attr.is_variant != payload.is_variant:
                 tipo_viejo = "Divisor de Stock" if existing_attr.is_variant else "Ficha Técnica"
                 raise HTTPException(
@@ -796,8 +797,10 @@ def create_attribute(
                     detail=f"El atributo '{existing_attr.name}' está archivado como '{tipo_viejo}'. No podés recrearlo con un comportamiento distinto porque corrompería el historial del catálogo."
                 )
             
+            # Coincide la naturaleza: Lo restauramos
             existing_attr.is_active = True
             
+            # Procesamos los valores que llegaron desde el modal
             for val_str in payload.values:
                 existing_val = db.query(models.ProductAttributeValue).filter(
                     models.ProductAttributeValue.attribute_id == existing_attr.attribute_id,
@@ -805,7 +808,7 @@ def create_attribute(
                 ).first()
 
                 if existing_val:
-                    existing_val.is_active = True
+                    existing_val.is_active = True # Lo reactivamos
                 else:
                     new_val = models.ProductAttributeValue(
                         attribute_id=existing_attr.attribute_id,
@@ -817,6 +820,28 @@ def create_attribute(
             db.commit()
             return existing_attr
 
+    # --- AQUÍ ESTABA EL CÓDIGO FALTANTE ---
+    # FLUJO NORMAL: El atributo no existía, lo creamos desde cero
+    new_attr = models.ProductAttribute(
+        name=payload.name,
+        is_variant=payload.is_variant,
+        is_active=True
+    )
+    db.add(new_attr)
+    db.commit()
+    db.refresh(new_attr)
+
+    # Agregamos los valores iniciales si los enviaron
+    for val_str in payload.values:
+        new_val = models.ProductAttributeValue(
+            attribute_id=new_attr.attribute_id,
+            value=val_str,
+            is_active=True
+        )
+        db.add(new_val)
+        
+    db.commit()
+    return new_attr
 
 @router.post("/attributes/{attribute_id}/values", status_code=status.HTTP_201_CREATED)
 def add_attribute_value(

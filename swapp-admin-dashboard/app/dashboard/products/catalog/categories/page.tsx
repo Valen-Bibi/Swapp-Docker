@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FolderTree, Plus, Edit, PlusSquare } from "lucide-react";
+import { FolderTree, Plus, Edit, PlusSquare, Lock } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import PageHeader from "@/components/layout/PageHeader";
@@ -14,7 +14,6 @@ import { SwappTooltip } from "@/components/ui/SwappTooltip";
 import { SwappToggle } from "@/components/ui/SwappToggle";
 import { ProductService } from "@/services/product.service";
 import { Category } from "@/types/product";
-import { Lock } from "lucide-react";
 
 export default function CategoriesPage() {
 	const [categories, setCategories] = useState<Category[]>([]);
@@ -45,7 +44,6 @@ export default function CategoriesPage() {
 		name: string;
 	} | null>(null);
 
-	// Actualizamos la función para que escuche el estado del toggle
 	const fetchCategories = async (includeInactive = showInactive) => {
 		setLoading(true);
 		try {
@@ -59,7 +57,6 @@ export default function CategoriesPage() {
 		}
 	};
 
-	// Refrescamos la tabla cada vez que el usuario toca el toggle
 	useEffect(() => {
 		fetchCategories(showInactive);
 	}, [showInactive]);
@@ -116,6 +113,7 @@ export default function CategoriesPage() {
 
 	return (
 		<div className="p-6 relative">
+			{/* CONTROLES Y HEADER */}
 			<div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<PageHeader
 					title="Árbol de Categorías"
@@ -123,7 +121,6 @@ export default function CategoriesPage() {
 					icon={FolderTree}
 				/>
 				<div className="flex items-center gap-4">
-					{/* Contenedor del Toggle estandarizado */}
 					<div className="flex items-center gap-2 bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/30 px-3 py-1.5 rounded-lg border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo transition-colors">
 						<span className="text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
 							Ver Categorías Archivadas
@@ -160,18 +157,19 @@ export default function CategoriesPage() {
 				</div>
 			</div>
 
-			<div className="overflow-hidden rounded-xl border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro shadow-sm transition-colors">
+			{/* CONTENEDOR DE TABLA (GLASSMORPHISM) */}
+			<div className="rounded-xl border border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 bg-swapp-blanco/40 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm shadow-sm transition-all duration-300 overflow-visible sm:overflow-auto">
 				<table className="w-full text-left text-sm text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
-					<thead className="bg-swapp-tiza-verdoso/50 dark:bg-swapp-azul-petroleo/30 text-swapp-azul-oscuro dark:text-swapp-tiza-verdoso select-none">
+					<thead className="bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/20 border-b border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 select-none">
 						<tr>
-							<th className="px-6 py-4 font-semibold">Categoría (Slug)</th>
-							<th className="px-6 py-4 font-semibold">Jerarquía</th>
-							<th className="px-6 py-4 font-semibold">Orden</th>
-							<th className="px-6 py-4 font-semibold">Estado</th>
-							<th className="px-6 py-4 font-semibold text-right">Acciones</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">Categoría (Slug)</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">Jerarquía</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">Orden</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">Estado</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 text-right">Acciones</th>
 						</tr>
 					</thead>
-					<tbody className="divide-y divide-swapp-tiza-verdoso dark:divide-swapp-azul-petroleo">
+					<tbody className="">
 						{filteredCategories.length === 0 ? (
 							<tr>
 								<td
@@ -183,13 +181,21 @@ export default function CategoriesPage() {
 						) : (
 							filteredCategories.map((c) => {
 								const isChild = !!c.parent_id;
+
+								// Lógica visual estandarizada para filas
+								const baseRowClasses = "border-b border-swapp-tiza-verdoso/40 dark:border-swapp-azul-petroleo/40 last:border-0 transition-colors duration-200";
+								
+								const rowStatusStyle = c.is_active
+									? `hover:bg-swapp-blanco/60 dark:hover:bg-swapp-azul-petroleo/20 ${isChild ? "bg-swapp-tiza-verdoso/10 dark:bg-swapp-azul-petroleo/10" : ""}`
+									: "opacity-60 bg-swapp-tiza-verdoso/40 dark:bg-swapp-azul-oscuro/80 grayscale filter mix-blend-multiply dark:mix-blend-normal hover:bg-swapp-tiza-verdoso/50 dark:hover:bg-swapp-azul-oscuro/90";
+
 								return (
 									<tr
 										key={c.category_id}
-										className={`transition-colors hover:bg-swapp-tiza-verdoso/30 dark:hover:bg-swapp-azul-petroleo/30 ${isChild ? "bg-swapp-tiza-verdoso/10 dark:bg-swapp-azul-petroleo/10" : ""}`}>
+										className={`${baseRowClasses} ${rowStatusStyle}`}>
 										<td className="px-6 py-4">
 											<div
-												className={`font-medium flex items-center gap-2 text-swapp-azul-oscuro dark:text-swapp-blanco ${isChild ? "pl-6 border-l-2 border-swapp-verde-oscuro dark:border-swapp-verde-menta" : ""}`}>
+												className={`font-medium flex items-center gap-2 text-swapp-azul-oscuro dark:text-swapp-blanco ${isChild ? "pl-6 border-l-2 border-swapp-verde-oscuro dark:border-swapp-verde-menta" : ""} ${!c.is_active ? "line-through" : ""}`}>
 												{isChild && (
 													<span className="text-swapp-verde-menta/60">↳</span>
 												)}

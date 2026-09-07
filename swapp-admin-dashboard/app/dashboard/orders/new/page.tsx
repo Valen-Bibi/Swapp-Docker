@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, ArrowLeft } from "lucide-react";
 
 import {
 	createOrderSchema,
@@ -50,15 +50,25 @@ export default function NewOrderPage() {
 
 	return (
 		<div className="p-6 relative">
-			<div className="mb-6">
+			{/* CONTROLES Y HEADER ESTANDARIZADOS */}
+			<div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<PageHeader
 					title="Nuevo Pedido Manual"
 					description="Carga de pedidos recibidos por WhatsApp o canales informales"
 					icon={ShoppingCart}
 				/>
+				
+				<div className="flex items-center gap-4">
+					<button
+						onClick={() => router.back()}
+						className="inline-flex items-center gap-2 rounded-lg bg-swapp-tiza-verdoso/40 dark:bg-swapp-azul-petroleo/40 px-4 py-2 text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo transition-colors whitespace-nowrap">
+						<ArrowLeft className="h-4 w-4" /> Volver a Pedidos
+					</button>
+				</div>
 			</div>
 
-			<div className="rounded-xl border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro shadow-sm p-6">
+			{/* CONTENEDOR DEL FORMULARIO (GLASSMORPHISM) */}
+			<div className="rounded-xl border border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 bg-swapp-blanco/40 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm shadow-sm transition-all duration-300 p-6 sm:p-8">
 				<FormProvider {...methods}>
 					<form
 						onSubmit={methods.handleSubmit(onSubmit)}

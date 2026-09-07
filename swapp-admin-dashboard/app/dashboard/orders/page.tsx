@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { OrderService } from "@/services/order.service";
+import { ProductService } from "@/services/product.service";
 import {
 	ListOrdered,
 	ChevronDown,
@@ -26,12 +27,16 @@ import { useTableSort } from "@/hooks/useTableSort";
 import { formatCurrency } from "@/lib/utils";
 import ConfirmOrderModal from "@/components/orders/ConfirmOrderModal";
 import { SwappTooltip } from "@/components/ui/SwappTooltip";
+import { SwappToggle } from "@/components/ui/SwappToggle";
 import EditOrderModal from "@/components/orders/EditOrderModal";
-import { OrderItem, Order } from "@/types/order";
+import { Order } from "@/types/order";
+import { Product } from "@/types/product";
 
 export default function OrdersPage() {
 	const [orders, setOrders] = useState<Order[]>([]);
+	const [products, setProducts] = useState<Product[]>([]);
 	const [loading, setLoading] = useState(true);
+	
 	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 	const [editingOrder, setEditingOrder] = useState<Order | null>(null);
 
@@ -41,30 +46,31 @@ export default function OrdersPage() {
 	const [showTodayOnly, setShowTodayOnly] = useState(false);
 	const [expandedRows, setExpandedRows] = useState<string[]>([]);
 
-	// Estados del Modal
+	// Estados del Modal de Estado
 	const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-	const [selectedOrderUuid, setSelectedOrderUuid] = useState<string | null>(
-		null,
-	);
-	const [actionType, setActionType] = useState<"complete" | "cancel" | null>(
-		null,
-	);
+	const [selectedOrderUuid, setSelectedOrderUuid] = useState<string | null>(null);
+	const [actionType, setActionType] = useState<"complete" | "cancel" | null>(null);
 	const [isUpdating, setIsUpdating] = useState(false);
 
-	const fetchOrders = async () => {
+	// Cargamos Pedidos y Catálogo en paralelo
+	const fetchData = async () => {
 		try {
-			const data = await OrderService.getOrders();
-			setOrders(data);
+			const [ordersData, productsData] = await Promise.all([
+				OrderService.getOrders(),
+				ProductService.getAll()
+			]);
+			setOrders(ordersData);
+			setProducts(productsData);
 		} catch (error) {
-			console.error("Error obteniendo los pedidos:", error);
-			toast.error("No se pudieron cargar los pedidos.");
+			console.error("Error obteniendo los datos:", error);
+			toast.error("No se pudieron cargar los pedidos o el catálogo.");
 		} finally {
 			setLoading(false);
 		}
 	};
 
 	useEffect(() => {
-		fetchOrders();
+		fetchData();
 	}, []);
 
 	const toggleRow = (uuid: string) => {
@@ -98,7 +104,7 @@ export default function OrdersPage() {
 					: "Pedido cancelado. El stock se ha reintegrado.",
 				{ id: toastId },
 			);
-			fetchOrders();
+			fetchData();
 		} catch (error: any) {
 			toast.error(error.response?.data?.detail || "Error al actualizar", {
 				id: toastId,
@@ -178,50 +184,54 @@ export default function OrdersPage() {
 
 	return (
 		<div className="p-6 relative">
-			<div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+			{/* CONTROLES Y HEADER */}
+			<div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<PageHeader
 					title="Gestión de Pedidos"
 					description="Listado general y logística puerta a puerta"
 					icon={ListOrdered}
 				/>
 
-				<div className="flex flex-col sm:flex-row items-center gap-3">
-					{/* Botón: Entregas de Hoy */}
-					<button
-						onClick={() => setShowTodayOnly(!showTodayOnly)}
-						className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors border ${
-							showTodayOnly
-								? "bg-swapp-verde-oscuro/10 border-swapp-verde-oscuro/30 text-swapp-verde-oscuro dark:bg-swapp-verde-menta/10 dark:border-swapp-verde-menta/30 dark:text-swapp-verde-menta"
-								: "bg-swapp-blanco dark:bg-swapp-azul-oscuro border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo"
-						}`}>
+				<div className="flex flex-wrap items-center gap-4">
+					{/* Toggle estandarizado para Entregas de Hoy */}
+					<div className="flex items-center gap-2 bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/30 px-3 py-1.5 rounded-lg border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo transition-colors">
 						<Calendar
-							className={`h-4 w-4 ${showTodayOnly ? "text-swapp-verde-oscuro dark:text-swapp-verde-menta" : ""}`}
+							className={`h-4 w-4 ${showTodayOnly ? "text-swapp-verde-oscuro dark:text-swapp-verde-menta" : "text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50"}`}
 						/>
-						{showTodayOnly
-							? "Viendo Entregas de Hoy"
-							: "Filtrar Entregas de Hoy"}
-					</button>
+						<span className="text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso whitespace-nowrap">
+							{showTodayOnly ? "Entregas de Hoy" : "Filtrar por Hoy"}
+						</span>
+						<SwappToggle
+							checked={showTodayOnly}
+							onChange={setShowTodayOnly}
+							id="toggle-today-orders"
+						/>
+					</div>
 
-					<select
-						value={statusFilter}
-						onChange={(e) => setStatusFilter(e.target.value)}
-						className="rounded-lg border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro px-4 py-2 text-sm text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso outline-none focus:ring-1 focus:ring-swapp-verde-oscuro transition-colors">
-						<option value="all">Todos los estados</option>
-						<option value="pending">En Proceso</option>
-						<option value="completed">Entregados</option>
-						<option value="cancelled">Cancelados</option>
-					</select>
-					<SearchBar
-						searchTerm={searchTerm}
-						onSearchChange={setSearchTerm}
-						placeholder="Buscar cliente o teléfono..."
-					/>
+					<div className="flex items-center gap-3">
+						<select
+							value={statusFilter}
+							onChange={(e) => setStatusFilter(e.target.value)}
+							className="rounded-lg border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro px-3 py-1.5 text-sm text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso outline-none focus:ring-1 focus:ring-swapp-verde-oscuro transition-colors">
+							<option value="all">Todos los estados</option>
+							<option value="pending">En Proceso</option>
+							<option value="completed">Entregados</option>
+							<option value="cancelled">Cancelados</option>
+						</select>
+						
+						<SearchBar
+							searchTerm={searchTerm}
+							onSearchChange={setSearchTerm}
+							placeholder="Buscar cliente o teléfono..."
+						/>
+					</div>
 				</div>
 			</div>
 
-			<div className="overflow-hidden rounded-xl border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro shadow-sm transition-colors overflow-x-auto">
+			{/* CONTENEDOR DE TABLA (GLASSMORPHISM) */}
+			<div className="rounded-xl border border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 bg-swapp-blanco/40 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm shadow-sm transition-all duration-300 overflow-visible sm:overflow-auto">
 				<table className="w-full text-left text-sm text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso min-w-[800px]">
-					<thead className="bg-swapp-tiza-verdoso/50 dark:bg-swapp-azul-petroleo/30 text-swapp-azul-oscuro dark:text-swapp-tiza-verdoso select-none">
+					<thead className="bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/20 border-b border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 select-none">
 						<tr>
 							<SortableHeader
 								label="Cliente / Contacto"
@@ -230,7 +240,7 @@ export default function OrdersPage() {
 								currentDirection={sortDirection}
 								onSort={handleSort}
 							/>
-							<th className="px-6 py-4 font-semibold">Ubicación de Entrega</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">Ubicación de Entrega</th>
 							<SortableHeader
 								label="Fechas y Estado"
 								columnKey="date"
@@ -245,10 +255,10 @@ export default function OrdersPage() {
 								currentDirection={sortDirection}
 								onSort={handleSort}
 							/>
-							<th className="px-6 py-4 font-semibold text-right">Acciones</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 text-right">Acciones</th>
 						</tr>
 					</thead>
-					<tbody className="divide-y divide-swapp-tiza-verdoso dark:divide-swapp-azul-petroleo">
+					<tbody className="">
 						{processedOrders.length === 0 ? (
 							<tr>
 								<td
@@ -267,13 +277,20 @@ export default function OrdersPage() {
 									(acc, item) => acc + (item.expected_return_qty || 0),
 									0,
 								);
-								const cleanPhone = order.customer_phone.replace(/\D/g, ""); // Limpia para API de WhatsApp
+								const cleanPhone = order.customer_phone.replace(/\D/g, "");
+
+								// Lógica visual estandarizada para filas
+								const baseRowClasses = "border-b border-swapp-tiza-verdoso/40 dark:border-swapp-azul-petroleo/40 last:border-0 transition-colors duration-200";
+								
+								// Si el pedido está cancelado, le aplicamos el filtro grisáceo
+								const rowStatusStyle = order.status === "cancelled"
+									? "opacity-60 bg-swapp-tiza-verdoso/40 dark:bg-swapp-azul-oscuro/80 grayscale filter mix-blend-multiply dark:mix-blend-normal hover:bg-swapp-tiza-verdoso/50 dark:hover:bg-swapp-azul-oscuro/90"
+									: `hover:bg-swapp-blanco/60 dark:hover:bg-swapp-azul-petroleo/20 ${isExpanded ? "bg-swapp-blanco/60 dark:bg-swapp-azul-petroleo/20" : ""}`;
 
 								return (
 									<React.Fragment key={order.order_uuid}>
 										{/* FILA PRINCIPAL (PEDIDO) */}
-										<tr
-											className={`transition-colors hover:bg-swapp-tiza-verdoso/30 dark:hover:bg-swapp-azul-petroleo/30 ${isExpanded ? "bg-swapp-tiza-verdoso/10 dark:bg-swapp-azul-petroleo/10" : ""}`}>
+										<tr className={`${baseRowClasses} ${rowStatusStyle}`}>
 											<td className="px-6 py-4">
 												<div className="flex flex-col gap-1.5">
 													<span className="font-semibold text-swapp-azul-oscuro dark:text-swapp-blanco text-base">
@@ -283,7 +300,6 @@ export default function OrdersPage() {
 														<span className="text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
 															{order.customer_phone}
 														</span>
-														{/* ACTUALIZADO: Forzamos la apertura directa de WhatsApp Web */}
 														<SwappTooltip text="WhatsApp Cliente">
 															<a
 																href={`https://web.whatsapp.com/send?phone=${cleanPhone}&text=Hola%20${order.customer_name},%20te%20escribimos%20de%20Swapp%20por%20tu%20pedido.`}
@@ -299,14 +315,13 @@ export default function OrdersPage() {
 
 											<td className="px-6 py-4">
 												<div className="flex flex-col gap-1.5">
-													<span className="font-medium text-swapp-azul-oscuro dark:text-swapp-tiza-verdoso">
+													<span className="font-medium text-swapp-azul-oscuro dark:text-swapp-blanco">
 														{order.delivery_zone || "Zona no especificada"}
 													</span>
 													<div className="flex items-start gap-1.5 text-xs text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
 														<MapPin className="h-3.5 w-3.5 shrink-0 mt-0.5 text-swapp-verde-oscuro dark:text-swapp-verde-menta" />
 
-														{/* ACTUALIZADO: Link directo a búsqueda en Google Maps */}
-														<SwappTooltip text="Ver Ubicacion en Maps">
+														<SwappTooltip text="Ver Ubicación en Maps">
 															<a
 																href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${order.delivery_address}${order.delivery_zone ? ", " + order.delivery_zone : ""}, Argentina`)}`}
 																target="_blank"
@@ -397,7 +412,6 @@ export default function OrdersPage() {
 																</button>
 															</SwappTooltip>
 															<SwappTooltip text="Cancelar Pedido">
-																{/* Botón Cancelar */}
 																<button
 																	onClick={() =>
 																		handleStatusClick(
@@ -427,7 +441,7 @@ export default function OrdersPage() {
 
 										{/* ACORDEÓN DESPLEGABLE */}
 										{isExpanded && (
-											<tr className="bg-swapp-tiza-verdoso/10 dark:bg-swapp-azul-oscuro border-b border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo">
+											<tr className="bg-swapp-tiza-verdoso/10 dark:bg-swapp-azul-oscuro border-b border-swapp-tiza-verdoso/40 dark:border-swapp-azul-petroleo/40">
 												<td colSpan={5} className="px-6 py-4">
 													<div className="flex flex-col gap-4">
 														{/* Notas del Repartidor */}
@@ -445,62 +459,70 @@ export default function OrdersPage() {
 															</div>
 														)}
 
-														{/* Tabla de Productos */}
-														<div className="rounded-lg border border-swapp-tiza-verdoso/50 dark:border-swapp-azul-petroleo/50 overflow-hidden bg-swapp-blanco dark:bg-swapp-azul-oscuro/50">
+														{/* Tabla de Productos Anidada */}
+														<div className="rounded-lg border border-swapp-tiza-verdoso/50 dark:border-swapp-azul-petroleo/50 overflow-hidden bg-swapp-blanco dark:bg-swapp-azul-oscuro/50 shadow-sm">
 															<table className="w-full text-xs text-left">
-																<thead className="bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/20 text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+																<thead className="bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/20 border-b border-swapp-tiza-verdoso/50 dark:border-swapp-azul-petroleo/50">
 																	<tr>
-																		<th className="px-4 py-3 font-medium w-2/5">
-																			ID y Variante
+																		<th className="px-4 py-3 text-[10px] uppercase tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 w-2/5">
+																			Producto y SKU
 																		</th>
-																		<th className="px-4 py-3 font-medium w-1/5 text-center">
+																		<th className="px-4 py-3 text-[10px] uppercase tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 w-1/5 text-center">
 																			Cantidad
 																		</th>
-																		<th className="px-4 py-3 font-medium w-1/5">
+																		<th className="px-4 py-3 text-[10px] uppercase tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 w-1/5">
 																			Logística Inversa
 																		</th>
-																		<th className="px-4 py-3 font-medium text-right w-1/5">
+																		<th className="px-4 py-3 text-[10px] uppercase tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 text-right w-1/5">
 																			Subtotal
 																		</th>
 																	</tr>
 																</thead>
-																<tbody className="divide-y divide-swapp-tiza-verdoso/30 dark:divide-swapp-azul-petroleo/30">
-																	{order.items.map((item, idx) => (
-																		<tr
-																			key={idx}
-																			className="hover:bg-swapp-tiza-verdoso/20 dark:hover:bg-swapp-azul-petroleo/20 transition-colors">
-																			<td className="px-4 py-3">
-																				<span className="font-medium text-swapp-azul-oscuro dark:text-swapp-blanco block">
-																					ID Prod: {item.product_id}
-																				</span>
-																				{item.variant_id && (
-																					<span className="font-mono text-[10px] text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 mt-0.5 block">
-																						Variante ID: {item.variant_id}
+																<tbody className="">
+																	{order.items.map((item, idx) => {
+																		const productInfo = products.find(p => p.product_id === item.product_id);
+																		const variantInfo = productInfo?.variants?.find(v => v.variant_id === item.variant_id);
+
+																		const baseVariantRowClasses = "border-b border-swapp-tiza-verdoso/30 dark:border-swapp-azul-petroleo/30 last:border-0 transition-all duration-200";
+																		const variantRowStatusStyle = order.status === "cancelled" ? "" : "hover:bg-swapp-tiza-verdoso/30 dark:hover:bg-swapp-azul-petroleo/30";
+
+																		return (
+																			<tr
+																				key={idx}
+																				className={`${baseVariantRowClasses} ${variantRowStatusStyle}`}>
+																				<td className="px-4 py-3">
+																					<span className="font-medium text-swapp-azul-oscuro dark:text-swapp-blanco block">
+																						{productInfo?.name || `Producto ID: ${item.product_id}`}
 																					</span>
-																				)}
-																			</td>
-																			<td className="px-4 py-3 text-center font-semibold text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
-																				{item.quantity} x{" "}
-																				{formatCurrency(item.unit_price)}
-																			</td>
-																			<td className="px-4 py-3">
-																				{item.requires_return ? (
-																					<div className="inline-flex items-center gap-1 text-[10px] text-swapp-verde-pastel dark:text-swapp-verde-menta font-medium bg-swapp-verde-pastel/10 dark:bg-swapp-verde-menta/10 px-2 py-1 rounded-full border border-swapp-verde-pastel/20 dark:border-swapp-verde-menta/20">
-																						<Recycle className="h-3 w-3" />
-																						Recuperar:{" "}
-																						{item.expected_return_qty} un.
-																					</div>
-																				) : (
-																					<span className="text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40 italic">
-																						No aplica
-																					</span>
-																				)}
-																			</td>
-																			<td className="px-4 py-3 text-right font-medium text-swapp-azul-oscuro dark:text-swapp-blanco">
-																				{formatCurrency(item.subtotal)}
-																			</td>
-																		</tr>
-																	))}
+																					{item.variant_id && (
+																						<span className="font-mono text-[10px] text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 mt-0.5 block">
+																							SKU: {variantInfo?.sku || `Var ID: ${item.variant_id}`}
+																						</span>
+																					)}
+																				</td>
+																				<td className="px-4 py-3 text-center font-semibold text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
+																					{item.quantity} x{" "}
+																					{formatCurrency(item.unit_price)}
+																				</td>
+																				<td className="px-4 py-3">
+																					{item.requires_return ? (
+																						<div className="inline-flex items-center gap-1 text-[10px] text-swapp-verde-pastel dark:text-swapp-verde-menta font-medium bg-swapp-verde-pastel/10 dark:bg-swapp-verde-menta/10 px-2 py-1 rounded-full border border-swapp-verde-pastel/20 dark:border-swapp-verde-menta/20">
+																							<Recycle className="h-3 w-3" />
+																							Recuperar:{" "}
+																							{item.expected_return_qty} un.
+																						</div>
+																					) : (
+																						<span className="text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40 italic">
+																							No aplica
+																						</span>
+																					)}
+																				</td>
+																				<td className="px-4 py-3 text-right font-medium text-swapp-azul-oscuro dark:text-swapp-blanco">
+																					{formatCurrency(item.subtotal)}
+																				</td>
+																			</tr>
+																		);
+																	})}
 																</tbody>
 															</table>
 														</div>
@@ -521,7 +543,7 @@ export default function OrdersPage() {
 						setEditingOrder(null);
 					}}
 					order={editingOrder}
-					onSuccess={fetchOrders}
+					onSuccess={fetchData}
 				/>
 			</div>
 
