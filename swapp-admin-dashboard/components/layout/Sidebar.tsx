@@ -40,10 +40,8 @@ export default function Sidebar() {
 	const router = useRouter();
 	const [userData, setUserData] = useState<UserData | null>(null);
 
-	// Estado para colapsar/expandir el sidebar general
 	const [isCollapsed, setIsCollapsed] = useState(false);
 
-	// Estados de expansión de submenús
 	const [isOrdersExpanded, setIsOrdersExpanded] = useState(
 		safePathname.includes("/dashboard/orders"),
 	);
@@ -96,19 +94,17 @@ export default function Sidebar() {
 		}
 	};
 
-	// --- CORRECCIÓN DE ALINEACIÓN ---
-	// Cambiamos 'justify-between' fijo por uno condicional para que el 'justify-center' trabaje limpio
 	const getNavButtonClasses = (isActive: boolean) =>
 		`flex items-center w-full p-2 rounded-lg transition-all duration-300 ${
 			isActive
-				? "bg-swapp-verde-oscuro text-swapp-blanco shadow-sm"
+				? "text-swapp-verde-oscuro dark:text-swapp-verde-menta font-bold"
 				: "text-swapp-azul-petroleo border border-transparent hover:bg-swapp-tiza-verdoso dark:text-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo dark:hover:text-swapp-blanco"
 		} ${isCollapsed ? "justify-center" : "justify-between px-3"}`;
 
 	const getNavLinkClasses = (isActive: boolean) =>
-		`flex items-center w-full gap-2 px-3 py-2 text-sm rounded-lg transition-all duration-300 ${
+		`flex items-center w-full gap-2 px-3 h-[40px] text-sm rounded-lg transition-colors duration-300 relative z-10 ${
 			isActive
-				? "bg-swapp-tiza-verdoso/40 dark:bg-swapp-azul-petroleo/40 backdrop-blur-md border border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 text-swapp-verde-oscuro dark:text-swapp-verde-menta font-bold shadow-sm relative overflow-hidden"
+				? "text-swapp-verde-oscuro dark:text-swapp-verde-menta font-bold"
 				: "text-swapp-azul-petroleo/70 border border-transparent hover:bg-swapp-tiza-verdoso dark:text-swapp-tiza-verdoso/70 dark:hover:bg-swapp-azul-petroleo dark:hover:text-swapp-blanco"
 		}`;
 
@@ -119,8 +115,70 @@ export default function Sidebar() {
 				: "text-swapp-azul-petroleo border border-transparent hover:bg-swapp-tiza-verdoso dark:text-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo hover:text-swapp-azul-oscuro dark:hover:text-swapp-blanco"
 		} ${isCollapsed ? "justify-center" : "px-3"}`;
 
-	const ActiveIndicator = () => (
-		<span className="absolute left-0 top-1/2 -translate-y-1/2 h-3/5 w-1 bg-swapp-verde-oscuro dark:bg-swapp-verde-menta rounded-r-full animate-in slide-in-from-left-2 duration-300" />
+	// --- ARRAYS DE SUBMENÚS ---
+	const catalogLinks = [
+		{
+			path: "/dashboard/products/catalog/master",
+			label: "Catálogo Maestro",
+			icon: Box,
+		},
+		{
+			path: "/dashboard/products/catalog/categories",
+			label: "Categorías",
+			icon: FolderTree,
+		},
+		{
+			path: "/dashboard/products/catalog/brands",
+			label: "Marcas Registradas",
+			icon: Bookmark,
+		},
+		{
+			path: "/dashboard/products/catalog/attributes",
+			label: "Atributos (PIM)",
+			icon: Tag,
+		},
+	];
+	const activeCatalogIndex = catalogLinks.findIndex((link) =>
+		safePathname.includes(link.path),
+	);
+
+	const inventoryLinks = [
+		{
+			path: "/dashboard/products/inventory/stock",
+			label: "Control de Stock",
+			icon: Box,
+		},
+	];
+	const activeInventoryIndex = inventoryLinks.findIndex(
+		(link) => safePathname === link.path,
+	);
+
+	const pricingLinks = [
+		{
+			path: "/dashboard/products/pricing/costs",
+			label: "Costos y Precios",
+			icon: DollarSign,
+		},
+		{
+			path: "/dashboard/products/pricing/discounts",
+			label: "Ofertas Especiales",
+			icon: Tag,
+		},
+	];
+	const activePricingIndex = pricingLinks.findIndex(
+		(link) => safePathname === link.path,
+	);
+
+	const ordersLinks = [
+		{
+			path: "/dashboard/orders",
+			label: "Todos los Pedidos",
+			icon: ListOrdered,
+		},
+		{ path: "/dashboard/orders/new", label: "Carga Manual", icon: PlusSquare },
+	];
+	const activeOrdersIndex = ordersLinks.findIndex(
+		(link) => safePathname === link.path,
 	);
 
 	return (
@@ -128,7 +186,6 @@ export default function Sidebar() {
 			className={`flex-shrink-0 bg-swapp-blanco dark:bg-swapp-azul-oscuro border-r border-swapp-tiza-verdoso dark:border-none flex flex-col overflow-y-auto overflow-x-hidden transition-all duration-300 ease-in-out relative z-20 custom-scrollbar ${
 				isCollapsed ? "w-20" : "w-73"
 			}`}>
-			{/* HEADER & TOGGLE */}
 			<div className="flex items-center justify-between p-4 border-b border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo transition-colors h-[89px]">
 				<Link
 					href="/dashboard"
@@ -159,52 +216,64 @@ export default function Sidebar() {
 					{isCollapsed ? (
 						<hr className="mx-2 mb-2 border-t border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo transition-all duration-300" />
 					) : (
-						<p className="px-4 text-xs font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta uppercase tracking-widest mb-3 animate-in fade-in duration-300">
+						<p className="px-4 text-sm font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta uppercase tracking-widest mb-3 animate-in fade-in duration-300">
 							Productos
 						</p>
 					)}
-					
-					{/* Árbol Principal: Línea vertical que agrupa todo */}
-					<div className={`space-y-1 transition-all duration-300 ${!isCollapsed ? "border-l-2 border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo/60 ml-4 pl-2" : ""}`}>
-						
+
+					<div
+						className={`space-y-1 transition-all duration-300 ${!isCollapsed ? "ml-4" : ""}`}>
 						{/* Menú Expandible: Catálogo */}
 						<div className="flex flex-col gap-1">
 							<SwappTooltip text={isCollapsed ? "Catálogo" : ""}>
 								<button
-									onClick={() => handleMenuClick(isCatalogExpanded, setIsCatalogExpanded)}
-									className={getNavButtonClasses(safePathname.includes("/dashboard/products/catalog"))}>
+									onClick={() =>
+										handleMenuClick(isCatalogExpanded, setIsCatalogExpanded)
+									}
+									className={getNavButtonClasses(
+										safePathname.includes("/dashboard/products/catalog"),
+									)}>
 									<div className="flex items-center gap-3">
-										<Box className={`h-5 w-5 shrink-0 ${safePathname.includes("/dashboard/products/catalog") ? "text-swapp-blanco" : ""}`} />
-										{!isCollapsed && <span className="font-medium whitespace-nowrap">Identidad</span>}
+										<Box className="h-5 w-5 shrink-0" />
+										{!isCollapsed && (
+											<span className="font-medium whitespace-nowrap text-sm">
+												Identidad
+											</span>
+										)}
 									</div>
 									{!isCollapsed && (
-										<ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isCatalogExpanded ? "rotate-180" : ""}`} />
+										<ChevronDown
+											className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isCatalogExpanded ? "rotate-180" : ""}`}
+										/>
 									)}
 								</button>
 							</SwappTooltip>
 
-							{/* Rama Secundaria: Línea vertical para sub-menús */}
-							<div className={`overflow-hidden transition-all duration-300 ease-in-out flex flex-col gap-1 ${!isCollapsed && isCatalogExpanded ? "max-h-64 opacity-100 mt-1 ml-4 pl-3 border-l-2 border-swapp-tiza-verdoso/50 dark:border-swapp-azul-petroleo/50" : "max-h-0 opacity-0"}`}>
-								<Link href="/dashboard/products/catalog/master" className={getNavLinkClasses(safePathname.includes("/dashboard/products/catalog/master"))}>
-									{safePathname.includes("/dashboard/products/catalog/master") && <ActiveIndicator />}
-									<Box className="h-4 w-4 shrink-0" />
-									<span className="whitespace-nowrap">Catálogo Maestro</span>
-								</Link>
-								<Link href="/dashboard/products/catalog/categories" className={getNavLinkClasses(safePathname.includes("/dashboard/products/catalog/categories"))}>
-									{safePathname.includes("/dashboard/products/catalog/categories") && <ActiveIndicator />}
-									<FolderTree className="h-4 w-4 shrink-0" />
-									<span className="whitespace-nowrap">Categorías</span>
-								</Link>
-								<Link href="/dashboard/products/catalog/brands" className={getNavLinkClasses(safePathname.includes("/dashboard/products/catalog/brands"))}>
-									{safePathname.includes("/dashboard/products/catalog/brands") && <ActiveIndicator />}
-									<Bookmark className="h-4 w-4 shrink-0" />
-									<span className="whitespace-nowrap">Marcas Registradas</span>
-								</Link>
-								<Link href="/dashboard/products/catalog/attributes" className={getNavLinkClasses(safePathname.includes("/dashboard/products/catalog/attributes"))}>
-									{safePathname.includes("/dashboard/products/catalog/attributes") && <ActiveIndicator />}
-									<Tag className="h-4 w-4 shrink-0" />
-									<span className="whitespace-nowrap">Atributos (PIM)</span>
-								</Link>
+							<div
+								className={`overflow-hidden transition-all duration-300 ease-in-out relative flex flex-col gap-1 ${!isCollapsed && isCatalogExpanded ? "max-h-[400px] opacity-100 mt-1 pl-[14px] py-1.5" : "max-h-0 opacity-0"}`}>
+								{/* NUEVA LÍNEA DE GUÍA INTERNA */}
+								<div className="absolute left-0 top-0 bottom-0 w-[2px] bg-swapp-verde-oscuro/40 dark:bg-swapp-azul-petroleo/70" />
+
+								{activeCatalogIndex >= 0 && (
+									<div
+										// Modificado: left-[14px] y z-10
+										className="absolute left-[14px] right-0 top-1.5 h-[40px] z-10 rounded-lg bg-swapp-tiza-verdoso/40 dark:bg-swapp-azul-petroleo/40 backdrop-blur-md border border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 shadow-md transition-transform duration-400 ease-out pointer-events-none"
+										style={{
+											transform: `translateY(${activeCatalogIndex * 44}px)`,
+										}}>
+										<span className="absolute -left-[14px] top-1/2 -translate-y-1/2 h-3/5 w-[2px] bg-swapp-verde-oscuro dark:bg-swapp-verde-menta rounded-full" />
+									</div>
+								)}
+
+								{catalogLinks.map((link, idx) => (
+									<Link
+										key={link.path}
+										href={link.path}
+										className={getNavLinkClasses(activeCatalogIndex === idx)}>
+										<link.icon className="h-4 w-4 shrink-0" />
+										<span className="whitespace-nowrap">{link.label}</span>
+									</Link>
+								))}
 							</div>
 						</div>
 
@@ -212,24 +281,52 @@ export default function Sidebar() {
 						<div className="flex flex-col gap-1 pt-1">
 							<SwappTooltip text={isCollapsed ? "Inventarios" : ""}>
 								<button
-									onClick={() => handleMenuClick(isInventoryExpanded, setIsInventoryExpanded)}
-									className={getNavButtonClasses(safePathname.includes("/dashboard/products/inventory"))}>
+									onClick={() =>
+										handleMenuClick(isInventoryExpanded, setIsInventoryExpanded)
+									}
+									className={getNavButtonClasses(
+										safePathname.includes("/dashboard/products/inventory"),
+									)}>
 									<div className="flex items-center gap-3">
-										<Package className={`h-5 w-5 shrink-0 ${safePathname.includes("/dashboard/products/inventory") ? "text-swapp-blanco" : ""}`} />
-										{!isCollapsed && <span className="font-medium whitespace-nowrap">Inventarios</span>}
+										<Package className="h-5 w-5 shrink-0" />
+										{!isCollapsed && (
+											<span className="font-medium whitespace-nowrap text-sm">
+												Inventarios
+											</span>
+										)}
 									</div>
 									{!isCollapsed && (
-										<ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isInventoryExpanded ? "rotate-180" : ""}`} />
+										<ChevronDown
+											className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isInventoryExpanded ? "rotate-180" : ""}`}
+										/>
 									)}
 								</button>
 							</SwappTooltip>
 
-							<div className={`overflow-hidden transition-all duration-300 ease-in-out flex flex-col gap-1 ${!isCollapsed && isInventoryExpanded ? "max-h-24 opacity-100 mt-1 ml-4 pl-3 border-l-2 border-swapp-tiza-verdoso/50 dark:border-swapp-azul-petroleo/50" : "max-h-0 opacity-0"}`}>
-								<Link href="/dashboard/products/inventory/stock" className={getNavLinkClasses(safePathname === "/dashboard/products/inventory/stock")}>
-									{safePathname === "/dashboard/products/inventory/stock" && <ActiveIndicator />}
-									<Box className="h-4 w-4 shrink-0" />
-									<span className="whitespace-nowrap">Control de Stock</span>
-								</Link>
+							<div
+								className={`overflow-hidden transition-all duration-300 ease-in-out relative flex flex-col gap-1 ${!isCollapsed && isInventoryExpanded ? "max-h-[400px] opacity-100 mt-1 pl-[14px] py-1.5" : "max-h-0 opacity-0"}`}>
+								{/* NUEVA LÍNEA DE GUÍA INTERNA */}
+								<div className="absolute left-0 top-0 bottom-0 w-[2px] bg-swapp-verde-oscuro/40 dark:bg-swapp-azul-petroleo/70" />
+
+								{activeInventoryIndex >= 0 && (
+									<div
+										// Modificado: left-[14px] y z-10
+										className="absolute left-[14px] right-0 top-1.5 h-[40px] z-10 rounded-lg bg-swapp-tiza-verdoso/40 dark:bg-swapp-azul-petroleo/40 backdrop-blur-md border border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 shadow-md transition-transform duration-400 ease-out pointer-events-none"
+										style={{
+											transform: `translateY(${activeInventoryIndex * 44}px)`,
+										}}>
+										<span className="absolute -left-[14px] top-1/2 -translate-y-1/2 h-3/5 w-[2px] bg-swapp-verde-oscuro dark:bg-swapp-verde-menta rounded-full" />
+									</div>
+								)}
+								{inventoryLinks.map((link, idx) => (
+									<Link
+										key={link.path}
+										href={link.path}
+										className={getNavLinkClasses(activeInventoryIndex === idx)}>
+										<link.icon className="h-4 w-4 shrink-0" />
+										<span className="whitespace-nowrap">{link.label}</span>
+									</Link>
+								))}
 							</div>
 						</div>
 
@@ -237,29 +334,52 @@ export default function Sidebar() {
 						<div className="flex flex-col gap-1 pt-1">
 							<SwappTooltip text={isCollapsed ? "Precios" : ""}>
 								<button
-									onClick={() => handleMenuClick(isPricingExpanded, setIsPricingExpanded)}
-									className={getNavButtonClasses(safePathname.includes("/dashboard/products/pricing"))}>
+									onClick={() =>
+										handleMenuClick(isPricingExpanded, setIsPricingExpanded)
+									}
+									className={getNavButtonClasses(
+										safePathname.includes("/dashboard/products/pricing"),
+									)}>
 									<div className="flex items-center gap-3">
-										<DollarSign className={`h-5 w-5 shrink-0 ${safePathname.includes("/dashboard/products/pricing") ? "text-swapp-blanco" : ""}`} />
-										{!isCollapsed && <span className="font-medium whitespace-nowrap">Precios</span>}
+										<DollarSign className="h-5 w-5 shrink-0" />
+										{!isCollapsed && (
+											<span className="font-medium whitespace-nowrap text-sm">
+												Precios
+											</span>
+										)}
 									</div>
 									{!isCollapsed && (
-										<ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isPricingExpanded ? "rotate-180" : ""}`} />
+										<ChevronDown
+											className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isPricingExpanded ? "rotate-180" : ""}`}
+										/>
 									)}
 								</button>
 							</SwappTooltip>
 
-							<div className={`overflow-hidden transition-all duration-300 ease-in-out flex flex-col gap-1 ${!isCollapsed && isPricingExpanded ? "max-h-32 opacity-100 mt-1 ml-4 pl-3 border-l-2 border-swapp-tiza-verdoso/50 dark:border-swapp-azul-petroleo/50" : "max-h-0 opacity-0"}`}>
-								<Link href="/dashboard/products/pricing/costs" className={getNavLinkClasses(safePathname === "/dashboard/products/pricing/costs")}>
-									{safePathname === "/dashboard/products/pricing/costs" && <ActiveIndicator />}
-									<DollarSign className="h-4 w-4 shrink-0" />
-									<span className="whitespace-nowrap">Costos y Precios</span>
-								</Link>
-								<Link href="/dashboard/products/pricing/discounts" className={getNavLinkClasses(safePathname === "/dashboard/products/pricing/discounts")}>
-									{safePathname === "/dashboard/products/pricing/discounts" && <ActiveIndicator />}
-									<Tag className="h-4 w-4 shrink-0" />
-									<span className="whitespace-nowrap">Ofertas Especiales</span>
-								</Link>
+							<div
+								className={`overflow-hidden transition-all duration-300 ease-in-out relative flex flex-col gap-1 ${!isCollapsed && isPricingExpanded ? "max-h-[400px] opacity-100 mt-1 pl-[14px] py-1.5" : "max-h-0 opacity-0"}`}>
+								{/* NUEVA LÍNEA DE GUÍA INTERNA */}
+								<div className="absolute left-0 top-0 bottom-0 w-[2px] bg-swapp-verde-oscuro/40 dark:bg-swapp-azul-petroleo/70" />
+
+								{activePricingIndex >= 0 && (
+									<div
+										// Modificado: left-[14px] y z-10
+										className="absolute left-[14px] right-0 top-1.5 h-[40px] z-10 rounded-lg bg-swapp-tiza-verdoso/40 dark:bg-swapp-azul-petroleo/40 backdrop-blur-md border border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 shadow-md transition-transform duration-400 ease-out pointer-events-none"
+										style={{
+											transform: `translateY(${activePricingIndex * 44}px)`,
+										}}>
+										<span className="absolute -left-[14px] top-1/2 -translate-y-1/2 h-3/5 w-[2px] bg-swapp-verde-oscuro dark:bg-swapp-verde-menta rounded-full" />
+									</div>
+								)}
+								{pricingLinks.map((link, idx) => (
+									<Link
+										key={link.path}
+										href={link.path}
+										className={getNavLinkClasses(activePricingIndex === idx)}>
+										<link.icon className="h-4 w-4 shrink-0" />
+										<span className="whitespace-nowrap">{link.label}</span>
+									</Link>
+								))}
 							</div>
 						</div>
 					</div>
@@ -270,39 +390,64 @@ export default function Sidebar() {
 					{isCollapsed ? (
 						<hr className="mx-2 mb-2 border-t border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo transition-all duration-300" />
 					) : (
-						<p className="px-4 text-xs font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta uppercase tracking-widest mb-3 animate-in fade-in duration-300">
+						<p className="px-4 text-sm font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta uppercase tracking-widest mb-3 animate-in fade-in duration-300">
 							Operaciones
 						</p>
 					)}
-					
-					<div className={`space-y-1 transition-all duration-300 ${!isCollapsed ? "border-l-2 border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo/60 ml-4 pl-2" : ""}`}>
+
+					<div
+						className={`space-y-1 transition-all duration-300 ${!isCollapsed ? "ml-4" : ""}`}>
 						{/* Menú Expandible: Pedidos */}
 						<div className="flex flex-col gap-1">
 							<SwappTooltip text={isCollapsed ? "Pedidos" : ""}>
 								<button
-									onClick={() => handleMenuClick(isOrdersExpanded, setIsOrdersExpanded)}
-									className={getNavButtonClasses(safePathname.includes("/dashboard/orders"))}>
+									onClick={() =>
+										handleMenuClick(isOrdersExpanded, setIsOrdersExpanded)
+									}
+									className={getNavButtonClasses(
+										safePathname.includes("/dashboard/orders"),
+									)}>
 									<div className="flex items-center gap-3">
-										<ShoppingCart className={`h-5 w-5 shrink-0 ${safePathname.includes("/dashboard/orders") ? "text-swapp-blanco" : ""}`} />
-										{!isCollapsed && <span className="font-medium whitespace-nowrap">Pedidos</span>}
+										<ShoppingCart className="h-5 w-5 shrink-0" />
+										{!isCollapsed && (
+											<span className="font-medium whitespace-nowrap text-sm">
+												Pedidos
+											</span>
+										)}
 									</div>
 									{!isCollapsed && (
-										<ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isOrdersExpanded ? "rotate-180" : ""}`} />
+										<ChevronDown
+											className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isOrdersExpanded ? "rotate-180" : ""}`}
+										/>
 									)}
 								</button>
 							</SwappTooltip>
 
-							<div className={`overflow-hidden transition-all duration-300 ease-in-out flex flex-col gap-1 ${!isCollapsed && isOrdersExpanded ? "max-h-32 opacity-100 mt-1 ml-4 pl-3 border-l-2 border-swapp-tiza-verdoso/50 dark:border-swapp-azul-petroleo/50" : "max-h-0 opacity-0"}`}>
-								<Link href="/dashboard/orders" className={getNavLinkClasses(safePathname === "/dashboard/orders")}>
-									{safePathname === "/dashboard/orders" && <ActiveIndicator />}
-									<ListOrdered className="h-4 w-4 shrink-0" />
-									<span className="whitespace-nowrap">Todos los Pedidos</span>
-								</Link>
-								<Link href="/dashboard/orders/new" className={getNavLinkClasses(safePathname === "/dashboard/orders/new")}>
-									{safePathname === "/dashboard/orders/new" && <ActiveIndicator />}
-									<PlusSquare className="h-4 w-4 shrink-0" />
-									<span className="whitespace-nowrap">Carga Manual</span>
-								</Link>
+							<div
+								className={`overflow-hidden transition-all duration-300 ease-in-out relative flex flex-col gap-1 ${!isCollapsed && isOrdersExpanded ? "max-h-[400px] opacity-100 mt-1 pl-[14px] py-1.5" : "max-h-0 opacity-0"}`}>
+								{/* NUEVA LÍNEA DE GUÍA INTERNA */}
+								<div className="absolute left-0 top-0 bottom-0 w-[2px] bg-swapp-verde-oscuro/40 dark:bg-swapp-azul-petroleo/70" />
+
+								{activeOrdersIndex >= 0 && (
+									<div
+										// Modificado: left-[14px] y z-10
+										className="absolute left-[14px] right-0 top-1.5 h-[40px] z-10 rounded-lg bg-swapp-tiza-verdoso/40 dark:bg-swapp-azul-petroleo/40 backdrop-blur-md border border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 shadow-md transition-transform duration-400 ease-out pointer-events-none"
+										style={{
+											transform: `translateY(${activeOrdersIndex * 44}px)`,
+										}}>
+										<span className="absolute -left-[14px] top-1/2 -translate-y-1/2 h-3/5 w-[2px] bg-swapp-verde-oscuro dark:bg-swapp-verde-menta rounded-full" />
+									</div>
+								)}
+
+								{ordersLinks.map((link, idx) => (
+									<Link
+										key={link.path}
+										href={link.path}
+										className={getNavLinkClasses(activeOrdersIndex === idx)}>
+										<link.icon className="h-4 w-4 shrink-0" />
+										<span className="whitespace-nowrap">{link.label}</span>
+									</Link>
+								))}
 							</div>
 						</div>
 					</div>
@@ -313,20 +458,29 @@ export default function Sidebar() {
 					{isCollapsed ? (
 						<hr className="mx-2 mb-2 border-t border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo transition-all duration-300" />
 					) : (
-						<p className="px-4 text-xs font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta uppercase tracking-widest mb-3 animate-in fade-in duration-300">
+						<p className="px-4 text-sm font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta uppercase tracking-widest mb-3 animate-in fade-in duration-300">
 							Usuarios
 						</p>
 					)}
-					
-					<div className={`space-y-1 transition-all duration-300 ${!isCollapsed ? "border-l-2 border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo/60 ml-4 pl-2" : ""}`}>
+
+					<div
+						className={`space-y-1 transition-all duration-300 ${!isCollapsed ? "ml-4" : ""}`}>
 						<div className="flex flex-col gap-1">
 							<SwappTooltip text={isCollapsed ? "Clientes (Próximamente)" : ""}>
-								<Link
-									href="#"
-									className={`flex items-center w-full gap-3 p-2 text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40 rounded-lg cursor-not-allowed ${isCollapsed ? "justify-center" : "px-3"}`}>
-									<Users className="h-5 w-5 shrink-0" />
-									{!isCollapsed && <span className="whitespace-nowrap">Clientes (Próximamente)</span>}
-								</Link>
+								{/* En este menú que aún no tiene links desplegables, también aplicamos la guía para que todo sea consistente */}
+								<div
+									className={`overflow-hidden transition-all duration-300 ease-in-out relative flex flex-col gap-1 ${!isCollapsed ? "max-h-[400px] opacity-100 mt-1 pl-[14px] py-1.5" : "max-h-0 opacity-0"}`}>
+									<div className="absolute left-0 top-0 bottom-0 w-[2px] bg-swapp-verde-oscuro/40 dark:bg-swapp-azul-petroleo/70" />
+
+									<Link
+										href="#"
+										className={`flex items-center w-full gap-2 px-3 h-[40px] text-sm text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40 rounded-lg cursor-not-allowed relative z-10`}>
+										<Users className="h-4 w-4 shrink-0" />
+										<span className="whitespace-nowrap">
+											Clientes (Próximamente)
+										</span>
+									</Link>
+								</div>
 							</SwappTooltip>
 						</div>
 					</div>
@@ -335,8 +489,14 @@ export default function Sidebar() {
 
 			{/* SECCIÓN INFERIOR */}
 			<div className="border-t border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo transition-all duration-300 bg-swapp-tiza-verdoso/20 dark:bg-black/10 p-4">
-				<SwappTooltip text={isCollapsed && userData ? `${userData.first_name} ${userData.last_name}` : ""}>
-					<div className={`flex items-center w-full p-2 mb-2 rounded-lg bg-swapp-tiza-verdoso/50 dark:bg-swapp-azul-petroleo/30 border border-swapp-tiza-verdoso dark:border-none ${isCollapsed ? "justify-center" : "px-3"}`}>
+				<SwappTooltip
+					text={
+						isCollapsed && userData
+							? `${userData.first_name} ${userData.last_name}`
+							: ""
+					}>
+					<div
+						className={`flex items-center w-full p-2 mb-2 rounded-lg bg-swapp-tiza-verdoso/50 dark:bg-swapp-azul-petroleo/30 border border-swapp-tiza-verdoso dark:border-none ${isCollapsed ? "justify-center" : "px-3"}`}>
 						<div className="flex items-center gap-3">
 							<UserCircle className="h-8 w-8 shrink-0 text-swapp-verde-oscuro dark:text-swapp-verde-menta" />
 							{!isCollapsed && (
@@ -344,10 +504,13 @@ export default function Sidebar() {
 									{userData ? (
 										<>
 											<span className="text-sm font-medium text-swapp-azul-oscuro dark:text-swapp-blanco truncate whitespace-nowrap">
-												{userData.first_name || "Usuario"} {userData.last_name || ""}
+												{userData.first_name || "Usuario"}{" "}
+												{userData.last_name || ""}
 											</span>
 											<span className="text-xs text-swapp-azul-petroleo/80 dark:text-swapp-tiza-verdoso/70 truncate capitalize whitespace-nowrap">
-												{userData.role ? userData.role.replace("_", " ") : "Staff"}
+												{userData.role
+													? userData.role.replace("_", " ")
+													: "Staff"}
 											</span>
 										</>
 									) : (
@@ -371,11 +534,21 @@ export default function Sidebar() {
 						)}
 						<div className={`space-y-1 ${isCollapsed ? "mt-2" : ""}`}>
 							<SwappTooltip text={isCollapsed ? "Alta de Personal" : ""}>
-								<Link href="/dashboard/staff/new" className={getBottomLinkClasses(safePathname === "/dashboard/staff/new")}>
-									{safePathname === "/dashboard/staff/new" && <ActiveIndicator />}
+								<Link
+									href="/dashboard/staff/new"
+									className={getBottomLinkClasses(
+										safePathname === "/dashboard/staff/new",
+									)}>
+									{safePathname === "/dashboard/staff/new" && (
+										<span className="absolute left-0 top-1/2 -translate-y-1/2 h-3/5 w-1 bg-swapp-verde-oscuro dark:bg-swapp-verde-menta rounded-r-full" />
+									)}
 									<div className="flex items-center gap-3">
 										<Settings className="h-5 w-5 shrink-0" />
-										{!isCollapsed && <span className="font-medium whitespace-nowrap">Alta de Personal</span>}
+										{!isCollapsed && (
+											<span className="font-medium whitespace-nowrap text-sm">
+												Alta de Personal
+											</span>
+										)}
 									</div>
 								</Link>
 							</SwappTooltip>
@@ -384,20 +557,36 @@ export default function Sidebar() {
 				)}
 
 				<SwappTooltip text={isCollapsed ? "Configuración" : ""}>
-					<Link href="/dashboard/settings" className={getBottomLinkClasses(safePathname.includes("/dashboard/settings"))}>
-						{safePathname.includes("/dashboard/settings") && <ActiveIndicator />}
+					<Link
+						href="/dashboard/settings"
+						className={getBottomLinkClasses(
+							safePathname.includes("/dashboard/settings"),
+						)}>
+						{safePathname.includes("/dashboard/settings") && (
+							<span className="absolute left-0 top-1/2 -translate-y-1/2 h-3/5 w-1 bg-swapp-verde-oscuro dark:bg-swapp-verde-menta rounded-r-full" />
+						)}
 						<div className="flex items-center gap-3">
 							<Settings className="h-5 w-5 shrink-0" />
-							{!isCollapsed && <span className="font-medium whitespace-nowrap">Configuración</span>}
+							{!isCollapsed && (
+								<span className="font-medium whitespace-nowrap text-sm">
+									Configuración
+								</span>
+							)}
 						</div>
 					</Link>
 				</SwappTooltip>
 
 				<SwappTooltip text={isCollapsed ? "Cerrar sesión" : ""}>
-					<button onClick={handleLogout} className={`flex items-center justify-between w-full p-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-700 dark:hover:text-red-300 rounded-lg transition-colors ${isCollapsed ? "justify-center" : "px-3"}`}>
+					<button
+						onClick={handleLogout}
+						className={`flex items-center justify-between w-full p-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-700 dark:hover:text-red-300 rounded-lg transition-colors ${isCollapsed ? "justify-center" : "px-3"}`}>
 						<div className="flex items-center gap-3">
 							<LogOut className="h-5 w-5 shrink-0" />
-							{!isCollapsed && <span className="font-medium whitespace-nowrap">Cerrar sesión</span>}
+							{!isCollapsed && (
+								<span className="font-medium whitespace-nowrap text-sm">
+									Cerrar sesión
+								</span>
+							)}
 						</div>
 					</button>
 				</SwappTooltip>

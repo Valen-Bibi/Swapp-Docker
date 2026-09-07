@@ -87,7 +87,7 @@ export default function AttributesPage() {
 					<SwappTooltip text="Crear un nuevo atributo">
 						<button
 							onClick={() => setIsNewModalOpen(true)}
-							className="inline-flex items-center gap-2 rounded-lg bg-swapp-verde-oscuro dark:bg-swapp-verde-menta px-4 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro hover:bg-swapp-azul-oceano dark:hover:bg-swapp-verde-pastel transition-colors whitespace-nowrap">
+							className="inline-flex items-center gap-2 rounded-lg bg-swapp-verde-pastel dark:bg-swapp-verde-menta px-4 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro transition-colors hover:bg-swapp-verde-oscuro dark:hover:bg-swapp-verde-pastel disabled:opacity-50">
 							<Plus className="h-4 w-4" /> Nuevo Atributo
 						</button>
 					</SwappTooltip>
@@ -99,12 +99,18 @@ export default function AttributesPage() {
 				<table className="w-full text-left text-sm text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
 					<thead className="bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/20 border-b border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 select-none">
 						<tr>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 w-1/4">Atributo</th>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 w-1/5">Comportamiento</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 w-1/4">
+								Atributo
+							</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 w-1/5">
+								Comportamiento
+							</th>
 							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 w-2/4">
 								Valores Normalizados (Diccionario)
 							</th>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 text-right">Acciones</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 text-right">
+								Acciones
+							</th>
 						</tr>
 					</thead>
 					<tbody className="">
@@ -120,8 +126,10 @@ export default function AttributesPage() {
 						) : (
 							attributes.map((attr) => {
 								// Lógica visual estandarizada para filas
-								const baseRowClasses = "border-b border-swapp-tiza-verdoso/40 dark:border-swapp-azul-petroleo/40 last:border-0 transition-colors duration-200";
-								const rowStatusStyle = "hover:bg-swapp-blanco/60 dark:hover:bg-swapp-azul-petroleo/20";
+								const baseRowClasses =
+									"border-b border-swapp-tiza-verdoso/40 dark:border-swapp-azul-petroleo/40 last:border-0 transition-colors duration-200";
+								const rowStatusStyle =
+									"hover:bg-swapp-blanco/60 dark:hover:bg-swapp-azul-petroleo/20";
 
 								return (
 									<tr

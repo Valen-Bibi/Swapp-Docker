@@ -18,7 +18,7 @@ import { SwappTextarea } from "@/components/ui/SwappTextarea";
 import { SwappCheckbox } from "@/components/ui/SwappCheckbox";
 import { SwappToggle } from "@/components/ui/SwappToggle";
 import { SwappDropzone } from "@/components/ui/SwappDropzone";
-import { SwappSearchableSelect } from "@/components/ui/SwappSearchableSelect"; // <-- IMPORTAMOS EL BUSCADOR
+import { SwappSearchableSelect } from "@/components/ui/SwappSearchableSelect";
 import Link from "next/link";
 import { Brand, Category, TaxClass } from "@/types/product";
 
@@ -30,13 +30,11 @@ export default function NewProductPage() {
 	const [isSaving, setIsSaving] = useState(false);
 	const [showOptionalFields, setShowOptionalFields] = useState(false);
 
-	// --- ESTADOS MULTIMEDIA INDEPENDIENTES ---
 	const [mainImageFile, setMainImageFile] = useState<File | null>(null);
 	const [mainImagePreview, setMainImagePreview] = useState<string | null>(null);
 	const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
 	const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
 
-	// --- ESTADOS DE LA FICHA TÉCNICA (PIM) ---
 	const [structuralAttributes, setStructuralAttributes] = useState<any[]>([]);
 	const [customAttributes, setCustomAttributes] = useState<
 		Record<string, string>
@@ -93,7 +91,6 @@ export default function NewProductPage() {
 		fetchFormData();
 	}, []);
 
-	// --- CARGA DINÁMICA DE LA FICHA TÉCNICA ---
 	useEffect(() => {
 		const loadStructuralAttributes = async () => {
 			if (!formData.category_id) {
@@ -109,7 +106,6 @@ export default function NewProductPage() {
 					ProductService.getCategoryAttributes(parseInt(formData.category_id)),
 				]);
 
-				// Filtramos SOLO los atributos que NO son variantes (Ficha Técnica)
 				const structuralLinkedAttrs = linkedAttrs.filter(
 					(l: any) => !l.is_variant,
 				);
@@ -124,7 +120,6 @@ export default function NewProductPage() {
 				});
 
 				setStructuralAttributes(enrichedAttrs);
-				// Limpiamos los atributos previamente seleccionados si cambia la categoría
 				setCustomAttributes({});
 			} catch (error) {
 				toast.error("Error al cargar la ficha técnica de esta categoría.");
@@ -184,7 +179,6 @@ export default function NewProductPage() {
 			}
 		}
 
-		// Validamos que se hayan completado los atributos estructurales obligatorios
 		const missingStructural = structuralAttributes.some(
 			(attr) => attr.is_required && !customAttributes[attr.name],
 		);
@@ -210,7 +204,6 @@ export default function NewProductPage() {
 						}
 					: null;
 
-			// Limpiamos los atributos estructurales vacíos
 			const cleanCustomAttributes = Object.entries(customAttributes).reduce(
 				(acc: Record<string, string>, [key, val]) => {
 					if (val && val.trim() !== "") acc[key] = val;
@@ -224,7 +217,7 @@ export default function NewProductPage() {
 				custom_attributes:
 					Object.keys(cleanCustomAttributes).length > 0
 						? cleanCustomAttributes
-						: null, // <-- INYECTAMOS LA FICHA TÉCNICA
+						: null,
 				meta_title: formData.meta_title || null,
 				meta_description: formData.meta_description || null,
 				meta_keywords: formData.meta_keywords || null,

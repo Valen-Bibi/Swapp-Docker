@@ -1,6 +1,8 @@
+"use client";
+
 import { useState, useEffect } from "react";
-import { X, Lock, Unlock } from "lucide-react";
-import { ProductService } from "@/services/product.service"; // Cambiado a ProductService
+import { X, Lock, Unlock, PackagePlus, PackageMinus, Save } from "lucide-react";
+import { ProductService } from "@/services/product.service";
 import { toast } from "sonner";
 import { SwappInput } from "@/components/ui/SwappInput";
 import { SwappSelect } from "@/components/ui/SwappSelect";
@@ -12,7 +14,7 @@ interface StockMovementModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	product: Product | null;
-	variant: ProductVariant | null; // NUEVO PROP
+	variant: ProductVariant | null;
 	movementType: "ingreso" | "egreso";
 	onSuccess: () => void;
 }
@@ -31,6 +33,17 @@ export default function StockMovementModal({
 	const [unitCost, setUnitCost] = useState<number | "">("");
 	const [isSaving, setIsSaving] = useState(false);
 	const [isCostEditable, setIsCostEditable] = useState(false);
+
+	// --- CERRAR CON ESCAPE ---
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.key === "Escape" && isOpen) {
+				onClose();
+			}
+		};
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [isOpen, onClose]);
 
 	useEffect(() => {
 		if (isOpen && product && variant) {
@@ -115,114 +128,139 @@ export default function StockMovementModal({
 				];
 
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center bg-swapp-azul-oscuro/50 dark:bg-swapp-negro/70 backdrop-blur-sm p-4">
+		<div className="fixed inset-0 z-[100] flex items-center justify-center bg-swapp-azul-petroleo/20 dark:bg-swapp-negro/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95">
+			{/* CONTENEDOR DEL MODAL SIN BORDES EXTERNOS, SOLO BORDER-T DINÁMICO */}
 			<div
-				className={`w-full max-w-md max-h-[90vh] overflow-y-auto custom-scrollbar rounded-xl bg-swapp-blanco dark:bg-swapp-azul-oscuro p-6 shadow-2xl border-t-4 transition-colors ${
+				className={`w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden rounded-xl bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md shadow-2xl border-t-4 transition-colors ${
 					movementType === "ingreso"
-						? "border-swapp-verde-oscuro dark:border-swapp-verde-menta"
-						: "border-red-500 dark:border-red-500"
+						? "border-t-swapp-verde-oscuro dark:border-t-swapp-verde-menta"
+						: "border-t-red-500 dark:border-t-red-500"
 				}`}>
-				<div className="mb-2 flex items-center justify-between">
-					<h2 className="text-xl font-bold text-swapp-azul-oscuro dark:text-swapp-blanco">
-						{movementType === "ingreso"
-							? "Registrar Ingreso de Stock"
-							: "Registrar Descarte / Egreso"}
-					</h2>
+				{/* HEADER ESTANDARIZADO */}
+				<div className="p-6 border-b border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo flex items-start justify-between shrink-0 transition-colors">
+					<div>
+						<h2 className="text-xl font-bold text-swapp-azul-oscuro dark:text-swapp-blanco flex items-center gap-2">
+							{movementType === "ingreso" ? (
+								<PackagePlus className="h-5 w-5 text-swapp-verde-oscuro dark:text-swapp-verde-menta" />
+							) : (
+								<PackageMinus className="h-5 w-5 text-red-500 dark:text-red-400" />
+							)}
+							{movementType === "ingreso"
+								? "Ingreso de Stock"
+								: "Descarte / Egreso"}
+						</h2>
+						<p className="text-sm text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 mt-1.5 font-medium transition-colors">
+							{product.name}
+						</p>
+						<p className="text-[11px] font-mono font-bold tracking-wider text-swapp-verde-oscuro dark:text-swapp-verde-menta mt-2 bg-swapp-verde-oscuro/10 dark:bg-swapp-verde-menta/10 inline-block px-2 py-0.5 rounded border border-swapp-verde-oscuro/20 dark:border-swapp-verde-menta/20">
+							SKU: {variant.sku}
+						</p>
+					</div>
 					<button
+						type="button"
 						onClick={onClose}
-						className="text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50 hover:text-swapp-azul-oscuro dark:hover:text-swapp-blanco transition-colors">
+						className="p-1 rounded-md text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50 hover:bg-red-500/10 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400 transition-colors mt-0.5">
 						<X className="h-5 w-5" />
 					</button>
 				</div>
-				<p className="text-sm text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 mb-1 transition-colors">
-					{product.name}
-				</p>
-				<p className="text-xs font-mono text-swapp-verde-oscuro dark:text-swapp-verde-menta mb-6 bg-swapp-verde-pastel/10 dark:bg-swapp-verde-menta/10 inline-block px-2 py-1 rounded">
-					SKU: {variant.sku}
-				</p>
 
-				<form onSubmit={handleSaveMovement} className="space-y-4">
-					<SwappInput
-						label="Cantidad de unidades"
-						type="text"
-						formatThousands
-						min="1"
-						placeholder="Ej: 50"
-						required
-						value={quantity || ""}
-						onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
-					/>
-					<SwappSelect
-						label="Motivo del ajuste"
-						required
-						value={reason}
-						onChange={(e) => setReason(e.target.value)}
-						options={reasonOptions}
-					/>
+				<div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+					{/* HEREDAMOS TRANSPARENCIA A LOS INPUTS */}
+					<form
+						onSubmit={handleSaveMovement}
+						className="space-y-5 [&_input]:!bg-transparent [&_select]:!bg-transparent [&_textarea]:!bg-transparent">
+						<SwappInput
+							label="Cantidad de unidades"
+							type="text"
+							formatThousands
+							min="1"
+							placeholder="Ej: 50"
+							required
+							autoFocus
+							value={quantity || ""}
+							onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
+						/>
 
-					{reason === "Compra a proveedor" && (
-						<div className="bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/20 p-4 rounded-lg border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo/50 animate-in fade-in slide-in-from-top-2">
-							<div className="flex items-center justify-between mb-4">
-								<div className="flex items-center gap-2">
-									{isCostEditable ? (
-										<Unlock className="h-4 w-4 text-swapp-verde-oscuro dark:text-swapp-verde-menta" />
-									) : (
-										<Lock className="h-4 w-4 text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50" />
-									)}
-									<p className="text-sm font-semibold text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
-										Actualizar costo de variante
-									</p>
+						<SwappSelect
+							label="Motivo del ajuste"
+							options={reasonOptions}
+							value={reason}
+							onChange={(e) => setReason(e.target.value)}
+						/>
+
+						{reason === "Compra a proveedor" && (
+							<div className="bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/20 p-4 rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo animate-in fade-in slide-in-from-top-2 transition-colors">
+								<div className="flex items-center justify-between mb-4">
+									<div className="flex items-center gap-2">
+										{isCostEditable ? (
+											<Unlock className="h-4 w-4 text-swapp-verde-oscuro dark:text-swapp-verde-menta" />
+										) : (
+											<Lock className="h-4 w-4 text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50" />
+										)}
+										<p className="text-sm font-semibold text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
+											Actualizar costo de variante
+										</p>
+									</div>
+									<SwappToggle
+										checked={isCostEditable}
+										onChange={setIsCostEditable}
+										id="cost_editable_toggle"
+									/>
 								</div>
-								<SwappToggle
-									checked={isCostEditable}
-									onChange={setIsCostEditable}
-								/>
+								<div
+									className={`transition-all duration-300 ${!isCostEditable ? "opacity-50 grayscale pointer-events-none" : ""}`}>
+									<SwappInput
+										label="Costo Unitario Pagado ($)"
+										type="text"
+										formatThousands
+										required={reason === "Compra a proveedor" && isCostEditable}
+										disabled={!isCostEditable}
+										value={unitCost}
+										onChange={(e) =>
+											setUnitCost(
+												e.target.value === "" ? "" : parseFloat(e.target.value),
+											)
+										}
+										helpText={
+											isCostEditable
+												? "Modificalo si el proveedor cambió el precio."
+												: "Habilitá la edición desde el switch para actualizar el costo."
+										}
+									/>
+								</div>
 							</div>
-							<div
-								className={`transition-all duration-200 ${!isCostEditable ? "opacity-60 grayscale pointer-events-none" : ""}`}>
-								<SwappInput
-									label="Costo Unitario Pagado ($)"
-									type="text"
-									formatThousands
-									required={reason === "Compra a proveedor" && isCostEditable}
-									disabled={!isCostEditable}
-									value={unitCost}
-									onChange={(e) =>
-										setUnitCost(
-											e.target.value === "" ? "" : parseFloat(e.target.value),
-										)
-									}
-									helpText={
-										isCostEditable
-											? "Modificalo si el proveedor cambió el precio."
-											: "Habilitá la edición desde el switch para actualizar el costo."
-									}
-								/>
-							</div>
+						)}
+
+						<SwappTextarea
+							label="Notas / Comentarios adicionales"
+							placeholder="Escribí detalles que sirvan para auditorías futuras..."
+							rows={3}
+							value={notes}
+							onChange={(e) => setNotes(e.target.value)}
+						/>
+
+						{/* FOOTER CON BOTONES ESTANDARIZADOS */}
+						<div className="mt-2 flex justify-end gap-3 border-t border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo pt-5 transition-colors">
+							<button
+								type="button"
+								onClick={onClose}
+								className="rounded-lg px-4 py-2 text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso hover:bg-red-500/10 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400 transition-colors">
+								Cancelar
+							</button>
+							<button
+								type="submit"
+								disabled={isSaving || quantity <= 0}
+								className={`flex items-center gap-2 rounded-lg px-6 py-2 text-sm font-medium transition-colors disabled:opacity-50 ${
+									movementType === "ingreso"
+										? "bg-swapp-verde-pastel dark:bg-swapp-verde-menta text-swapp-blanco dark:text-swapp-azul-oscuro hover:bg-swapp-verde-oscuro dark:hover:bg-swapp-verde-pastel"
+										: "bg-red-500 dark:bg-red-600 text-white dark:text-swapp-blanco hover:bg-red-600 dark:hover:bg-red-500"
+								}`}>
+								<Save className="h-4 w-4" />
+								{isSaving ? "Registrando..." : "Confirmar Ajuste"}
+							</button>
 						</div>
-					)}
-					<SwappTextarea
-						label="Notas / Comentarios adicionales"
-						placeholder="Escribí detalles que sirvan para auditorías futuras..."
-						rows={3}
-						value={notes}
-						onChange={(e) => setNotes(e.target.value)}
-					/>
-					<div className="mt-6 flex justify-end gap-3 border-t border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo pt-4 transition-colors">
-						<button
-							type="button"
-							onClick={onClose}
-							className="rounded-lg px-4 py-2 text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo transition-colors">
-							Cancelar
-						</button>
-						<button
-							type="submit"
-							disabled={isSaving || quantity <= 0}
-							className={`rounded-lg px-4 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro transition-colors disabled:opacity-50 ${movementType === "ingreso" ? "bg-swapp-verde-oscuro dark:bg-swapp-verde-menta hover:bg-swapp-azul-oceano dark:hover:bg-swapp-verde-pastel" : "bg-red-600 dark:bg-red-500 dark:text-swapp-blanco hover:bg-red-700 dark:hover:bg-red-600"}`}>
-							{isSaving ? "Registrando..." : "Confirmar Ajuste"}
-						</button>
-					</div>
-				</form>
+					</form>
+				</div>
 			</div>
 		</div>
 	);

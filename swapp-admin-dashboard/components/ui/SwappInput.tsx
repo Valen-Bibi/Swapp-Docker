@@ -18,23 +18,18 @@ export function SwappInput({
 }: SwappInputProps) {
 	const [displayValue, setDisplayValue] = useState("");
 
-	// Extraemos las clases a una constante para no repetir código
 	const inputClasses =
 		"w-full rounded-md border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro p-2.5 text-swapp-azul-oscuro dark:text-swapp-blanco placeholder:text-swapp-azul-petroleo/40 dark:placeholder:text-swapp-tiza-verdoso/40 focus:outline-none focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta transition-colors disabled:bg-swapp-tiza-verdoso/50 dark:disabled:bg-swapp-azul-petroleo/50 disabled:text-swapp-azul-petroleo/50 dark:disabled:text-swapp-tiza-verdoso/50";
 
-	// Sincronizar el valor que viene de afuera (padre) con nuestro estado interno formateado
 	useEffect(() => {
 		if (formatThousands && value !== undefined && value !== null) {
 			const stringValue = String(value);
 
-			// Limpieza en caso de reset o valores inválidos
 			if (stringValue === "" || stringValue === "NaN") {
 				setDisplayValue("");
 				return;
 			}
 
-			// Calculamos el equivalente numérico para evitar que React sobreescriba
-			// el estado mientras el usuario tipea ceros decimales o la coma.
 			const rawCurrent = displayValue.replace(/\./g, "").replace(/,/g, ".");
 			const currentNumericValue = parseFloat(rawCurrent);
 			const newNumericValue = parseFloat(stringValue);
@@ -118,7 +113,7 @@ export function SwappInput({
 				<input
 					{...props}
 					type={type}
-					value={value ?? ""} /* <-- SOLUCIÓN: Agregamos ?? "" */
+					value={value ?? ""}
 					onChange={onChange}
 					className={inputClasses}
 				/>
@@ -138,7 +133,7 @@ export function SwappInput({
 			</label>
 			<input
 				{...props}
-				type="text" // Forzamos texto porque type="number" estricto rompe con los separadores
+				type="text"
 				value={displayValue}
 				onChange={handleFormattedChange}
 				className={inputClasses}

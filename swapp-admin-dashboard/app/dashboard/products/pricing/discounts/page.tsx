@@ -198,7 +198,7 @@ export default function OffersPage() {
 					<SwappTooltip text="Crear una nueva oferta">
 						<button
 							onClick={() => openModal()}
-							className="inline-flex items-center gap-2 rounded-lg bg-swapp-verde-oscuro dark:bg-swapp-verde-menta px-4 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro hover:bg-swapp-azul-oceano dark:hover:bg-swapp-verde-pastel transition-colors whitespace-nowrap">
+							className="inline-flex items-center gap-2 rounded-lg bg-swapp-verde-pastel dark:bg-swapp-verde-menta px-4 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro transition-colors hover:bg-swapp-verde-oscuro dark:hover:bg-swapp-verde-pastel disabled:opacity-50">
 							<Plus className="h-4 w-4" /> Nueva Oferta
 						</button>
 					</SwappTooltip>
@@ -210,12 +210,24 @@ export default function OffersPage() {
 				<table className="w-full text-left text-sm text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
 					<thead className="bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/20 border-b border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 select-none">
 						<tr>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">Producto / Alcance</th>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">Campaña</th>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">Descuento</th>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">Validez</th>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 text-center">Estado</th>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 text-right">Acciones</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
+								Producto / Alcance
+							</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
+								Campaña
+							</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
+								Descuento
+							</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
+								Validez
+							</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 text-center">
+								Estado
+							</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 text-right">
+								Acciones
+							</th>
 						</tr>
 					</thead>
 					<tbody className="">
@@ -229,16 +241,19 @@ export default function OffersPage() {
 							</tr>
 						) : (
 							filteredDiscounts.map((d) => {
-								const isGlobal = !d.variant_uuids || d.variant_uuids.length === 0;
+								const isGlobal =
+									!d.variant_uuids || d.variant_uuids.length === 0;
 								const isExpired = new Date(d.end_date) < new Date();
 
 								// Lógica visual estandarizada para filas
-								const baseRowClasses = "border-b border-swapp-tiza-verdoso/40 dark:border-swapp-azul-petroleo/40 last:border-0 transition-colors duration-200";
-								
+								const baseRowClasses =
+									"border-b border-swapp-tiza-verdoso/40 dark:border-swapp-azul-petroleo/40 last:border-0 transition-colors duration-200";
+
 								// Si está inactiva o vencida, aplicamos el filtro grisáceo
-								const rowStatusStyle = (!d.is_active || isExpired)
-									? "opacity-60 bg-swapp-tiza-verdoso/40 dark:bg-swapp-azul-oscuro/80 grayscale filter mix-blend-multiply dark:mix-blend-normal hover:bg-swapp-tiza-verdoso/50 dark:hover:bg-swapp-azul-oscuro/90"
-									: "hover:bg-swapp-blanco/60 dark:hover:bg-swapp-azul-petroleo/20";
+								const rowStatusStyle =
+									!d.is_active || isExpired
+										? "opacity-60 bg-swapp-tiza-verdoso/40 dark:bg-swapp-azul-oscuro/80 grayscale filter mix-blend-multiply dark:mix-blend-normal hover:bg-swapp-tiza-verdoso/50 dark:hover:bg-swapp-azul-oscuro/90"
+										: "hover:bg-swapp-blanco/60 dark:hover:bg-swapp-azul-petroleo/20";
 
 								return (
 									<tr
@@ -300,7 +315,9 @@ export default function OffersPage() {
 										</td>
 										<td className="px-6 py-4 text-center">
 											<SwappTooltip
-												text={d.is_active ? "Desactivar" : "Activar"}>
+												text={
+													d.is_active ? "Desactivar Ofera" : "Activar Oferta"
+												}>
 												<button
 													onClick={() => handleToggleActive(d)}
 													disabled={isExpired}

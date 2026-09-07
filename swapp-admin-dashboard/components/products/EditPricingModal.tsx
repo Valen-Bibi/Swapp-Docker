@@ -1,5 +1,7 @@
+"use client";
+
 import { useState, useEffect } from "react";
-import { X, Landmark, TrendingUp } from "lucide-react";
+import { X, Landmark, TrendingUp, Save } from "lucide-react";
 import { toast } from "sonner";
 import { ProductService } from "@/services/product.service";
 import { SwappInput } from "@/components/ui/SwappInput";
@@ -23,6 +25,17 @@ export default function EditPricingModal({
 	const [basePrice, setBasePrice] = useState<number>(0);
 	const [costPrice, setCostPrice] = useState<number | "">("");
 	const [isSaving, setIsSaving] = useState(false);
+
+	// --- CERRAR CON ESCAPE ---
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.key === "Escape" && isOpen) {
+				onClose();
+			}
+		};
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [isOpen, onClose]);
 
 	useEffect(() => {
 		if (isOpen && product) {
@@ -89,95 +102,104 @@ export default function EditPricingModal({
 			: null;
 
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center bg-swapp-negro/50 dark:bg-swapp-negro/70 backdrop-blur-sm p-4">
-			<div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-xl bg-swapp-blanco dark:bg-swapp-azul-oscuro p-6 shadow-2xl border-t-4 border-swapp-turquesa-oscuro dark:border-swapp-menta transition-colors custom-scrollbar">
-				<div className="mb-4 flex items-center justify-between">
-					<h2 className="text-xl font-bold text-swapp-azul-oscuro dark:text-swapp-blanco">
-						{variant ? "Ajustar Rentabilidad" : "Valores de Referencia"}
-					</h2>
+		<div className="fixed inset-0 z-[100] flex items-center justify-center bg-swapp-azul-petroleo/20 dark:bg-swapp-negro/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95">
+			{/* CONTENEDOR DEL MODAL SIN BORDES EXTERNOS, SOLO BORDER-T */}
+			<div className="w-full max-w-md max-h-[90vh] flex flex-col rounded-xl bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md shadow-2xl border-t-4 border-t-swapp-verde-oscuro dark:border-t-swapp-verde-menta overflow-hidden transition-colors">
+				{/* HEADER ESTANDARIZADO */}
+				<div className="p-6 border-b border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo flex items-start justify-between shrink-0 transition-colors">
+					<div>
+						<h2 className="text-xl font-bold text-swapp-azul-oscuro dark:text-swapp-blanco flex items-center gap-2">
+							<Landmark className="h-5 w-5 text-swapp-verde-oscuro dark:text-swapp-verde-menta" />
+							{variant ? "Ajustar Rentabilidad" : "Valores de Referencia"}
+						</h2>
+						<p className="text-sm text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 mt-1.5 font-medium transition-colors">
+							{product.name}
+						</p>
+						{variant ? (
+							<p className="text-[11px] font-mono font-bold tracking-wider text-swapp-verde-oscuro dark:text-swapp-verde-menta mt-2 bg-swapp-verde-oscuro/10 dark:bg-swapp-verde-menta/10 inline-block px-2 py-0.5 rounded border border-swapp-verde-oscuro/20 dark:border-swapp-verde-menta/20">
+								SKU: {variant.sku}
+							</p>
+						) : (
+							<p className="text-xs font-medium text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50 mt-2">
+								Se aplicarán por defecto a nuevas variantes.
+							</p>
+						)}
+					</div>
 					<button
+						type="button"
 						onClick={onClose}
-						className="text-swapp-azul-petroleo/50 hover:text-swapp-azul-oscuro dark:hover:text-swapp-blanco transition-colors">
+						className="p-1 rounded-md text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50 hover:bg-red-500/10 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400 transition-colors mt-0.5">
 						<X className="h-5 w-5" />
 					</button>
 				</div>
 
-				<div className="mb-6 pb-4 border-b border-swapp-tiza dark:border-swapp-azul-petroleo flex flex-col gap-1">
-					<p className="text-sm font-medium text-swapp-azul-petroleo/70 dark:text-swapp-blanco">
-						{product.name}
-					</p>
-					{variant ? (
-						<span className="text-xs font-mono bg-swapp-tiza/50 dark:bg-swapp-azul-petroleo/50 text-swapp-turquesa-oscuro dark:text-swapp-menta px-2 py-1 rounded w-fit">
-							SKU: {variant.sku}
-						</span>
-					) : (
-						<span className="text-xs font-medium text-swapp-azul-petroleo/50 dark:text-swapp-blanco">
-							Estos valores se aplicarán por defecto al crear nuevas variantes
-							físicas.
-						</span>
-					)}
-				</div>
+				<div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+					{/* HEREDAMOS TRANSPARENCIA A LOS INPUTS */}
+					<form
+						onSubmit={handleSaveChanges}
+						className="space-y-6 [&_input]:!bg-transparent">
+						<div className="space-y-4">
+							<h3 className="text-sm font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+								Valores Base
+							</h3>
 
-				<form onSubmit={handleSaveChanges} className="space-y-6">
-					<div className="space-y-4">
-						<h3 className="text-sm font-bold uppercase tracking-wider text-swapp-azul-petroleo dark:text-swapp-blanco flex items-center gap-2">
-							<Landmark className="h-4 w-4" /> Valores Base
-						</h3>
-
-						<div className="grid grid-cols-2 gap-4">
-							<SwappInput
-								label="Costo Interno ($)"
-								helpText="- Opcional"
-								type="number"
-								step="0.01"
-								placeholder="Ej: 500.00"
-								value={costPrice}
-								onChange={(e) =>
-									setCostPrice(
-										e.target.value === "" ? "" : parseFloat(e.target.value),
-									)
-								}
-							/>
-
-							<div className="flex flex-col gap-1">
+							<div className="grid grid-cols-2 gap-4">
 								<SwappInput
-									label="Precio Final ($)"
+									label="Costo Interno ($)"
+									helpText="- Opcional"
 									type="number"
 									step="0.01"
-									required
-									value={basePrice === 0 ? "" : basePrice}
+									placeholder="Ej: 500.00"
+									value={costPrice}
 									onChange={(e) =>
-										setBasePrice(parseFloat(e.target.value) || 0)
+										setCostPrice(
+											e.target.value === "" ? "" : parseFloat(e.target.value),
+										)
 									}
 								/>
-								{currentMargin !== null && (
-									<span
-										className={`text-[10px] font-medium mt-1 flex items-center gap-1 ${currentMargin > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
-										<TrendingUp
-											className={`h-3 w-3 ${currentMargin < 0 ? "rotate-180" : ""}`}
-										/>
-										Margen: {currentMargin}%
-									</span>
-								)}
+
+								<div className="flex flex-col gap-1">
+									<SwappInput
+										label="Precio Final ($)"
+										type="number"
+										step="0.01"
+										required
+										value={basePrice === 0 ? "" : basePrice}
+										onChange={(e) =>
+											setBasePrice(parseFloat(e.target.value) || 0)
+										}
+									/>
+									{currentMargin !== null && (
+										<span
+											className={`text-[10px] font-medium mt-1 flex items-center gap-1 ${currentMargin > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+											<TrendingUp
+												className={`h-3 w-3 ${currentMargin < 0 ? "rotate-180" : ""}`}
+											/>
+											Margen: {currentMargin}%
+										</span>
+									)}
+								</div>
 							</div>
 						</div>
-					</div>
 
-					<div className="mt-6 flex justify-end gap-3 pt-4 border-t border-swapp-tiza dark:border-swapp-azul-petroleo transition-colors">
-						<button
-							type="button"
-							onClick={onClose}
-							className="rounded-lg px-4 py-2 text-sm font-medium hover:bg-swapp-tiza dark:hover:bg-swapp-azul-petroleo transition-colors">
-							Cancelar
-						</button>
-						<button
-							type="submit"
-							disabled={isSaving}
-							className="rounded-lg bg-swapp-turquesa-oscuro dark:bg-swapp-menta px-4 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro transition-colors hover:opacity-90 disabled:opacity-50">
-							{isSaving ? "Aplicando..." : "Guardar Cambios"}
-						</button>
-					</div>
-				</form>
+						{/* FOOTER CON NUEVOS COLORES DE BOTÓN */}
+						<div className="mt-6 flex justify-end gap-3 pt-4 border-t border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo transition-colors">
+							<button
+								type="button"
+								onClick={onClose}
+								className="rounded-lg px-4 py-2 text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso hover:bg-red-500/10 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400 transition-colors">
+								Cancelar
+							</button>
+							<button
+								type="submit"
+								disabled={isSaving}
+								className="flex items-center gap-2 rounded-lg bg-swapp-verde-pastel dark:bg-swapp-verde-menta px-6 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro transition-colors hover:bg-swapp-verde-oscuro dark:hover:bg-swapp-verde-pastel disabled:opacity-50">
+								<Save className="h-4 w-4" />
+								{isSaving ? "Aplicando..." : "Guardar Cambios"}
+							</button>
+						</div>
+					</form>
+				</div>
 			</div>
 		</div>
 	);

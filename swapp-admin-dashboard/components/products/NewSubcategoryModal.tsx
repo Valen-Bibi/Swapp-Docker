@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { X, FolderTree } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { X, FolderTree, Save } from "lucide-react";
 import { toast } from "sonner";
 import { SwappInput } from "@/components/ui/SwappInput";
 import { SwappToggle } from "@/components/ui/SwappToggle";
@@ -24,6 +24,17 @@ export default function NewSubcategoryModal({
 	const [slug, setSlug] = useState("");
 	const [isActive, setIsActive] = useState(true);
 	const [isSaving, setIsSaving] = useState(false);
+
+	// --- CERRAR CON ESCAPE ---
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.key === "Escape" && isOpen) {
+				onClose();
+			}
+		};
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [isOpen, onClose]);
 
 	if (!isOpen || !parentCategory) return null;
 
@@ -54,7 +65,7 @@ export default function NewSubcategoryModal({
 			await ProductService.createCategory({
 				name: name.trim(),
 				slug: slug.trim(),
-				parent_id: parentCategory.id, // <-- ACÁ ESTÁ LA MAGIA DEL ENLACE
+				parent_id: parentCategory.id,
 				is_active: isActive,
 				display_order: 0,
 			});
@@ -81,8 +92,9 @@ export default function NewSubcategoryModal({
 	};
 
 	return (
-		<div className="fixed inset-0 z-[100] flex items-center justify-center bg-swapp-negro/50 dark:bg-swapp-negro/70 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95">
-			<div className="w-full max-w-md rounded-xl bg-swapp-blanco dark:bg-swapp-azul-oscuro p-6 shadow-2xl border-t-4 border-swapp-verde-oscuro dark:border-swapp-verde-menta">
+		<div className="fixed inset-0 z-[100] flex items-center justify-center bg-swapp-azul-petroleo/20 dark:bg-swapp-negro/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95">
+			{/* CONTENEDOR DEL MODAL CON EL BALANCE DE OPACIDAD PERFECTO */}
+			<div className="w-full max-w-md rounded-xl bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md shadow-2xl border-t-4 border-t-swapp-verde-oscuro dark:border-t-swapp-verde-menta p-6 transition-colors">
 				<div className="mb-6 flex items-center justify-between">
 					<div>
 						<h2 className="text-xl font-bold text-swapp-azul-oscuro dark:text-swapp-blanco flex items-center gap-2">
@@ -98,12 +110,14 @@ export default function NewSubcategoryModal({
 					</div>
 					<button
 						onClick={onClose}
-						className="text-swapp-azul-petroleo/50 hover:text-swapp-azul-oscuro dark:text-swapp-tiza-verdoso/50 dark:hover:text-swapp-blanco transition-colors">
+						className="p-1 rounded-md text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50 hover:bg-red-500/10 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400 transition-colors">
 						<X className="h-5 w-5" />
 					</button>
 				</div>
 
-				<form onSubmit={handleSubmit} className="space-y-5">
+				<form
+					onSubmit={handleSubmit}
+					className="space-y-5 [&_input]:!bg-transparent">
 					<SwappInput
 						label="Nombre de la Subcategoría"
 						required
@@ -121,7 +135,7 @@ export default function NewSubcategoryModal({
 						placeholder="ej-botellas-termicas"
 					/>
 
-					<div className="flex items-center justify-between rounded-lg border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo p-3 bg-swapp-tiza-verdoso/10 dark:bg-swapp-azul-petroleo/10">
+					<div className="flex items-center justify-between rounded-lg border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo p-3 bg-transparent transition-colors">
 						<span className="text-sm font-medium text-swapp-azul-oscuro dark:text-swapp-blanco">
 							Subcategoría Activa
 						</span>
@@ -132,17 +146,18 @@ export default function NewSubcategoryModal({
 						/>
 					</div>
 
-					<div className="flex justify-end gap-3 pt-4">
+					<div className="flex justify-end gap-3 pt-4 border-t border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo mt-6 transition-colors">
 						<button
 							type="button"
 							onClick={onClose}
-							className="px-4 py-2 text-sm font-medium text-swapp-azul-petroleo hover:bg-swapp-tiza-verdoso rounded-lg transition-colors">
+							className="rounded-lg px-4 py-2 text-sm font-medium text-swapp-azul-petroleo hover:bg-red-500/10 hover:text-red-600 dark:text-swapp-tiza-verdoso dark:hover:bg-red-500/10 dark:hover:text-red-400 transition-colors">
 							Cancelar
 						</button>
 						<button
 							type="submit"
 							disabled={isSaving}
-							className="bg-swapp-verde-oscuro text-swapp-blanco hover:bg-swapp-azul-oceano px-6 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50">
+							className="flex items-center gap-2 rounded-lg bg-swapp-verde-pastel dark:bg-swapp-verde-menta px-6 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro transition-colors hover:bg-swapp-verde-oscuro dark:hover:bg-swapp-verde-pastel disabled:opacity-50">
+							<Save className="h-4 w-4" />
 							{isSaving ? "Guardando..." : "Crear"}
 						</button>
 					</div>

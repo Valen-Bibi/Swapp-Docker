@@ -14,10 +14,8 @@ export default function OrderForm() {
 		formState: { isSubmitting },
 	} = useFormContext();
 
-	// 1. Observamos todos los ítems dinámicamente desde el padre
 	const items = watch("items") || [];
 
-	// 2. Calculamos el total al vuelo en cada renderizado de la interfaz
 	const totalAmount = items.reduce(
 		(acc: number, item: any) => acc + (Number(item.subtotal) || 0),
 		0,

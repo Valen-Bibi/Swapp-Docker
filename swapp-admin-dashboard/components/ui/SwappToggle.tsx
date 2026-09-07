@@ -24,14 +24,15 @@ export function SwappToggle({
 				aria-checked={checked}
 				disabled={disabled}
 				onClick={() => !disabled && onChange(!checked)}
-				className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-swapp-verde-oscuro ${
+				// MAGIA APLICADA: Se reemplazó "items-center" por "p-[2px]" para crear el carril perfecto.
+				className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer p-[2px] rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-swapp-verde-oscuro ${
 					checked
 						? "bg-swapp-verde-oscuro dark:bg-swapp-verde-menta"
 						: "bg-swapp-azul-petroleo/30 dark:bg-swapp-tiza-verdoso/30"
 				} ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}>
 				<span
 					className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-swapp-blanco shadow ring-0 transition duration-200 ease-in-out ${
-						checked ? "translate-x-4" : "translate-x-0.5"
+						checked ? "translate-x-4" : "translate-x-0"
 					}`}
 				/>
 			</button>

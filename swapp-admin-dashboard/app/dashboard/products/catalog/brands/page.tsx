@@ -16,7 +16,7 @@ export default function BrandsPage() {
 	const [brands, setBrands] = useState<Brand[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [searchTerm, setSearchTerm] = useState("");
-	
+
 	// Agregamos el estado del toggle para estandarizar con las otras vistas
 	const [showInactive, setShowInactive] = useState(false);
 
@@ -110,7 +110,7 @@ export default function BrandsPage() {
 						onSearchChange={setSearchTerm}
 						placeholder="Buscar marca..."
 					/>
-					
+
 					<SwappTooltip text="Registrar una nueva marca">
 						<button
 							onClick={() => {
@@ -123,7 +123,7 @@ export default function BrandsPage() {
 								});
 								setIsModalOpen(true);
 							}}
-							className="inline-flex items-center gap-2 rounded-lg bg-swapp-verde-oscuro dark:bg-swapp-verde-menta px-4 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro hover:bg-swapp-azul-oceano dark:hover:bg-swapp-verde-pastel transition-colors whitespace-nowrap">
+							className="inline-flex items-center gap-2 rounded-lg bg-swapp-verde-pastel dark:bg-swapp-verde-menta px-4 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro transition-colors hover:bg-swapp-verde-oscuro dark:hover:bg-swapp-verde-pastel disabled:opacity-50">
 							<Plus className="h-4 w-4" /> Nueva Marca
 						</button>
 					</SwappTooltip>
@@ -135,11 +135,21 @@ export default function BrandsPage() {
 				<table className="w-full text-left text-sm text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
 					<thead className="bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/20 border-b border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 select-none">
 						<tr>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">Logo</th>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">Nombre y Slug</th>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">Orden</th>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">Estado</th>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 text-right">Acciones</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
+								Logo
+							</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
+								Nombre y Slug
+							</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
+								Orden
+							</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
+								Estado
+							</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 text-right">
+								Acciones
+							</th>
 						</tr>
 					</thead>
 					<tbody className="">
@@ -154,8 +164,9 @@ export default function BrandsPage() {
 						) : (
 							filteredBrands.map((b) => {
 								// Lógica visual estandarizada para filas
-								const baseRowClasses = "border-b border-swapp-tiza-verdoso/40 dark:border-swapp-azul-petroleo/40 last:border-0 transition-colors duration-200";
-								
+								const baseRowClasses =
+									"border-b border-swapp-tiza-verdoso/40 dark:border-swapp-azul-petroleo/40 last:border-0 transition-colors duration-200";
+
 								const rowStatusStyle = b.is_active
 									? "hover:bg-swapp-blanco/60 dark:hover:bg-swapp-azul-petroleo/20"
 									: "opacity-60 bg-swapp-tiza-verdoso/40 dark:bg-swapp-azul-oscuro/80 grayscale filter mix-blend-multiply dark:mix-blend-normal hover:bg-swapp-tiza-verdoso/50 dark:hover:bg-swapp-azul-oscuro/90";
@@ -178,7 +189,8 @@ export default function BrandsPage() {
 											)}
 										</td>
 										<td className="px-6 py-4">
-											<div className={`font-medium text-swapp-azul-oscuro dark:text-swapp-blanco flex items-center gap-2 ${!b.is_active ? "line-through" : ""}`}>
+											<div
+												className={`font-medium text-swapp-azul-oscuro dark:text-swapp-blanco flex items-center gap-2 ${!b.is_active ? "line-through" : ""}`}>
 												{b.name}
 												{b.featured && (
 													<span className="text-[10px] bg-swapp-verde-oscuro/10 dark:bg-swapp-verde-menta/10 text-swapp-verde-oscuro dark:text-swapp-verde-menta px-2 py-0.5 rounded-full uppercase font-bold tracking-wider">

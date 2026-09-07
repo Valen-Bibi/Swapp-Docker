@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { X, Lock, CheckCircle2, Circle } from "lucide-react";
+import { X, Lock, CheckCircle2, Circle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { SwappToggle } from "@/components/ui/SwappToggle";
 import { ProductService } from "@/services/product.service";
@@ -20,6 +20,17 @@ export default function CategoryAttributesModal({
 	const [allAttributes, setAllAttributes] = useState<any[]>([]);
 	const [linkedAttributes, setLinkedAttributes] = useState<any[]>([]);
 	const [loading, setLoading] = useState(true);
+
+	// --- CERRAR CON ESCAPE ---
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.key === "Escape" && isOpen) {
+				onClose();
+			}
+		};
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [isOpen, onClose]);
 
 	useEffect(() => {
 		if (isOpen && category) {
@@ -100,25 +111,26 @@ export default function CategoryAttributesModal({
 	if (!isOpen || !category) return null;
 
 	return (
-		<div className="fixed inset-0 z-[100] flex items-center justify-center bg-swapp-negro/50 dark:bg-swapp-negro/70 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95">
-			<div className="w-full max-w-2xl max-h-[85vh] flex flex-col rounded-xl bg-swapp-blanco dark:bg-swapp-azul-oscuro shadow-2xl border-t-4 border-swapp-verde-oscuro dark:border-swapp-menta overflow-hidden">
+		<div className="fixed inset-0 z-[100] flex items-center justify-center bg-swapp-azul-petroleo/20 dark:bg-swapp-negro/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95">
+			{/* CONTENEDOR DEL MODAL ESTANDARIZADO */}
+			<div className="w-full max-w-2xl max-h-[85vh] flex flex-col rounded-xl bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md shadow-2xl border-t-4 border-t-swapp-verde-oscuro dark:border-t-swapp-verde-menta overflow-hidden transition-colors">
 				{/* HEADER */}
-				<div className="p-6 border-b border-swapp-tiza dark:border-swapp-azul-petroleo flex items-center justify-between shrink-0">
+				<div className="p-6 border-b border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo flex items-center justify-between shrink-0 transition-colors">
 					<div>
 						<h2 className="text-xl font-bold text-swapp-azul-oscuro dark:text-swapp-blanco flex items-center gap-2">
-							<Lock className="h-5 w-5 text-swapp-verde-oscuro dark:text-swapp-menta" />
-							Candado de Atributos
+							<Lock className="h-5 w-5 text-swapp-verde-oscuro dark:text-swapp-verde-menta" />
+							Atributos de la Subcategoría
 						</h2>
-						<p className="text-sm text-swapp-azul-petroleo/70 dark:text-swapp-tiza/70 mt-1">
+						<p className="text-sm text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 mt-1">
 							Atributos exigidos para la subcategoría:{" "}
-							<span className="font-semibold text-swapp-verde-oscuro dark:text-swapp-menta">
+							<span className="font-semibold text-swapp-verde-oscuro dark:text-swapp-verde-menta">
 								{category.name}
 							</span>
 						</p>
 					</div>
 					<button
 						onClick={onClose}
-						className="text-swapp-azul-petroleo/50 hover:text-swapp-azul-oscuro dark:text-swapp-tiza/50 dark:hover:text-swapp-blanco transition-colors">
+						className="p-1 rounded-md text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50 hover:bg-red-500/10 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400 transition-colors">
 						<X className="h-5 w-5" />
 					</button>
 				</div>
@@ -126,11 +138,14 @@ export default function CategoryAttributesModal({
 				{/* BODY */}
 				<div className="p-6 overflow-y-auto flex-1">
 					{loading ? (
-						<div className="flex justify-center py-8">
-							<div className="animate-spin h-6 w-6 border-2 border-swapp-verde-oscuro border-t-transparent rounded-full"></div>
+						<div className="flex flex-col items-center justify-center py-12 gap-3">
+							<Loader2 className="h-8 w-8 animate-spin text-swapp-verde-oscuro dark:text-swapp-verde-menta" />
+							<p className="text-sm text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
+								Sincronizando candado PIM...
+							</p>
 						</div>
 					) : allAttributes.length === 0 ? (
-						<div className="text-center py-8 text-swapp-azul-petroleo/50 dark:text-swapp-tiza/50 text-sm">
+						<div className="text-center py-8 text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50 text-sm">
 							No hay atributos en el catálogo maestro. Creá atributos primero.
 						</div>
 					) : (
@@ -145,12 +160,16 @@ export default function CategoryAttributesModal({
 								return (
 									<div
 										key={attr.attribute_id}
-										className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${isLinked ? "border-swapp-verde-oscuro bg-swapp-verde-oscuro/5 dark:border-swapp-menta dark:bg-swapp-menta/5" : "border-swapp-tiza dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro hover:bg-swapp-tiza/20 dark:hover:bg-swapp-azul-petroleo/30"}`}>
+										className={`flex items-center justify-between p-4 rounded-lg border transition-all duration-200 ${
+											isLinked
+												? "border-swapp-verde-oscuro/30 bg-swapp-verde-oscuro/10 dark:border-swapp-verde-menta/30 dark:bg-swapp-verde-menta/10"
+												: "border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo bg-transparent hover:bg-swapp-blanco/60 dark:hover:bg-swapp-azul-petroleo/20"
+										}`}>
 										<div className="flex flex-col">
 											<span className="font-medium text-sm text-swapp-azul-oscuro dark:text-swapp-blanco">
 												{attr.name}
 											</span>
-											<span className="text-xs text-swapp-azul-petroleo/60 dark:text-swapp-tiza/60">
+											<span className="text-xs text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 mt-0.5">
 												{attr.is_variant
 													? "Variante Física (Afecta Stock)"
 													: "Estructural (Ficha Técnica)"}
@@ -161,7 +180,7 @@ export default function CategoryAttributesModal({
 											{/* Toggle Requerido (Solo se muestra si está vinculado) */}
 											{isLinked && (
 												<div className="flex items-center gap-2">
-													<span className="text-xs text-swapp-azul-petroleo/70 dark:text-swapp-tiza/70">
+													<span className="text-xs text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
 														¿Obligatorio?
 													</span>
 													<SwappToggle
@@ -174,16 +193,20 @@ export default function CategoryAttributesModal({
 												</div>
 											)}
 
-											{/* Botón Vincular/Desvincular */}
+											{/* Botón Vincular/Desvincular con Hover en Rojo estandarizado */}
 											<button
 												onClick={() =>
 													toggleLink(attr.attribute_id, isLinked, false)
 												}
-												className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${isLinked ? "bg-swapp-verde-oscuro text-swapp-blanco hover:bg-red-500" : "bg-swapp-tiza dark:bg-swapp-azul-petroleo text-swapp-azul-petroleo dark:text-swapp-tiza hover:bg-swapp-verde-oscuro hover:text-swapp-blanco dark:hover:bg-swapp-menta dark:hover:text-swapp-azul-oscuro"}`}>
+												className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+													isLinked
+														? "bg-swapp-verde-oscuro text-swapp-blanco hover:bg-red-500/10 hover:text-red-600 dark:bg-swapp-verde-menta dark:text-swapp-azul-oscuro dark:hover:bg-red-500/10 dark:hover:text-red-400 border border-transparent hover:border-red-500/30"
+														: "bg-swapp-blanco/50 dark:bg-swapp-azul-petroleo/30 text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso hover:bg-swapp-verde-oscuro hover:text-swapp-blanco dark:hover:bg-swapp-verde-menta dark:hover:text-swapp-azul-oscuro border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo"
+												}`}>
 												{isLinked ? (
 													<>
 														Vincular <CheckCircle2 className="h-3.5 w-3.5" />
-													</> // Al hacer hover se podría cambiar el texto a "Desvincular", pero como MVP así es claro
+													</>
 												) : (
 													<>
 														Vincular <Circle className="h-3.5 w-3.5" />

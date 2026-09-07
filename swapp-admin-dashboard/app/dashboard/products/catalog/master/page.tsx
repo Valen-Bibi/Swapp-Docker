@@ -374,7 +374,7 @@ export default function MasterCatalogPage() {
 							onClick={() =>
 								router.push("/dashboard/products/catalog/master/new")
 							}
-							className="inline-flex items-center gap-2 rounded-lg bg-swapp-verde-oscuro dark:bg-swapp-verde-menta px-4 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro hover:bg-swapp-azul-oceano dark:hover:bg-swapp-verde-pastel transition-colors">
+							className="inline-flex items-center gap-2 rounded-lg bg-swapp-verde-pastel dark:bg-swapp-verde-menta px-4 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro transition-colors hover:bg-swapp-verde-oscuro dark:hover:bg-swapp-verde-pastel disabled:opacity-50">
 							<Plus className="h-4 w-4" /> Nuevo Producto
 						</button>
 					</SwappTooltip>
@@ -387,7 +387,9 @@ export default function MasterCatalogPage() {
 				<table className="w-full text-left text-sm text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
 					<thead className="bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/20 border-b border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 select-none">
 						<tr>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">Imagen</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
+								Imagen
+							</th>
 							<SortableHeader
 								label="Producto e Identidad"
 								columnKey="name"
@@ -416,7 +418,9 @@ export default function MasterCatalogPage() {
 								currentDirection={sortDirection}
 								onSort={handleSort}
 							/>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 text-right">Acciones</th>
+							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 text-right">
+								Acciones
+							</th>
 						</tr>
 					</thead>
 					{/* Eliminamos divide-y para manejar bordes fila por fila */}
@@ -444,8 +448,9 @@ export default function MasterCatalogPage() {
 								const isExpanded = expandedRows.includes(p.product_uuid);
 
 								// Base para todas las filas
-								const baseRowClasses = "border-b border-swapp-tiza-verdoso/40 dark:border-swapp-azul-petroleo/40 last:border-0 transition-colors duration-200";
-								
+								const baseRowClasses =
+									"border-b border-swapp-tiza-verdoso/40 dark:border-swapp-azul-petroleo/40 last:border-0 transition-colors duration-200";
+
 								// Comportamiento del Hover y Active states
 								const parentRowStatusStyle = p.is_active
 									? `hover:bg-swapp-blanco/60 dark:hover:bg-swapp-azul-petroleo/20 ${isExpanded ? "bg-swapp-blanco/60 dark:bg-swapp-azul-petroleo/20" : ""}`
@@ -515,7 +520,7 @@ export default function MasterCatalogPage() {
 														className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${p.is_published ? "bg-swapp-verde-pastel/10 dark:bg-swapp-verde-menta/10 text-swapp-verde-oscuro dark:text-swapp-verde-menta" : "bg-swapp-tiza-verdoso dark:bg-swapp-azul-petroleo text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso"}`}>
 														{p.is_published ? "Publicado" : "Borrador"}
 													</span>
-													
+
 													{/* BARRA DE SCORING */}
 													<SwappTooltip text="Nivel de completitud de la Ficha Técnica">
 														<div className="flex items-center gap-2 w-24">
@@ -653,9 +658,10 @@ export default function MasterCatalogPage() {
 																	visibleVariants.map((v: any) => {
 																		const isEditing =
 																			editingVariantId === v.variant_uuid;
-																		
+
 																		// Clases para el hover de las variantes anidadas
-																		const baseVariantRowClasses = "border-b border-swapp-tiza-verdoso/30 dark:border-swapp-azul-petroleo/30 last:border-0 transition-all duration-200";
+																		const baseVariantRowClasses =
+																			"border-b border-swapp-tiza-verdoso/30 dark:border-swapp-azul-petroleo/30 last:border-0 transition-all duration-200";
 																		const rowStatusStyle = v.is_active
 																			? "hover:bg-swapp-tiza-verdoso/30 dark:hover:bg-swapp-azul-petroleo/30"
 																			: "opacity-60 bg-swapp-tiza-verdoso/40 dark:bg-swapp-azul-oscuro/80 grayscale filter mix-blend-multiply dark:mix-blend-normal";
