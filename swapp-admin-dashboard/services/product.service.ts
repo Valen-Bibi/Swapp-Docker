@@ -48,6 +48,24 @@ export const ProductService = {
     return data;
   },
 
+  reorderCategories: async (payload: { categories: { category_id: number; display_order: number }[] }) => {
+    const { data } = await api.post("/api/products/admin/categories/reorder", payload);
+    return data;
+  },
+
+  getCategoryProductsCount: async (categoryId: number): Promise<{ active_products_count: number }> => {
+    const { data } = await api.get(`/api/products/admin/categories/${categoryId}/products/count`);
+    return data;
+  },
+
+  archiveCategoryWithResolution: async (
+    categoryId: number, 
+    payload: { action: "archive_products" | "reassign"; new_category_id?: number | null }
+  ) => {
+    const { data } = await api.post(`/api/products/admin/categories/${categoryId}/archive`, payload);
+    return data;
+  },
+
   addMovement: async (
     productUuid: string,
     variantUuid: string, // NUEVO PARÁMETRO

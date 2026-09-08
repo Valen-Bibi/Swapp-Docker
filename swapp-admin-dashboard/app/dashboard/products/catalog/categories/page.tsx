@@ -10,6 +10,7 @@ import {
 	Archive,
 	RotateCcw,
 	Ban,
+	ArrowUpDown,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
@@ -19,6 +20,8 @@ import TableSkeleton from "@/components/tables/TableSkeleton";
 import NewCategoryModal from "@/components/products/NewCategoryModal";
 import NewSubcategoryModal from "@/components/products/NewSubcategoryModal";
 import CategoryAttributesModal from "@/components/products/CategoryAttributesModal";
+import ReorderCategoriesModal from "@/components/products/ReorderCategoriesModal";
+import ArchiveCategoryModal from "@/components/products/ArchiveCategoryModal";
 import { SwappTooltip } from "@/components/ui/SwappTooltip";
 import { SwappToggle } from "@/components/ui/SwappToggle";
 import { ProductService } from "@/services/product.service";
@@ -46,6 +49,11 @@ export default function CategoriesPage() {
 		id: number;
 		name: string;
 	} | null>(null);
+	const [isReorderModalOpen, setIsReorderModalOpen] = useState(false);
+
+	const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
+	const [categoryToArchive, setCategoryToArchive] = useState<{id: number, name: string} | null>(null);
+	const [activeProductsCount, setActiveProductsCount] = useState(0);
 
 	const [isLockModalOpen, setIsLockModalOpen] = useState(false);
 	const [selectedCategoryForLock, setSelectedCategoryForLock] = useState<{
@@ -80,7 +88,7 @@ export default function CategoriesPage() {
 			if (editingCat.category_id) {
 				await api.put(
 					`/api/products/admin/categories/${editingCat.category_id}`,
-					editingCat,
+					{ ...editingCat, display_order: 0 } // <-- Forzamos el 0 en actualización
 				);
 			} else {
 				await ProductService.createCategory({
@@ -88,7 +96,7 @@ export default function CategoriesPage() {
 					slug: editingCat.slug!,
 					parent_id: editingCat.parent_id,
 					is_active: editingCat.is_active,
-					display_order: editingCat.display_order,
+					display_order: 0, // <-- Forzamos el 0 en creación
 				});
 			}
 			toast.success("Operación exitosa", { id: toastId });
@@ -103,41 +111,51 @@ export default function CategoriesPage() {
 		}
 	};
 
-	const handleToggleStatus = async (
-		categoryId: number,
-		currentStatus: boolean,
-	) => {
+	const handleToggleStatus = async (categoryId: number, currentStatus: boolean, categoryName: string) => {
 		const isDeactivating = currentStatus;
-		const actionText = isDeactivating ? "archivar" : "restaurar";
 
 		if (isDeactivating) {
-			const confirmed = window.confirm(
-				`¿Estás seguro de que querés archivar esta categoría?`,
-			);
-			if (!confirmed) return;
+			const toastId = toast.loading("Verificando dependencias...");
+			try {
+				// Preguntamos al backend si hay productos activos atados acá
+				const res = await ProductService.getCategoryProductsCount(categoryId);
+				toast.dismiss(toastId);
+
+				if (res.active_products_count > 0) {
+					// BIFURCACIÓN: Tiene productos. Abrimos el "Juez".
+					setCategoryToArchive({ id: categoryId, name: categoryName });
+					setActiveProductsCount(res.active_products_count);
+					setIsArchiveModalOpen(true);
+					return; // Cortamos la ejecución acá
+				} else {
+					// No tiene productos. Cartel clásico.
+					const confirmed = window.confirm(`¿Estás seguro de que querés archivar la categoría "${categoryName}"?`);
+					if (!confirmed) return;
+				}
+			} catch (error) {
+				toast.dismiss(toastId);
+				toast.error("Error al verificar dependencias.");
+				return;
+			}
 		}
 
-		const toastId = toast.loading(
-			isDeactivating ? "Archivando categoría..." : "Restaurando categoría...",
+		const actionText = isDeactivating ? "archivar" : "restaurar";
+		const actionToastId = toast.loading(
+			isDeactivating ? "Archivando categoría..." : "Restaurando categoría..."
 		);
 
 		try {
 			await api.put(`/api/products/admin/categories/${categoryId}`, {
-				is_active: !isDeactivating,
+				is_active: !isDeactivating
 			});
 
 			toast.success(
-				isDeactivating
-					? "Categoría archivada exitosamente"
-					: "Categoría restaurada",
-				{ id: toastId },
+				isDeactivating ? "Categoría archivada exitosamente" : "Categoría restaurada",
+				{ id: actionToastId }
 			);
 			fetchCategories();
 		} catch (error: any) {
-			toast.error(
-				error.response?.data?.detail || `Error al ${actionText} la categoría.`,
-				{ id: toastId },
-			);
+			toast.error(error.response?.data?.detail || `Error al ${actionText} la categoría.`, { id: actionToastId });
 		}
 	};
 
@@ -199,6 +217,13 @@ export default function CategoriesPage() {
 							}}
 							className="inline-flex items-center gap-2 rounded-lg bg-swapp-verde-pastel dark:bg-swapp-verde-menta px-4 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro transition-colors hover:bg-swapp-verde-oscuro dark:hover:bg-swapp-verde-pastel disabled:opacity-50">
 							<Plus className="h-4 w-4" /> Nueva Categoría
+						</button>
+					</SwappTooltip>
+					<SwappTooltip text="Modificar el orden visual del catálogo">
+						<button
+							onClick={() => setIsReorderModalOpen(true)}
+							className="inline-flex items-center gap-2 rounded-lg bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo px-4 py-2 text-sm font-medium text-swapp-azul-oscuro dark:text-swapp-blanco transition-colors hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo">
+							<ArrowUpDown className="h-4 w-4" /> Reordenar
 						</button>
 					</SwappTooltip>
 				</div>
@@ -360,12 +385,7 @@ export default function CategoriesPage() {
 														</SwappTooltip>
 														<SwappTooltip text="Archivar Categoría">
 															<button
-																onClick={() =>
-																	handleToggleStatus(
-																		c.category_id as number,
-																		c.is_active,
-																	)
-																}
+																onClick={() => handleToggleStatus(c.category_id as number, c.is_active, c.name)}
 																className="p-1.5 rounded-md text-swapp-azul-petroleo/40 hover:text-red-500 dark:text-swapp-tiza-verdoso/40 hover:bg-red-500/10 transition-colors">
 																<Archive className="h-4 w-4" />
 															</button>
@@ -374,12 +394,7 @@ export default function CategoriesPage() {
 												) : (
 													<SwappTooltip text="Restaurar Categoría">
 														<button
-															onClick={() =>
-																handleToggleStatus(
-																	c.category_id as number,
-																	c.is_active,
-																)
-															}
+															onClick={() => handleToggleStatus(c.category_id as number, c.is_active, c.name)}
 															className="p-1.5 rounded-md text-swapp-azul-petroleo/60 hover:text-swapp-verde-oscuro dark:text-swapp-tiza-verdoso/60 dark:hover:text-swapp-verde-menta hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo transition-colors">
 															<RotateCcw className="h-4 w-4" />
 														</button>
@@ -414,6 +429,20 @@ export default function CategoriesPage() {
 				isOpen={isLockModalOpen}
 				onClose={() => setIsLockModalOpen(false)}
 				category={selectedCategoryForLock}
+			/>
+			<ArchiveCategoryModal
+			isOpen={isArchiveModalOpen}
+			onClose={() => setIsArchiveModalOpen(false)}
+			category={categoryToArchive}
+			activeProductsCount={activeProductsCount}
+			categories={categories}
+			onSuccess={() => fetchCategories()}
+			/>
+			<ReorderCategoriesModal
+			isOpen={isReorderModalOpen}
+			onClose={() => setIsReorderModalOpen(false)}
+			categories={categories}
+			onSuccess={() => fetchCategories()}
 			/>
 		</div>
 	);

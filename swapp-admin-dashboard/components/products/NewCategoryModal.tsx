@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import { X, Save, FolderTree } from "lucide-react";
 import { SwappInput } from "@/components/ui/SwappInput";
-import { SwappSelect } from "@/components/ui/SwappSelect";
 import { SwappToggle } from "@/components/ui/SwappToggle";
 import { Category } from "@/types/product";
 
@@ -12,7 +11,7 @@ interface NewCategoryModalProps {
 	onClose: () => void;
 	editingCat: Partial<Category>;
 	setEditingCat: (cat: Partial<Category>) => void;
-	categories: Category[];
+	categories: Category[]; 
 	onSubmit: (e: React.FormEvent) => void;
 	isSaving: boolean;
 }
@@ -22,11 +21,9 @@ export default function NewCategoryModal({
 	onClose,
 	editingCat,
 	setEditingCat,
-	categories,
 	onSubmit,
 	isSaving,
 }: NewCategoryModalProps) {
-	// --- CERRAR CON ESCAPE ---
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (e.key === "Escape" && isOpen) {
@@ -48,16 +45,8 @@ export default function NewCategoryModal({
 
 	const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const name = e.target.value;
-		setEditingCat({ ...editingCat, name, slug: generateSlug(name) });
+		setEditingCat({ ...editingCat, name, slug: generateSlug(name), parent_id: null });
 	};
-
-	// Formateamos las categorías para el componente SwappSelect
-	const categoryOptions = categories
-		.filter((c) => c.category_id !== editingCat.category_id)
-		.map((c) => ({
-			value: c.category_id,
-			label: c.name,
-		}));
 
 	return (
 		<div className="fixed inset-0 z-[100] flex items-center justify-center bg-swapp-azul-petroleo/20 dark:bg-swapp-negro/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95">
@@ -65,7 +54,7 @@ export default function NewCategoryModal({
 				<div className="p-6 border-b border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo flex items-center justify-between shrink-0 transition-colors">
 					<h2 className="text-xl font-bold text-swapp-azul-oscuro dark:text-swapp-blanco flex items-center gap-2">
 						<FolderTree className="h-5 w-5 text-swapp-verde-oscuro dark:text-swapp-verde-menta" />
-						{editingCat.category_id ? "Editar Categoría" : "Nueva Categoría"}
+						{editingCat.category_id ? "Editar Categoría Principal" : "Nueva Categoría Principal"}
 					</h2>
 					<button
 						type="button"
@@ -76,10 +65,9 @@ export default function NewCategoryModal({
 				</div>
 
 				<div className="p-6">
-					{/* Agregamos [&_select]:!bg-transparent para heredar el glassmorphism */}
 					<form
 						onSubmit={onSubmit}
-						className="space-y-5 [&_input]:!bg-transparent [&_select]:!bg-transparent">
+						className="space-y-5 [&_input]:!bg-transparent">
 						<div className="grid grid-cols-2 gap-4">
 							<SwappInput
 								label="Nombre"
@@ -96,32 +84,6 @@ export default function NewCategoryModal({
 								}
 							/>
 						</div>
-
-						<SwappSelect
-							label="Categoría Padre (Opcional)"
-							placeholder="Es categoría principal"
-							options={categoryOptions}
-							value={editingCat.parent_id || ""}
-							onChange={(e) =>
-								setEditingCat({
-									...editingCat,
-									parent_id: e.target.value ? parseInt(e.target.value) : null,
-								})
-							}
-						/>
-
-						<SwappInput
-							label="Orden de prioridad"
-							type="number"
-							required
-							value={editingCat.display_order}
-							onChange={(e) =>
-								setEditingCat({
-									...editingCat,
-									display_order: parseInt(e.target.value) || 0,
-								})
-							}
-						/>
 
 						<div className="flex items-center justify-between rounded-lg border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo p-3 bg-transparent transition-colors mt-2">
 							<span className="text-sm font-medium text-swapp-azul-oscuro dark:text-swapp-blanco">
