@@ -17,11 +17,18 @@ import {
 import TableSkeleton from "@/components/tables/TableSkeleton";
 import PageHeader from "@/components/layout/PageHeader";
 import SearchBar from "@/components/ui/SearchBar";
-import EditPricingModal from "@/components/products/EditPricingModal";
+import EditPricingModal from "@/components/products/modals/EditPricingModal";
 import { SwappTooltip } from "@/components/ui/SwappTooltip";
-import PriceHistoryModal from "@/components/products/PriceHistoryModal";
+import PriceHistoryModal from "@/components/products/modals/PriceHistoryModal";
 import { Product, ProductVariant } from "@/types/product";
 import { formatCurrency } from "@/lib/utils";
+
+// --- NUEVOS COMPONENTES ESTANDARIZADOS ---
+import GlassTableWrapper from "@/components/tables/GlassTableWrapper";
+import GlassTableHead, { GlassTh } from "@/components/tables/GlassTableHead";
+import TableActionIcon from "@/components/tables/TableActionIcon";
+import StatusBadge from "@/components/ui/StatusBadge";
+import AnimatedTableRow from "@/components/tables/AnimatedTableRow";
 
 type ProductWithOffer = Product & { active_discounts?: any[] };
 
@@ -152,27 +159,34 @@ export default function CostsPage() {
 				</div>
 			</div>
 
-			{/* CONTENEDOR DE TABLA (GLASSMORPHISM) */}
-			<div className="rounded-xl border border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 bg-swapp-blanco/40 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm shadow-sm transition-all duration-300 overflow-visible sm:overflow-auto">
-				<table className="w-full text-left text-sm text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
-					<thead className="bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/20 border-b border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 select-none">
+			{/* CONTENEDOR DE TABLA MODULARIZADO */}
+			<GlassTableWrapper>
+				<GlassTableHead>
+					<GlassTh className="w-16">Imagen</GlassTh>
+					<GlassTh>Producto General</GlassTh>
+					<GlassTh>Variantes Físicas</GlassTh>
+					<GlassTh>Costo / Margen Ref.</GlassTh>
+					<GlassTh align="right">Acciones</GlassTh>
+				</GlassTableHead>
+
+				<tbody>
+					{filteredProducts.length === 0 ? (
 						<tr>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 w-16">Imagen</th>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">Producto General</th>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">Variantes Físicas</th>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">Costo / Margen Ref.</th>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 text-right">Acciones</th>
+							<td
+								colSpan={5}
+								className="px-6 py-12 text-center text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50">
+								No se encontraron productos que coincidan con la búsqueda.
+							</td>
 						</tr>
-					</thead>
-					<tbody className="">
-						{filteredProducts.map((p) => {
+					) : (
+						filteredProducts.map((p) => {
 							const mainImageUrl = p.media?.find(
 								(m: any) =>
 									m.media_type === "image" && m.media_subtype === "main",
 							)?.file_url;
 
 							const variantsCount = p.variants?.length || 0;
-							const isExpanded = expandedRows.includes(p.product_uuid);
+							const isExpanded = expandedRows.includes(p.product_uuid!);
 
 							const refCost =
 								(p as any).reference_cost ?? p.variants?.[0]?.cost_price ?? 0;
@@ -199,37 +213,43 @@ export default function CostsPage() {
 
 							const refMargin = calculateMargin(refCost, refPriceFinal);
 
-							// Lógica visual estandarizada para filas
-							const baseRowClasses = "border-b border-swapp-tiza-verdoso/40 dark:border-swapp-azul-petroleo/40 last:border-0 transition-colors duration-200";
-							const rowStatusStyle = p.is_active !== false
-								? `hover:bg-swapp-blanco/60 dark:hover:bg-swapp-azul-petroleo/20 ${isExpanded ? "bg-swapp-blanco/60 dark:bg-swapp-azul-petroleo/20" : ""}`
-								: "opacity-60 bg-swapp-tiza-verdoso/40 dark:bg-swapp-azul-oscuro/80 grayscale filter mix-blend-multiply dark:mix-blend-normal hover:bg-swapp-tiza-verdoso/50 dark:hover:bg-swapp-azul-oscuro/90";
+							const baseRowClasses =
+								"border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50 last:border-0 transition-colors duration-200";
+							const rowStatusStyle =
+								p.is_active !== false
+									? `hover:bg-swapp-blanco/80 dark:hover:bg-swapp-azul-petroleo/30 ${isExpanded ? "bg-swapp-blanco/80 dark:hover:bg-swapp-azul-petroleo/30" : ""}`
+									: "opacity-60 bg-swapp-azul-petroleo/10 dark:bg-swapp-azul-oscuro/80 hover:bg-swapp-azul-petroleo/20 dark:hover:bg-swapp-azul-oscuro/90";
 
 							return (
 								<React.Fragment key={p.product_uuid}>
 									{/* Fila Principal (Padre) */}
 									<tr className={`${baseRowClasses} ${rowStatusStyle}`}>
+										{/* IMAGEN DE PRODUCTO */}
 										<td className="px-6 py-4">
 											{mainImageUrl ? (
 												<img
 													src={mainImageUrl}
 													alt={`Imagen de ${p.name}`}
-													className="h-10 w-10 rounded-md object-cover border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo"
+													className="h-10 w-10 rounded-md object-cover bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo shadow-sm p-0.5"
 												/>
 											) : (
-												<div className="h-10 w-10 rounded-md bg-swapp-tiza-verdoso dark:bg-swapp-azul-petroleo flex items-center justify-center text-swapp-azul-petroleo/30 dark:text-swapp-tiza-verdoso/30 transition-colors">
+												<div className="h-10 w-10 rounded-md bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/40 border border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo flex items-center justify-center text-swapp-azul-petroleo/30 dark:text-swapp-tiza-verdoso/30 transition-colors shadow-sm">
 													<ImageIcon className="h-5 w-5" />
 												</div>
 											)}
 										</td>
-										<td className="px-6 py-4 font-medium text-swapp-azul-oscuro dark:text-swapp-blanco">
+
+										{/* NOMBRE PRODUCTO */}
+										<td className="px-6 py-4 font-bold text-swapp-azul-oscuro dark:text-swapp-blanco">
 											{p.name}
 										</td>
-										<td className="px-6 py-4 font-mono text-xs">
+
+										{/* DESPLEGABLE DE VARIANTES */}
+										<td className="px-6 py-4 font-mono text-xs text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
 											{variantsCount > 0 ? (
 												<button
-													onClick={() => toggleRow(p.product_uuid)}
-													className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo transition-colors text-swapp-verde-oscuro dark:text-swapp-verde-menta font-sans font-medium">
+													onClick={() => toggleRow(p.product_uuid!)}
+													className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo bg-swapp-blanco/60 dark:bg-swapp-azul-oscuro/60 hover:bg-swapp-blanco dark:hover:bg-swapp-azul-petroleo transition-colors text-swapp-verde-oscuro dark:text-swapp-verde-menta font-sans font-bold shadow-sm">
 													<Layers className="h-3.5 w-3.5" />
 													{variantsCount === 1
 														? "1 Variante"
@@ -241,192 +261,196 @@ export default function CostsPage() {
 													)}
 												</button>
 											) : (
-												<span className="text-swapp-azul-petroleo/60">
-													Sin stock físico
+												<span className="text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40">
+													-
 												</span>
 											)}
 										</td>
+
+										{/* COSTO / MARGEN REF CON STATUS BADGE */}
 										<td className="px-6 py-4 text-xs">
 											<div className="flex items-center gap-3">
-												<span className="text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+												<span className="font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
 													Costo: {refCost ? formatCurrency(refCost) : "-"}
 												</span>
 												{refMargin !== null && (
-													<span
-														className={`font-semibold ${refMargin > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+													<StatusBadge
+														variant={refMargin > 0 ? "success" : "danger"}>
 														({refMargin}%)
-													</span>
+													</StatusBadge>
 												)}
 											</div>
 										</td>
+
+										{/* ACCIONES */}
 										<td className="px-6 py-4 text-right">
-											<SwappTooltip text="Ajustar Valores de Referencia">
-												<button
-													onClick={() => handleEditClick(p, null)}
-													className="p-1.5 rounded-md text-swapp-azul-petroleo/50 hover:text-swapp-verde-oscuro dark:text-swapp-tiza-verdoso/50 dark:hover:text-swapp-verde-menta hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo transition-colors">
-													<Edit className="h-4 w-4" />
-												</button>
-											</SwappTooltip>
+											<TableActionIcon
+												icon={Edit}
+												tooltip="Ajustar Valores de Referencia"
+												onClick={() => handleEditClick(p, null)}
+											/>
 										</td>
 									</tr>
 
-									{/* Fila Desplegable (Hijos / Variantes Físicas) */}
-									{isExpanded && variantsCount > 0 && (
-										<tr className="bg-swapp-tiza-verdoso/10 dark:bg-swapp-azul-oscuro border-b border-swapp-tiza-verdoso/40 dark:border-swapp-azul-petroleo/40">
-											<td colSpan={5} className="px-6 py-4">
-												<div className="rounded-lg border border-swapp-tiza-verdoso/50 dark:border-swapp-azul-petroleo/50 overflow-hidden bg-swapp-blanco dark:bg-swapp-azul-oscuro/50 shadow-sm">
-													<table className="w-full text-xs text-left">
-														<thead className="bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/20 border-b border-swapp-tiza-verdoso/50 dark:border-swapp-azul-petroleo/50">
-															<tr>
-																<th className="px-4 py-3 text-[10px] tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
-																	SKU Específico
-																</th>
-																<th className="px-4 py-3 text-[10px] tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
-																	Costo Interno
-																</th>
-																<th className="px-4 py-3 text-[10px] tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
-																	Precio Base
-																</th>
-																<th className="px-4 py-3 text-[10px] tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
-																	Precio Oferta
-																</th>
-																<th className="px-4 py-3 text-[10px] tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
-																	Margen Neto
-																</th>
-																<th className="px-4 py-3 text-[10px] tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 text-right">
-																	Acciones
-																</th>
-															</tr>
-														</thead>
-														<tbody className="">
-															{p.variants?.map((v) => {
-																const activeDiscount = p.active_discounts?.find(
-																	(d: any) => {
-																		const isGlobal =
-																			!d.variant_uuids ||
-																			d.variant_uuids.length === 0;
-																		return (
-																			isGlobal ||
-																			d.variant_uuids.includes(v.variant_uuid)
-																		);
-																	},
-																);
+									{/* ACORDEÓN DESPLEGABLE (VARIANTES) - MODULARIZADO */}
+									{variantsCount > 0 && (
+										<AnimatedTableRow isExpanded={isExpanded} colSpan={5}>
+											<table className="w-full text-xs text-left">
+												{/* CABECERA VARIANTES */}
+												<thead className="bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/20 border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50">
+													<tr>
+														<th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/70">
+															SKU Específico
+														</th>
+														<th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/70">
+															Costo Interno
+														</th>
+														<th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/70">
+															Precio Base
+														</th>
+														<th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/70">
+															Precio Oferta
+														</th>
+														<th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/70">
+															Margen Neto
+														</th>
+														<th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/70 text-right">
+															Acciones
+														</th>
+													</tr>
+												</thead>
 
-																let finalPrice = v.price;
-																if (activeDiscount) {
-																	if (
-																		activeDiscount.discount_type ===
-																		"percentage"
-																	) {
-																		finalPrice =
-																			v.price *
-																			(1 - activeDiscount.value / 100);
-																	} else {
-																		finalPrice = Math.max(
-																			0,
-																			v.price - activeDiscount.value,
-																		);
-																	}
-																}
-
-																const marg = calculateMargin(
-																	v.cost_price,
-																	finalPrice,
-																);
-
-																const baseVariantRowClasses = "border-b border-swapp-tiza-verdoso/30 dark:border-swapp-azul-petroleo/30 last:border-0 transition-all duration-200";
-																const variantRowStatusStyle = v.is_active !== false
-																	? "hover:bg-swapp-tiza-verdoso/30 dark:hover:bg-swapp-azul-petroleo/30"
-																	: "opacity-60 bg-swapp-tiza-verdoso/40 dark:bg-swapp-azul-oscuro/80 grayscale filter mix-blend-multiply dark:mix-blend-normal";
-
+												<tbody>
+													{p.variants?.map((v) => {
+														const activeDiscount = p.active_discounts?.find(
+															(d: any) => {
+																const isGlobal =
+																	!d.variant_uuids ||
+																	d.variant_uuids.length === 0;
 																return (
-																	<tr
-																		key={v.variant_uuid}
-																		className={`${baseVariantRowClasses} ${variantRowStatusStyle}`}>
-																		<td className="px-4 py-3 font-mono font-medium text-swapp-azul-oscuro dark:text-swapp-blanco">
-																			{v.sku}
-																		</td>
-																		<td className="px-4 py-3 text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
-																			{v.cost_price
-																				? formatCurrency(v.cost_price)
-																				: "-"}
-																		</td>
-
-																		<td
-																			className={`px-4 py-3 font-semibold ${activeDiscount ? "text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40 line-through text-[10px]" : "text-swapp-verde-oscuro dark:text-swapp-verde-menta"}`}>
-																			{formatCurrency(v.price)}
-																		</td>
-
-																		<td className="px-4 py-3">
-																			{activeDiscount ? (
-																				<div className="flex flex-col items-start gap-0.5">
-																					<span className="font-bold text-emerald-600 dark:text-emerald-400">
-																						{formatCurrency(finalPrice)}
-																					</span>
-																					<span className="inline-flex items-center gap-1 text-[9px] font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-500/20 px-1.5 py-0.5 rounded uppercase tracking-wider">
-																						<Tag className="h-2.5 w-2.5" />
-																						{activeDiscount.name}
-																					</span>
-																				</div>
-																			) : (
-																				<span className="text-swapp-azul-petroleo/30 dark:text-swapp-tiza-verdoso/30">
-																					-
-																				</span>
-																			)}
-																		</td>
-
-																		<td className="px-4 py-3">
-																			{marg !== null ? (
-																				<span
-																					className={`inline-flex items-center gap-1 font-bold ${marg > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
-																					<TrendingUp
-																						className={`h-3 w-3 ${marg < 0 ? "rotate-180" : ""}`}
-																					/>{" "}
-																					{marg}%
-																				</span>
-																			) : (
-																				<span className="text-swapp-azul-petroleo/30 dark:text-swapp-tiza-verdoso/30">
-																					N/A
-																				</span>
-																			)}
-																		</td>
-																		<td className="px-4 py-3 text-right">
-																			<div className="flex items-center justify-end gap-1.5">
-																				<SwappTooltip text="Ver Historial de Cambios">
-																					<button
-																						onClick={() =>
-																							handleHistoryClick(p, v)
-																						}
-																						className="p-1.5 rounded-md text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40 hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo hover:text-swapp-azul-oceano dark:hover:text-swapp-verde-pastel transition-colors">
-																						<History className="h-3.5 w-3.5" />
-																					</button>
-																				</SwappTooltip>
-																				<SwappTooltip text="Ajustar Precios y Costos">
-																					<button
-																						onClick={() =>
-																							handleEditClick(p, v)
-																						}
-																						className="p-1.5 rounded-md text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40 hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo hover:text-swapp-verde-oscuro dark:hover:text-swapp-verde-menta transition-colors">
-																						<Edit className="h-3.5 w-3.5" />
-																					</button>
-																				</SwappTooltip>
-																			</div>
-																		</td>
-																	</tr>
+																	isGlobal ||
+																	d.variant_uuids.includes(v.variant_uuid)
 																);
-															})}
-														</tbody>
-													</table>
-												</div>
-											</td>
-										</tr>
+															},
+														);
+
+														let finalPrice = v.price;
+														if (activeDiscount) {
+															if (
+																activeDiscount.discount_type === "percentage"
+															) {
+																finalPrice =
+																	v.price * (1 - activeDiscount.value / 100);
+															} else {
+																finalPrice = Math.max(
+																	0,
+																	v.price - activeDiscount.value,
+																);
+															}
+														}
+
+														const marg = calculateMargin(
+															v.cost_price,
+															finalPrice,
+														);
+
+														const baseVariantRowClasses =
+															"border-b border-swapp-azul-petroleo/5 dark:border-swapp-azul-petroleo/20 last:border-0 transition-all duration-200";
+														const variantRowStatusStyle =
+															v.is_active !== false
+																? "hover:bg-swapp-blanco/60 dark:hover:bg-swapp-azul-petroleo/20"
+																: "opacity-60 bg-swapp-azul-petroleo/10 dark:bg-swapp-azul-oscuro/80 grayscale filter mix-blend-multiply dark:mix-blend-normal";
+
+														return (
+															<tr
+																key={v.variant_uuid}
+																className={`${baseVariantRowClasses} ${variantRowStatusStyle}`}>
+																{/* SKU VARIANTE */}
+																<td className="px-4 py-3 font-mono font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/90">
+																	{v.sku}
+																</td>
+
+																{/* COSTO INTERNO */}
+																<td className="px-4 py-3 font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+																	{v.cost_price
+																		? formatCurrency(v.cost_price)
+																		: "-"}
+																</td>
+
+																{/* PRECIO BASE */}
+																<td
+																	className={`px-4 py-3 font-bold ${activeDiscount ? "text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40 line-through text-[10px]" : "text-swapp-verde-oscuro dark:text-swapp-verde-menta"}`}>
+																	{formatCurrency(v.price)}
+																</td>
+
+																{/* PRECIO OFERTA */}
+																<td className="px-4 py-3">
+																	{activeDiscount ? (
+																		<div className="flex flex-col items-start gap-1">
+																			<span className="font-bold text-emerald-600 dark:text-emerald-400">
+																				{formatCurrency(finalPrice)}
+																			</span>
+																			<StatusBadge
+																				variant="success"
+																				className="!text-[9px]">
+																				<Tag className="h-2.5 w-2.5" />
+																				{activeDiscount.name}
+																			</StatusBadge>
+																		</div>
+																	) : (
+																		<span className="text-swapp-azul-petroleo/30 dark:text-swapp-tiza-verdoso/30 italic">
+																			-
+																		</span>
+																	)}
+																</td>
+
+																{/* MARGEN NETO */}
+																<td className="px-4 py-3">
+																	{marg !== null ? (
+																		<span
+																			className={`inline-flex items-center gap-1 font-bold ${marg > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
+																			<TrendingUp
+																				className={`h-3.5 w-3.5 ${marg < 0 ? "rotate-180" : ""}`}
+																			/>{" "}
+																			{marg}%
+																		</span>
+																	) : (
+																		<span className="text-swapp-azul-petroleo/30 dark:text-swapp-tiza-verdoso/30 italic">
+																			N/A
+																		</span>
+																	)}
+																</td>
+
+																{/* ACCIONES VARIANTES */}
+																<td className="px-4 py-3 text-right">
+																	<div className="flex items-center justify-end gap-1.5">
+																		<TableActionIcon
+																			icon={History}
+																			tooltip="Ver Historial de Cambios"
+																			size="sm"
+																			onClick={() => handleHistoryClick(p, v)}
+																		/>
+																		<TableActionIcon
+																			icon={Edit}
+																			tooltip="Ajustar Precios y Costos"
+																			size="sm"
+																			onClick={() => handleEditClick(p, v)}
+																		/>
+																	</div>
+																</td>
+															</tr>
+														);
+													})}
+												</tbody>
+											</table>
+										</AnimatedTableRow>
 									)}
 								</React.Fragment>
 							);
-						})}
-					</tbody>
-				</table>
-			</div>
+						})
+					)}
+				</tbody>
+			</GlassTableWrapper>
 
 			<EditPricingModal
 				isOpen={isEditModalOpen}

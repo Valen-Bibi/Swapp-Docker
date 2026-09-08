@@ -5,12 +5,12 @@ import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import { jwtDecode } from "jwt-decode";
 import { api } from "@/lib/api";
-import { Eye, EyeOff } from "lucide-react"; // Importamos los íconos del ojito
+import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
-	const [showPassword, setShowPassword] = useState(false); // NUEVO ESTADO
+	const [showPassword, setShowPassword] = useState(false);
 	const [error, setError] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
 	const router = useRouter();
@@ -62,7 +62,6 @@ export default function LoginPage() {
 	};
 
 	return (
-		// Mantenemos tu azul petróleo de fondo
 		<div className="flex h-screen items-center justify-center bg-swapp-azul-petroleo">
 			<form
 				onSubmit={handleLogin}
@@ -93,7 +92,6 @@ export default function LoginPage() {
 						<input
 							type={showPassword ? "text" : "password"}
 							placeholder="Contraseña"
-							// Le agregamos pr-10 para que el texto no se pise con el ícono
 							className="w-full rounded-lg border border-swapp-blanco/20 bg-swapp-blanco/5 p-3 pr-10 text-swapp-blanco placeholder-swapp-tiza-verdoso/50 focus:border-swapp-verde-menta focus:outline-none focus:ring-1 focus:ring-swapp-verde-menta disabled:opacity-50 transition-colors"
 							value={password}
 							onChange={(e) => setPassword(e.target.value)}

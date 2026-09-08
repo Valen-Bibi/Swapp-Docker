@@ -33,14 +33,12 @@ export default function NewVariantModal({
 	const [isSaving, setIsSaving] = useState(false);
 	const [clonedFrom, setClonedFrom] = useState<string | null>(null);
 
-	// --- ESTADOS PIM ---
 	const [loadingPim, setLoadingPim] = useState(true);
 	const [allowedAttributes, setAllowedAttributes] = useState<any[]>([]);
 	const [selectedValues, setSelectedValues] = useState<Record<string, string>>(
 		{},
 	);
 
-	// --- CERRAR CON ESCAPE ---
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (e.key === "Escape" && isOpen) {
@@ -211,7 +209,7 @@ export default function NewVariantModal({
 	};
 
 	return (
-		<div className="fixed inset-0 z-[100] flex items-center justify-center bg-swapp-azul-petroleo/20 dark:bg-swapp-negro/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95">
+		<div className="fixed inset-0 z-[100] flex items-center justify-center bg-swapp-azul-petroleo/5 dark:bg-swapp-negro/30 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95">
 			{/* CONTENEDOR DEL MODAL SIN BORDES EXTERNOS, SOLO BORDER-T */}
 			<div className="w-full max-w-2xl max-h-[90vh] flex flex-col rounded-xl bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md shadow-2xl border-t-4 border-t-swapp-verde-oscuro dark:border-t-swapp-verde-menta overflow-hidden transition-colors">
 				{/* HEADER ESTANDARIZADO */}

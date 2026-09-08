@@ -11,7 +11,7 @@ interface NewCategoryModalProps {
 	onClose: () => void;
 	editingCat: Partial<Category>;
 	setEditingCat: (cat: Partial<Category>) => void;
-	categories: Category[]; 
+	categories: Category[];
 	onSubmit: (e: React.FormEvent) => void;
 	isSaving: boolean;
 }
@@ -45,16 +45,23 @@ export default function NewCategoryModal({
 
 	const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const name = e.target.value;
-		setEditingCat({ ...editingCat, name, slug: generateSlug(name), parent_id: null });
+		setEditingCat({
+			...editingCat,
+			name,
+			slug: generateSlug(name),
+			parent_id: null,
+		});
 	};
 
 	return (
-		<div className="fixed inset-0 z-[100] flex items-center justify-center bg-swapp-azul-petroleo/20 dark:bg-swapp-negro/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95">
+		<div className="fixed inset-0 z-[100] flex items-center justify-center bg-swapp-azul-petroleo/5 dark:bg-swapp-negro/30 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95">
 			<div className="w-full max-w-lg rounded-xl bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md shadow-2xl border-t-4 border-t-swapp-verde-oscuro dark:border-t-swapp-verde-menta overflow-hidden transition-colors">
 				<div className="p-6 border-b border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo flex items-center justify-between shrink-0 transition-colors">
 					<h2 className="text-xl font-bold text-swapp-azul-oscuro dark:text-swapp-blanco flex items-center gap-2">
 						<FolderTree className="h-5 w-5 text-swapp-verde-oscuro dark:text-swapp-verde-menta" />
-						{editingCat.category_id ? "Editar Categoría Principal" : "Nueva Categoría Principal"}
+						{editingCat.category_id
+							? "Editar Categoría Principal"
+							: "Nueva Categoría Principal"}
 					</h2>
 					<button
 						type="button"

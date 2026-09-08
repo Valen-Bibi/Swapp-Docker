@@ -57,18 +57,20 @@ export default function NewOrderPage() {
 					description="Carga de pedidos recibidos por WhatsApp o canales informales"
 					icon={ShoppingCart}
 				/>
-				
+
 				<div className="flex items-center gap-4">
+					{/* Botón Volver con Glassmorphism */}
 					<button
 						onClick={() => router.back()}
-						className="inline-flex items-center gap-2 rounded-lg bg-swapp-tiza-verdoso/40 dark:bg-swapp-azul-petroleo/40 px-4 py-2 text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo transition-colors whitespace-nowrap">
-						<ArrowLeft className="h-4 w-4" /> Volver a Pedidos
+						className="inline-flex items-center gap-2 rounded-xl bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo px-4 py-2 text-sm font-medium text-swapp-azul-oscuro dark:text-swapp-tiza-verdoso hover:bg-swapp-blanco/80 dark:hover:bg-swapp-azul-petroleo transition-colors whitespace-nowrap shadow-sm">
+						<ArrowLeft className="h-4 w-4 text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70" />{" "}
+						Volver a Pedidos
 					</button>
 				</div>
 			</div>
 
-			{/* CONTENEDOR DEL FORMULARIO (GLASSMORPHISM) */}
-			<div className="rounded-xl border border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 bg-swapp-blanco/40 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm shadow-sm transition-all duration-300 p-6 sm:p-8">
+			{/* CONTENEDOR DEL FORMULARIO ESTANDARIZADO (GLASSMORPHISM) */}
+			<div className="rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md shadow-xl transition-all duration-300 p-6 sm:p-8">
 				<FormProvider {...methods}>
 					<form
 						onSubmit={methods.handleSubmit(onSubmit)}

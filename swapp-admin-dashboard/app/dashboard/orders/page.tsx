@@ -36,7 +36,7 @@ export default function OrdersPage() {
 	const [orders, setOrders] = useState<Order[]>([]);
 	const [products, setProducts] = useState<Product[]>([]);
 	const [loading, setLoading] = useState(true);
-	
+
 	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 	const [editingOrder, setEditingOrder] = useState<Order | null>(null);
 
@@ -48,16 +48,19 @@ export default function OrdersPage() {
 
 	// Estados del Modal de Estado
 	const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-	const [selectedOrderUuid, setSelectedOrderUuid] = useState<string | null>(null);
-	const [actionType, setActionType] = useState<"complete" | "cancel" | null>(null);
+	const [selectedOrderUuid, setSelectedOrderUuid] = useState<string | null>(
+		null,
+	);
+	const [actionType, setActionType] = useState<"complete" | "cancel" | null>(
+		null,
+	);
 	const [isUpdating, setIsUpdating] = useState(false);
 
-	// Cargamos Pedidos y Catálogo en paralelo
 	const fetchData = async () => {
 		try {
 			const [ordersData, productsData] = await Promise.all([
 				OrderService.getOrders(),
-				ProductService.getAll()
+				ProductService.getAll(),
 			]);
 			setOrders(ordersData);
 			setProducts(productsData);
@@ -79,7 +82,6 @@ export default function OrdersPage() {
 		);
 	};
 
-	// --- MANEJO DEL MODAL DE ESTADO ---
 	const handleStatusClick = (
 		orderUuid: string,
 		type: "complete" | "cancel",
@@ -115,7 +117,6 @@ export default function OrdersPage() {
 		}
 	};
 
-	// --- FILTROS ---
 	const filteredOrders = orders.filter((order) => {
 		const matchesSearch =
 			order.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -130,7 +131,6 @@ export default function OrdersPage() {
 			if (!order.scheduled_delivery_date) {
 				matchesDate = false;
 			} else {
-				// Compara fechas ignorando la hora
 				const today = new Date().toISOString().split("T")[0];
 				const orderDate = new Date(order.scheduled_delivery_date)
 					.toISOString()
@@ -142,7 +142,6 @@ export default function OrdersPage() {
 		return matchesSearch && matchesStatus && matchesDate;
 	});
 
-	// --- ORDENAMIENTO ---
 	const {
 		sortedData: processedOrders,
 		sortKey,
@@ -154,24 +153,24 @@ export default function OrdersPage() {
 		status: (o) => o.status,
 	});
 
-	// --- AYUDANTES VISUALES ---
+	// --- BADGES ESTANDARIZADOS (GLASSMORPHISM) ---
 	const getStatusBadge = (status: string) => {
 		switch (status) {
 			case "pending":
 				return (
-					<span className="inline-flex items-center gap-1.5 rounded-full bg-yellow-100 dark:bg-yellow-500/10 px-2.5 py-1 text-xs font-semibold text-yellow-800 dark:text-yellow-500">
+					<span className="inline-flex items-center gap-1.5 rounded-md border border-yellow-500/20 bg-yellow-500/10 px-2 py-1 text-xs font-semibold text-yellow-600 dark:text-yellow-500 shadow-sm">
 						<Clock className="h-3.5 w-3.5" /> En Proceso
 					</span>
 				);
 			case "completed":
 				return (
-					<span className="inline-flex items-center gap-1.5 rounded-full bg-swapp-verde-pastel/10 dark:bg-swapp-verde-menta/10 px-2.5 py-1 text-xs font-semibold text-swapp-verde-oscuro dark:text-swapp-verde-menta">
+					<span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 shadow-sm">
 						<CheckCircle2 className="h-3.5 w-3.5" /> Entregado
 					</span>
 				);
 			case "cancelled":
 				return (
-					<span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 dark:bg-red-500/10 px-2.5 py-1 text-xs font-semibold text-red-600 dark:text-red-400">
+					<span className="inline-flex items-center gap-1.5 rounded-md border border-red-500/20 bg-red-500/10 px-2 py-1 text-xs font-semibold text-red-600 dark:text-red-400 shadow-sm">
 						<XCircle className="h-3.5 w-3.5" /> Cancelado
 					</span>
 				);
@@ -194,11 +193,11 @@ export default function OrdersPage() {
 
 				<div className="flex flex-wrap items-center gap-4">
 					{/* Toggle estandarizado para Entregas de Hoy */}
-					<div className="flex items-center gap-2 bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/30 px-3 py-1.5 rounded-lg border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo transition-colors">
+					<div className="flex items-center gap-3 bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md px-3 py-1.5 rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo transition-colors shadow-sm">
 						<Calendar
-							className={`h-4 w-4 ${showTodayOnly ? "text-swapp-verde-oscuro dark:text-swapp-verde-menta" : "text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50"}`}
+							className={`h-4 w-4 transition-colors ${showTodayOnly ? "text-swapp-verde-oscuro dark:text-swapp-verde-menta" : "text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50"}`}
 						/>
-						<span className="text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso whitespace-nowrap">
+						<span className="text-sm font-medium text-swapp-azul-oscuro dark:text-swapp-tiza-verdoso whitespace-nowrap">
 							{showTodayOnly ? "Entregas de Hoy" : "Filtrar por Hoy"}
 						</span>
 						<SwappToggle
@@ -212,13 +211,13 @@ export default function OrdersPage() {
 						<select
 							value={statusFilter}
 							onChange={(e) => setStatusFilter(e.target.value)}
-							className="rounded-lg border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro px-3 py-1.5 text-sm text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso outline-none focus:ring-1 focus:ring-swapp-verde-oscuro transition-colors">
+							className="rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md shadow-sm px-3 py-1.5 text-sm font-medium text-swapp-azul-oscuro dark:text-swapp-tiza-verdoso outline-none focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta transition-colors">
 							<option value="all">Todos los estados</option>
 							<option value="pending">En Proceso</option>
 							<option value="completed">Entregados</option>
 							<option value="cancelled">Cancelados</option>
 						</select>
-						
+
 						<SearchBar
 							searchTerm={searchTerm}
 							onSearchChange={setSearchTerm}
@@ -228,10 +227,11 @@ export default function OrdersPage() {
 				</div>
 			</div>
 
-			{/* CONTENEDOR DE TABLA (GLASSMORPHISM) */}
-			<div className="rounded-xl border border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 bg-swapp-blanco/40 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm shadow-sm transition-all duration-300 overflow-visible sm:overflow-auto">
-				<table className="w-full text-left text-sm text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso min-w-[800px]">
-					<thead className="bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/20 border-b border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 select-none">
+			{/* CONTENEDOR DE TABLA ESTANDARIZADO (GLASSMORPHISM) */}
+			<div className="rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md shadow-xl transition-all duration-300 overflow-visible sm:overflow-auto">
+				<table className="w-full text-left text-sm text-swapp-azul-oscuro dark:text-swapp-blanco min-w-[800px]">
+					{/* CABECERA ENTERPRISE GRID MÁS OSCURA */}
+					<thead className="bg-swapp-azul-petroleo/10 dark:bg-swapp-azul-petroleo/40 border-b border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo select-none">
 						<tr>
 							<SortableHeader
 								label="Cliente / Contacto"
@@ -240,7 +240,9 @@ export default function OrdersPage() {
 								currentDirection={sortDirection}
 								onSort={handleSort}
 							/>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">Ubicación de Entrega</th>
+							<th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/70">
+								Ubicación de Entrega
+							</th>
 							<SortableHeader
 								label="Fechas y Estado"
 								columnKey="date"
@@ -255,7 +257,9 @@ export default function OrdersPage() {
 								currentDirection={sortDirection}
 								onSort={handleSort}
 							/>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 text-right">Acciones</th>
+							<th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/70 text-right">
+								Acciones
+							</th>
 						</tr>
 					</thead>
 					<tbody className="">
@@ -272,20 +276,20 @@ export default function OrdersPage() {
 								const itemsCount = order.items?.length || 0;
 								const isExpanded = expandedRows.includes(order.order_uuid);
 
-								// Cálculo Global de Logística Inversa
 								const totalExpectedReturns = order.items?.reduce(
 									(acc, item) => acc + (item.expected_return_qty || 0),
 									0,
 								);
 								const cleanPhone = order.customer_phone.replace(/\D/g, "");
 
-								// Lógica visual estandarizada para filas
-								const baseRowClasses = "border-b border-swapp-tiza-verdoso/40 dark:border-swapp-azul-petroleo/40 last:border-0 transition-colors duration-200";
-								
-								// Si el pedido está cancelado, le aplicamos el filtro grisáceo
-								const rowStatusStyle = order.status === "cancelled"
-									? "opacity-60 bg-swapp-tiza-verdoso/40 dark:bg-swapp-azul-oscuro/80 grayscale filter mix-blend-multiply dark:mix-blend-normal hover:bg-swapp-tiza-verdoso/50 dark:hover:bg-swapp-azul-oscuro/90"
-									: `hover:bg-swapp-blanco/60 dark:hover:bg-swapp-azul-petroleo/20 ${isExpanded ? "bg-swapp-blanco/60 dark:bg-swapp-azul-petroleo/20" : ""}`;
+								const baseRowClasses =
+									"border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50 last:border-0 transition-colors duration-200";
+
+								// Si el pedido está cancelado, aplicamos estilo tenue
+								const rowStatusStyle =
+									order.status === "cancelled"
+										? "opacity-60 bg-swapp-azul-petroleo/10 dark:bg-swapp-azul-oscuro/80 hover:bg-swapp-azul-petroleo/20 dark:hover:bg-swapp-azul-oscuro/90"
+										: `hover:bg-swapp-blanco/80 dark:hover:bg-swapp-azul-petroleo/30 ${isExpanded ? "bg-swapp-blanco/80 dark:bg-swapp-azul-petroleo/30" : ""}`;
 
 								return (
 									<React.Fragment key={order.order_uuid}>
@@ -293,11 +297,11 @@ export default function OrdersPage() {
 										<tr className={`${baseRowClasses} ${rowStatusStyle}`}>
 											<td className="px-6 py-4">
 												<div className="flex flex-col gap-1.5">
-													<span className="font-semibold text-swapp-azul-oscuro dark:text-swapp-blanco text-base">
+													<span className="font-bold text-swapp-azul-oscuro dark:text-swapp-blanco text-base">
 														{order.customer_name}
 													</span>
 													<div className="flex items-center gap-2 text-xs">
-														<span className="text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+														<span className="font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
 															{order.customer_phone}
 														</span>
 														<SwappTooltip text="WhatsApp Cliente">
@@ -305,7 +309,7 @@ export default function OrdersPage() {
 																href={`https://web.whatsapp.com/send?phone=${cleanPhone}&text=Hola%20${order.customer_name},%20te%20escribimos%20de%20Swapp%20por%20tu%20pedido.`}
 																target="_blank"
 																rel="noopener noreferrer"
-																className="text-green-600 hover:text-green-700 bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/40 p-1 rounded-md transition-colors">
+																className="text-emerald-600 hover:text-emerald-700 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 p-1 rounded-md transition-colors shadow-sm">
 																<MessageCircle className="h-3.5 w-3.5" />
 															</a>
 														</SwappTooltip>
@@ -315,18 +319,17 @@ export default function OrdersPage() {
 
 											<td className="px-6 py-4">
 												<div className="flex flex-col gap-1.5">
-													<span className="font-medium text-swapp-azul-oscuro dark:text-swapp-blanco">
+													<span className="font-bold text-swapp-azul-oscuro dark:text-swapp-blanco">
 														{order.delivery_zone || "Zona no especificada"}
 													</span>
-													<div className="flex items-start gap-1.5 text-xs text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+													<div className="flex items-start gap-1.5 text-xs font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
 														<MapPin className="h-3.5 w-3.5 shrink-0 mt-0.5 text-swapp-verde-oscuro dark:text-swapp-verde-menta" />
-
 														<SwappTooltip text="Ver Ubicación en Maps">
 															<a
 																href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${order.delivery_address}${order.delivery_zone ? ", " + order.delivery_zone : ""}, Argentina`)}`}
 																target="_blank"
 																rel="noopener noreferrer"
-																className="max-w-[200px] truncate hover:text-swapp-verde-oscuro dark:hover:text-swapp-verde-menta hover:underline transition-all cursor-pointer">
+																className="max-w-[200px] truncate hover:text-swapp-verde-oscuro dark:hover:text-swapp-verde-menta transition-colors cursor-pointer">
 																{order.delivery_address}
 															</a>
 														</SwappTooltip>
@@ -338,7 +341,7 @@ export default function OrdersPage() {
 												<div className="flex flex-col items-start gap-2">
 													{getStatusBadge(order.status)}
 
-													<div className="flex flex-col gap-0.5">
+													<div className="flex flex-col gap-0.5 mt-1">
 														<span className="text-[11px] text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50 font-medium">
 															Creado:{" "}
 															{new Date(order.created_at).toLocaleDateString(
@@ -346,7 +349,7 @@ export default function OrdersPage() {
 															)}
 														</span>
 														{order.scheduled_delivery_date ? (
-															<span className="text-xs font-semibold text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
+															<span className="text-xs font-bold text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
 																Entrega:{" "}
 																{new Date(
 																	order.scheduled_delivery_date,
@@ -358,7 +361,7 @@ export default function OrdersPage() {
 																})}
 															</span>
 														) : (
-															<span className="text-swapp-azul-petroleo/60">
+															<span className="text-swapp-azul-petroleo/60 italic text-xs">
 																Sin fecha de entrega
 															</span>
 														)}
@@ -371,10 +374,9 @@ export default function OrdersPage() {
 													<span className="font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta text-lg">
 														{formatCurrency(order.total_amount)}
 													</span>
-													{/* Indicador Global de Logística Inversa */}
 													{totalExpectedReturns > 0 &&
 														order.status === "pending" && (
-															<span className="inline-flex items-center gap-1 text-[10px] font-medium text-swapp-verde-pastel dark:text-swapp-verde-menta bg-swapp-verde-pastel/10 dark:bg-swapp-verde-menta/10 px-2 py-0.5 rounded-full border border-swapp-verde-pastel/20 w-fit">
+															<span className="inline-flex items-center gap-1 text-[10px] font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta bg-swapp-verde-oscuro/10 dark:bg-swapp-verde-menta/10 px-2 py-0.5 rounded-md border border-swapp-verde-oscuro/20 dark:border-swapp-verde-menta/20 shadow-sm w-fit">
 																<Recycle className="h-3 w-3" /> Traer:{" "}
 																{totalExpectedReturns} un.
 															</span>
@@ -387,7 +389,7 @@ export default function OrdersPage() {
 													{/* Botón Acordeón */}
 													<button
 														onClick={() => toggleRow(order.order_uuid)}
-														className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo transition-colors text-swapp-verde-oscuro dark:text-swapp-verde-menta font-sans font-medium text-xs">
+														className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo bg-swapp-blanco/60 dark:bg-swapp-azul-oscuro/60 hover:bg-swapp-blanco dark:hover:bg-swapp-azul-petroleo transition-colors text-swapp-verde-oscuro dark:text-swapp-verde-menta font-sans font-bold text-xs shadow-sm">
 														<ListOrdered className="h-3.5 w-3.5" />
 														{isExpanded ? (
 															<ChevronDown className="h-4 w-4" />
@@ -398,7 +400,7 @@ export default function OrdersPage() {
 
 													{order.status === "pending" && (
 														<>
-															<div className="w-px h-5 bg-swapp-tiza-verdoso dark:bg-swapp-azul-petroleo mx-1" />
+															<div className="w-px h-5 bg-swapp-azul-petroleo/20 dark:bg-swapp-azul-petroleo mx-1" />
 															<SwappTooltip text="Pedido Completado">
 																<button
 																	onClick={() =>
@@ -407,7 +409,7 @@ export default function OrdersPage() {
 																			"complete",
 																		)
 																	}
-																	className="p-1.5 rounded-md text-swapp-azul-petroleo/50 hover:text-swapp-azul-oceano dark:text-swapp-tiza-verdoso/50 dark:hover:text-swapp-verde-pastel hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo transition-colors">
+																	className="p-1.5 rounded-md border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors shadow-sm">
 																	<CheckCircle2 className="h-4 w-4" />
 																</button>
 															</SwappTooltip>
@@ -419,7 +421,7 @@ export default function OrdersPage() {
 																			"cancel",
 																		)
 																	}
-																	className="p-1.5 rounded-md text-swapp-azul-petroleo/40 hover:text-red-500 dark:text-swapp-tiza-verdoso/40 hover:bg-red-500/10 transition-colors">
+																	className="p-1.5 rounded-md border border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors shadow-sm">
 																	<XCircle className="h-4 w-4" />
 																</button>
 															</SwappTooltip>
@@ -429,7 +431,7 @@ export default function OrdersPage() {
 																		setEditingOrder(order);
 																		setIsEditModalOpen(true);
 																	}}
-																	className="p-1.5 rounded-md text-swapp-azul-petroleo/50 hover:text-swapp-azul-oceano dark:text-swapp-tiza-verdoso/50 dark:hover:text-swapp-verde-pastel hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo transition-colors">
+																	className="p-2 rounded-lg text-swapp-azul-petroleo/50 hover:text-swapp-verde-oscuro dark:text-swapp-tiza-verdoso/50 dark:hover:text-swapp-verde-menta hover:bg-swapp-blanco dark:hover:bg-swapp-azul-petroleo transition-colors">
 																	<Edit className="h-4 w-4" />
 																</button>
 															</SwappTooltip>
@@ -439,92 +441,112 @@ export default function OrdersPage() {
 											</td>
 										</tr>
 
-										{/* ACORDEÓN DESPLEGABLE */}
-										{isExpanded && (
-											<tr className="bg-swapp-tiza-verdoso/10 dark:bg-swapp-azul-oscuro border-b border-swapp-tiza-verdoso/40 dark:border-swapp-azul-petroleo/40">
-												<td colSpan={5} className="px-6 py-4">
-													<div className="flex flex-col gap-4">
-														{/* Notas del Repartidor */}
-														{order.logistics_notes && (
-															<div className="flex items-start gap-2 p-3 rounded-lg bg-swapp-blanco dark:bg-swapp-azul-petroleo/30 border border-yellow-200 dark:border-yellow-900/30">
-																<FileText className="h-4 w-4 text-yellow-600 dark:text-yellow-500 mt-0.5" />
-																<div>
-																	<p className="text-[10px] font-bold text-yellow-800 dark:text-yellow-500 uppercase tracking-wide">
-																		Notas para el Repartidor
-																	</p>
-																	<p className="text-sm text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso mt-0.5">
-																		{order.logistics_notes}
-																	</p>
+										{/* ACORDEÓN DESPLEGABLE ANIMADO CON CSS GRID Y FONDO AL 2% */}
+										{itemsCount > 0 && (
+											<tr
+												className={`bg-swapp-azul-petroleo/2 dark:bg-swapp-azul-petroleo/10 transition-colors duration-300 ${isExpanded ? "border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50" : "border-b-0"}`}>
+												<td colSpan={5} className="p-0">
+													<div
+														className={`grid transition-all duration-300 ease-in-out ${isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
+														<div className="overflow-hidden">
+															<div className="px-6 py-4 flex flex-col gap-4">
+																{/* Notas del Repartidor */}
+																{order.logistics_notes && (
+																	<div className="flex items-start gap-2 p-3 rounded-xl bg-yellow-500/10 dark:bg-yellow-500/5 border border-yellow-500/20 shadow-sm backdrop-blur-sm">
+																		<FileText className="h-4 w-4 text-yellow-600 dark:text-yellow-500 mt-0.5" />
+																		<div>
+																			<p className="text-[10px] font-bold text-yellow-600 dark:text-yellow-500 uppercase tracking-wide">
+																				Notas para el Repartidor
+																			</p>
+																			<p className="text-sm font-medium text-swapp-azul-oscuro dark:text-swapp-tiza-verdoso mt-0.5">
+																				{order.logistics_notes}
+																			</p>
+																		</div>
+																	</div>
+																)}
+
+																{/* Tabla de Productos Anidada */}
+																<div className="rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 overflow-hidden bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md shadow-sm">
+																	<table className="w-full text-xs text-left">
+																		<thead className="bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/20 border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50">
+																			<tr>
+																				<th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/70 w-2/5">
+																					Producto y SKU
+																				</th>
+																				<th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/70 w-1/5 text-center">
+																					Cantidad
+																				</th>
+																				<th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/70 w-1/5">
+																					Logística Inversa
+																				</th>
+																				<th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/70 text-right w-1/5">
+																					Subtotal
+																				</th>
+																			</tr>
+																		</thead>
+																		<tbody className="">
+																			{order.items.map((item, idx) => {
+																				const productInfo = products.find(
+																					(p) =>
+																						p.product_id === item.product_id,
+																				);
+																				const variantInfo =
+																					productInfo?.variants?.find(
+																						(v) =>
+																							v.variant_id === item.variant_id,
+																					);
+
+																				const baseVariantRowClasses =
+																					"border-b border-swapp-azul-petroleo/5 dark:border-swapp-azul-petroleo/20 last:border-0 transition-all duration-200";
+																				const variantRowStatusStyle =
+																					order.status === "cancelled"
+																						? ""
+																						: "hover:bg-swapp-blanco/60 dark:hover:bg-swapp-azul-petroleo/20";
+
+																				return (
+																					<tr
+																						key={idx}
+																						className={`${baseVariantRowClasses} ${variantRowStatusStyle}`}>
+																						<td className="px-4 py-3">
+																							<span className="font-bold text-swapp-azul-oscuro dark:text-swapp-blanco block">
+																								{productInfo?.name ||
+																									`Producto ID: ${item.product_id}`}
+																							</span>
+																							{item.variant_id && (
+																								<span className="font-mono font-medium text-[10px] text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 mt-0.5 block">
+																									SKU:{" "}
+																									{variantInfo?.sku ||
+																										`Var ID: ${item.variant_id}`}
+																								</span>
+																							)}
+																						</td>
+																						<td className="px-4 py-3 text-center font-bold text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
+																							{item.quantity} x{" "}
+																							{formatCurrency(item.unit_price)}
+																						</td>
+																						<td className="px-4 py-3">
+																							{item.requires_return ? (
+																								<div className="inline-flex items-center gap-1 text-[10px] text-swapp-verde-oscuro dark:text-swapp-verde-menta font-bold bg-swapp-verde-oscuro/10 dark:bg-swapp-verde-menta/10 px-2 py-1 rounded-md border border-swapp-verde-oscuro/20 dark:border-swapp-verde-menta/20 shadow-sm">
+																									<Recycle className="h-3 w-3" />
+																									Recuperar:{" "}
+																									{item.expected_return_qty} un.
+																								</div>
+																							) : (
+																								<span className="text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40 italic">
+																									No aplica
+																								</span>
+																							)}
+																						</td>
+																						<td className="px-4 py-3 text-right font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta">
+																							{formatCurrency(item.subtotal)}
+																						</td>
+																					</tr>
+																				);
+																			})}
+																		</tbody>
+																	</table>
 																</div>
 															</div>
-														)}
-
-														{/* Tabla de Productos Anidada */}
-														<div className="rounded-lg border border-swapp-tiza-verdoso/50 dark:border-swapp-azul-petroleo/50 overflow-hidden bg-swapp-blanco dark:bg-swapp-azul-oscuro/50 shadow-sm">
-															<table className="w-full text-xs text-left">
-																<thead className="bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/20 border-b border-swapp-tiza-verdoso/50 dark:border-swapp-azul-petroleo/50">
-																	<tr>
-																		<th className="px-4 py-3 text-[10px] uppercase tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 w-2/5">
-																			Producto y SKU
-																		</th>
-																		<th className="px-4 py-3 text-[10px] uppercase tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 w-1/5 text-center">
-																			Cantidad
-																		</th>
-																		<th className="px-4 py-3 text-[10px] uppercase tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 w-1/5">
-																			Logística Inversa
-																		</th>
-																		<th className="px-4 py-3 text-[10px] uppercase tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 text-right w-1/5">
-																			Subtotal
-																		</th>
-																	</tr>
-																</thead>
-																<tbody className="">
-																	{order.items.map((item, idx) => {
-																		const productInfo = products.find(p => p.product_id === item.product_id);
-																		const variantInfo = productInfo?.variants?.find(v => v.variant_id === item.variant_id);
-
-																		const baseVariantRowClasses = "border-b border-swapp-tiza-verdoso/30 dark:border-swapp-azul-petroleo/30 last:border-0 transition-all duration-200";
-																		const variantRowStatusStyle = order.status === "cancelled" ? "" : "hover:bg-swapp-tiza-verdoso/30 dark:hover:bg-swapp-azul-petroleo/30";
-
-																		return (
-																			<tr
-																				key={idx}
-																				className={`${baseVariantRowClasses} ${variantRowStatusStyle}`}>
-																				<td className="px-4 py-3">
-																					<span className="font-medium text-swapp-azul-oscuro dark:text-swapp-blanco block">
-																						{productInfo?.name || `Producto ID: ${item.product_id}`}
-																					</span>
-																					{item.variant_id && (
-																						<span className="font-mono text-[10px] text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 mt-0.5 block">
-																							SKU: {variantInfo?.sku || `Var ID: ${item.variant_id}`}
-																						</span>
-																					)}
-																				</td>
-																				<td className="px-4 py-3 text-center font-semibold text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
-																					{item.quantity} x{" "}
-																					{formatCurrency(item.unit_price)}
-																				</td>
-																				<td className="px-4 py-3">
-																					{item.requires_return ? (
-																						<div className="inline-flex items-center gap-1 text-[10px] text-swapp-verde-pastel dark:text-swapp-verde-menta font-medium bg-swapp-verde-pastel/10 dark:bg-swapp-verde-menta/10 px-2 py-1 rounded-full border border-swapp-verde-pastel/20 dark:border-swapp-verde-menta/20">
-																							<Recycle className="h-3 w-3" />
-																							Recuperar:{" "}
-																							{item.expected_return_qty} un.
-																						</div>
-																					) : (
-																						<span className="text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40 italic">
-																							No aplica
-																						</span>
-																					)}
-																				</td>
-																				<td className="px-4 py-3 text-right font-medium text-swapp-azul-oscuro dark:text-swapp-blanco">
-																					{formatCurrency(item.subtotal)}
-																				</td>
-																			</tr>
-																		);
-																	})}
-																</tbody>
-															</table>
 														</div>
 													</div>
 												</td>

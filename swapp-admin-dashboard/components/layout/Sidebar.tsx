@@ -134,7 +134,7 @@ export default function Sidebar() {
 		},
 		{
 			path: "/dashboard/products/catalog/attributes",
-			label: "Atributos (PIM)",
+			label: "Atributos",
 			icon: Tag,
 		},
 	];
@@ -183,7 +183,7 @@ export default function Sidebar() {
 
 	return (
 		<aside
-			className={`flex-shrink-0 bg-swapp-blanco dark:bg-swapp-azul-oscuro border-r border-swapp-tiza-verdoso dark:border-none flex flex-col overflow-y-auto overflow-x-hidden transition-all duration-300 ease-in-out relative z-20 custom-scrollbar ${
+			className={`flex-shrink-0 bg-swapp-blanco dark:bg-swapp-azul-oscuro/70 border-r border-swapp-tiza-verdoso dark:border-none flex flex-col overflow-y-auto overflow-x-hidden transition-all duration-300 ease-in-out relative z-20 custom-scrollbar ${
 				isCollapsed ? "w-20" : "w-73"
 			}`}>
 			<div className="flex items-center justify-between p-4 border-b border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo transition-colors h-[89px]">
@@ -251,17 +251,17 @@ export default function Sidebar() {
 
 							<div
 								className={`overflow-hidden transition-all duration-300 ease-in-out relative flex flex-col gap-1 ${!isCollapsed && isCatalogExpanded ? "max-h-[400px] opacity-100 mt-1 pl-[14px] py-1.5" : "max-h-0 opacity-0"}`}>
-								{/* NUEVA LÍNEA DE GUÍA INTERNA */}
-								<div className="absolute left-0 top-0 bottom-0 w-[2px] bg-swapp-verde-oscuro/40 dark:bg-swapp-azul-petroleo/70" />
+								{/* LÍNEA DE GUÍA (RIEL) ESTANDARIZADA */}
+								<div className="absolute left-0 top-0 bottom-0 w-[2px] bg-swapp-azul-petroleo/10 dark:bg-swapp-azul-petroleo/40 rounded-full" />
 
 								{activeCatalogIndex >= 0 && (
 									<div
-										// Modificado: left-[14px] y z-10
-										className="absolute left-[14px] right-0 top-1.5 h-[40px] z-10 rounded-lg bg-swapp-tiza-verdoso/40 dark:bg-swapp-azul-petroleo/40 backdrop-blur-md border border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 shadow-md transition-transform duration-400 ease-out pointer-events-none"
+										// PASTILLA (ASCENSOR GLASSMORPHISM)
+										className="absolute left-[14px] right-0 top-1.5 h-[40px] z-10 rounded-lg bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 shadow-md transition-transform duration-300 ease-out pointer-events-none"
 										style={{
 											transform: `translateY(${activeCatalogIndex * 44}px)`,
 										}}>
-										<span className="absolute -left-[14px] top-1/2 -translate-y-1/2 h-3/5 w-[2px] bg-swapp-verde-oscuro dark:bg-swapp-verde-menta rounded-full" />
+										<span className="absolute -left-[14px] top-1/2 -translate-y-1/2 h-3/5 w-[2px] bg-swapp-verde-oscuro dark:bg-swapp-verde-menta rounded-full shadow-[0_0_8px_rgba(29,61,43,0.4)] dark:shadow-[0_0_8px_rgba(141,201,160,0.4)]" />
 									</div>
 								)}
 
@@ -305,17 +305,17 @@ export default function Sidebar() {
 
 							<div
 								className={`overflow-hidden transition-all duration-300 ease-in-out relative flex flex-col gap-1 ${!isCollapsed && isInventoryExpanded ? "max-h-[400px] opacity-100 mt-1 pl-[14px] py-1.5" : "max-h-0 opacity-0"}`}>
-								{/* NUEVA LÍNEA DE GUÍA INTERNA */}
-								<div className="absolute left-0 top-0 bottom-0 w-[2px] bg-swapp-verde-oscuro/40 dark:bg-swapp-azul-petroleo/70" />
+								{/* LÍNEA DE GUÍA (RIEL) ESTANDARIZADA */}
+								<div className="absolute left-0 top-0 bottom-0 w-[2px] bg-swapp-azul-petroleo/10 dark:bg-swapp-azul-petroleo/40 rounded-full" />
 
 								{activeInventoryIndex >= 0 && (
 									<div
-										// Modificado: left-[14px] y z-10
-										className="absolute left-[14px] right-0 top-1.5 h-[40px] z-10 rounded-lg bg-swapp-tiza-verdoso/40 dark:bg-swapp-azul-petroleo/40 backdrop-blur-md border border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 shadow-md transition-transform duration-400 ease-out pointer-events-none"
+										// PASTILLA (ASCENSOR GLASSMORPHISM)
+										className="absolute left-[14px] right-0 top-1.5 h-[40px] z-10 rounded-lg bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 shadow-md transition-transform duration-300 ease-out pointer-events-none"
 										style={{
 											transform: `translateY(${activeInventoryIndex * 44}px)`,
 										}}>
-										<span className="absolute -left-[14px] top-1/2 -translate-y-1/2 h-3/5 w-[2px] bg-swapp-verde-oscuro dark:bg-swapp-verde-menta rounded-full" />
+										<span className="absolute -left-[14px] top-1/2 -translate-y-1/2 h-3/5 w-[2px] bg-swapp-verde-oscuro dark:bg-swapp-verde-menta rounded-full shadow-[0_0_8px_rgba(29,61,43,0.4)] dark:shadow-[0_0_8px_rgba(141,201,160,0.4)]" />
 									</div>
 								)}
 								{inventoryLinks.map((link, idx) => (
@@ -358,17 +358,17 @@ export default function Sidebar() {
 
 							<div
 								className={`overflow-hidden transition-all duration-300 ease-in-out relative flex flex-col gap-1 ${!isCollapsed && isPricingExpanded ? "max-h-[400px] opacity-100 mt-1 pl-[14px] py-1.5" : "max-h-0 opacity-0"}`}>
-								{/* NUEVA LÍNEA DE GUÍA INTERNA */}
-								<div className="absolute left-0 top-0 bottom-0 w-[2px] bg-swapp-verde-oscuro/40 dark:bg-swapp-azul-petroleo/70" />
+								{/* LÍNEA DE GUÍA (RIEL) ESTANDARIZADA */}
+								<div className="absolute left-0 top-0 bottom-0 w-[2px] bg-swapp-azul-petroleo/10 dark:bg-swapp-azul-petroleo/40 rounded-full" />
 
 								{activePricingIndex >= 0 && (
 									<div
-										// Modificado: left-[14px] y z-10
-										className="absolute left-[14px] right-0 top-1.5 h-[40px] z-10 rounded-lg bg-swapp-tiza-verdoso/40 dark:bg-swapp-azul-petroleo/40 backdrop-blur-md border border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 shadow-md transition-transform duration-400 ease-out pointer-events-none"
+										// PASTILLA (ASCENSOR GLASSMORPHISM)
+										className="absolute left-[14px] right-0 top-1.5 h-[40px] z-10 rounded-lg bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 shadow-md transition-transform duration-300 ease-out pointer-events-none"
 										style={{
 											transform: `translateY(${activePricingIndex * 44}px)`,
 										}}>
-										<span className="absolute -left-[14px] top-1/2 -translate-y-1/2 h-3/5 w-[2px] bg-swapp-verde-oscuro dark:bg-swapp-verde-menta rounded-full" />
+										<span className="absolute -left-[14px] top-1/2 -translate-y-1/2 h-3/5 w-[2px] bg-swapp-verde-oscuro dark:bg-swapp-verde-menta rounded-full shadow-[0_0_8px_rgba(29,61,43,0.4)] dark:shadow-[0_0_8px_rgba(141,201,160,0.4)]" />
 									</div>
 								)}
 								{pricingLinks.map((link, idx) => (
@@ -425,17 +425,17 @@ export default function Sidebar() {
 
 							<div
 								className={`overflow-hidden transition-all duration-300 ease-in-out relative flex flex-col gap-1 ${!isCollapsed && isOrdersExpanded ? "max-h-[400px] opacity-100 mt-1 pl-[14px] py-1.5" : "max-h-0 opacity-0"}`}>
-								{/* NUEVA LÍNEA DE GUÍA INTERNA */}
-								<div className="absolute left-0 top-0 bottom-0 w-[2px] bg-swapp-verde-oscuro/40 dark:bg-swapp-azul-petroleo/70" />
+								{/* LÍNEA DE GUÍA (RIEL) ESTANDARIZADA */}
+								<div className="absolute left-0 top-0 bottom-0 w-[2px] bg-swapp-azul-petroleo/10 dark:bg-swapp-azul-petroleo/40 rounded-full" />
 
 								{activeOrdersIndex >= 0 && (
 									<div
-										// Modificado: left-[14px] y z-10
-										className="absolute left-[14px] right-0 top-1.5 h-[40px] z-10 rounded-lg bg-swapp-tiza-verdoso/40 dark:bg-swapp-azul-petroleo/40 backdrop-blur-md border border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 shadow-md transition-transform duration-400 ease-out pointer-events-none"
+										// PASTILLA (ASCENSOR GLASSMORPHISM)
+										className="absolute left-[14px] right-0 top-1.5 h-[40px] z-10 rounded-lg bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 shadow-md transition-transform duration-300 ease-out pointer-events-none"
 										style={{
 											transform: `translateY(${activeOrdersIndex * 44}px)`,
 										}}>
-										<span className="absolute -left-[14px] top-1/2 -translate-y-1/2 h-3/5 w-[2px] bg-swapp-verde-oscuro dark:bg-swapp-verde-menta rounded-full" />
+										<span className="absolute -left-[14px] top-1/2 -translate-y-1/2 h-3/5 w-[2px] bg-swapp-verde-oscuro dark:bg-swapp-verde-menta rounded-full shadow-[0_0_8px_rgba(29,61,43,0.4)] dark:shadow-[0_0_8px_rgba(141,201,160,0.4)]" />
 									</div>
 								)}
 
@@ -467,10 +467,9 @@ export default function Sidebar() {
 						className={`space-y-1 transition-all duration-300 ${!isCollapsed ? "ml-4" : ""}`}>
 						<div className="flex flex-col gap-1">
 							<SwappTooltip text={isCollapsed ? "Clientes (Próximamente)" : ""}>
-								{/* En este menú que aún no tiene links desplegables, también aplicamos la guía para que todo sea consistente */}
 								<div
 									className={`overflow-hidden transition-all duration-300 ease-in-out relative flex flex-col gap-1 ${!isCollapsed ? "max-h-[400px] opacity-100 mt-1 pl-[14px] py-1.5" : "max-h-0 opacity-0"}`}>
-									<div className="absolute left-0 top-0 bottom-0 w-[2px] bg-swapp-verde-oscuro/40 dark:bg-swapp-azul-petroleo/70" />
+									<div className="absolute left-0 top-0 bottom-0 w-[2px] bg-swapp-azul-petroleo/10 dark:bg-swapp-azul-petroleo/40 rounded-full" />
 
 									<Link
 										href="#"
@@ -540,7 +539,7 @@ export default function Sidebar() {
 										safePathname === "/dashboard/staff/new",
 									)}>
 									{safePathname === "/dashboard/staff/new" && (
-										<span className="absolute left-0 top-1/2 -translate-y-1/2 h-3/5 w-1 bg-swapp-verde-oscuro dark:bg-swapp-verde-menta rounded-r-full" />
+										<span className="absolute left-0 top-1/2 -translate-y-1/2 h-3/5 w-1 bg-swapp-verde-oscuro dark:bg-swapp-verde-menta rounded-r-full shadow-[0_0_8px_rgba(29,61,43,0.4)] dark:shadow-[0_0_8px_rgba(141,201,160,0.4)]" />
 									)}
 									<div className="flex items-center gap-3">
 										<Settings className="h-5 w-5 shrink-0" />
@@ -563,7 +562,7 @@ export default function Sidebar() {
 							safePathname.includes("/dashboard/settings"),
 						)}>
 						{safePathname.includes("/dashboard/settings") && (
-							<span className="absolute left-0 top-1/2 -translate-y-1/2 h-3/5 w-1 bg-swapp-verde-oscuro dark:bg-swapp-verde-menta rounded-r-full" />
+							<span className="absolute left-0 top-1/2 -translate-y-1/2 h-3/5 w-1 bg-swapp-verde-oscuro dark:bg-swapp-verde-menta rounded-r-full shadow-[0_0_8px_rgba(29,61,43,0.4)] dark:shadow-[0_0_8px_rgba(141,201,160,0.4)]" />
 						)}
 						<div className="flex items-center gap-3">
 							<Settings className="h-5 w-5 shrink-0" />

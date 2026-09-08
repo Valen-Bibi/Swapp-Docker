@@ -1,23 +1,34 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bookmark, Plus, Edit, Image as ImageIcon } from "lucide-react";
+import {
+	Bookmark,
+	Plus,
+	Edit,
+	Image as ImageIcon,
+	Archive,
+} from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import PageHeader from "@/components/layout/PageHeader";
 import SearchBar from "@/components/ui/SearchBar";
 import TableSkeleton from "@/components/tables/TableSkeleton";
-import NewBrandModal from "@/components/products/NewBrandModal";
+import NewBrandModal from "@/components/products/modals/NewBrandModal";
 import { SwappTooltip } from "@/components/ui/SwappTooltip";
-import { SwappToggle } from "@/components/ui/SwappToggle";
 import { Brand } from "@/types/product";
+
+// --- NUEVOS COMPONENTES ESTANDARIZADOS ---
+import GlassTableWrapper from "@/components/tables/GlassTableWrapper";
+import GlassTableHead, { GlassTh } from "@/components/tables/GlassTableHead";
+import TableActionIcon from "@/components/tables/TableActionIcon";
+import StatusBadge from "@/components/ui/StatusBadge";
+import GlassFilterToggle from "@/components/ui/GlassFilterToggle";
 
 export default function BrandsPage() {
 	const [brands, setBrands] = useState<Brand[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [searchTerm, setSearchTerm] = useState("");
 
-	// Agregamos el estado del toggle para estandarizar con las otras vistas
 	const [showInactive, setShowInactive] = useState(false);
 
 	const [isModalOpen, setIsModalOpen] = useState(false);
@@ -73,7 +84,6 @@ export default function BrandsPage() {
 		}
 	};
 
-	// Filtramos también por el estado activo/inactivo
 	const filteredBrands = brands
 		.filter((b) => {
 			if (!showInactive && !b.is_active) return false;
@@ -93,17 +103,16 @@ export default function BrandsPage() {
 					icon={Bookmark}
 				/>
 				<div className="flex items-center gap-4">
-					{/* Contenedor del Toggle estandarizado */}
-					<div className="flex items-center gap-2 bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/30 px-3 py-1.5 rounded-lg border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo transition-colors">
-						<span className="text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
-							Ver Marcas Archivadas
-						</span>
-						<SwappToggle
-							checked={showInactive}
-							onChange={setShowInactive}
-							id="toggle-inactive-brands"
-						/>
-					</div>
+					{/* NUEVO TOGGLE MODULARIZADO */}
+					<GlassFilterToggle
+						id="toggle-inactive-brands"
+						icon={Archive}
+						iconActiveColor="text-swapp-verde-oscuro dark:text-swapp-verde-menta"
+						labelOn="Viendo Archivadas"
+						labelOff="Ver Archivadas"
+						checked={showInactive}
+						onChange={setShowInactive}
+					/>
 
 					<SearchBar
 						searchTerm={searchTerm}
@@ -123,113 +132,109 @@ export default function BrandsPage() {
 								});
 								setIsModalOpen(true);
 							}}
-							className="inline-flex items-center gap-2 rounded-lg bg-swapp-verde-pastel dark:bg-swapp-verde-menta px-4 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro transition-colors hover:bg-swapp-verde-oscuro dark:hover:bg-swapp-verde-pastel disabled:opacity-50">
+							className="inline-flex items-center gap-2 rounded-xl bg-swapp-verde-pastel dark:bg-swapp-verde-menta px-4 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro transition-colors hover:bg-swapp-verde-oscuro dark:hover:bg-swapp-verde-pastel disabled:opacity-50 shadow-sm">
 							<Plus className="h-4 w-4" /> Nueva Marca
 						</button>
 					</SwappTooltip>
 				</div>
 			</div>
 
-			{/* CONTENEDOR DE TABLA (GLASSMORPHISM) */}
-			<div className="rounded-xl border border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 bg-swapp-blanco/40 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm shadow-sm transition-all duration-300 overflow-visible sm:overflow-auto">
-				<table className="w-full text-left text-sm text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
-					<thead className="bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/20 border-b border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 select-none">
+			{/* CONTENEDOR DE TABLA MODULARIZADO */}
+			<GlassTableWrapper>
+				<GlassTableHead>
+					<GlassTh className="w-24">Orden</GlassTh>
+					<GlassTh>Logo</GlassTh>
+					<GlassTh>Nombre y Slug</GlassTh>
+					<GlassTh>Estado</GlassTh>
+					<GlassTh align="right">Acciones</GlassTh>
+				</GlassTableHead>
+
+				<tbody>
+					{filteredBrands.length === 0 ? (
 						<tr>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
-								Logo
-							</th>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
-								Nombre y Slug
-							</th>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
-								Orden
-							</th>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
-								Estado
-							</th>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 text-right">
-								Acciones
-							</th>
+							<td
+								colSpan={5}
+								className="px-6 py-12 text-center text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50">
+								No se encontraron marcas con esos filtros.
+							</td>
 						</tr>
-					</thead>
-					<tbody className="">
-						{filteredBrands.length === 0 ? (
-							<tr>
-								<td
-									colSpan={5}
-									className="px-6 py-12 text-center text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50">
-									No se encontraron marcas con esos filtros.
-								</td>
-							</tr>
-						) : (
-							filteredBrands.map((b) => {
-								// Lógica visual estandarizada para filas
-								const baseRowClasses =
-									"border-b border-swapp-tiza-verdoso/40 dark:border-swapp-azul-petroleo/40 last:border-0 transition-colors duration-200";
+					) : (
+						filteredBrands.map((b) => {
+							const baseRowClasses =
+								"border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50 last:border-0 transition-colors duration-200";
 
-								const rowStatusStyle = b.is_active
-									? "hover:bg-swapp-blanco/60 dark:hover:bg-swapp-azul-petroleo/20"
-									: "opacity-60 bg-swapp-tiza-verdoso/40 dark:bg-swapp-azul-oscuro/80 grayscale filter mix-blend-multiply dark:mix-blend-normal hover:bg-swapp-tiza-verdoso/50 dark:hover:bg-swapp-azul-oscuro/90";
+							const rowStatusStyle = b.is_active
+								? "hover:bg-swapp-blanco/80 dark:hover:bg-swapp-azul-petroleo/30"
+								: "opacity-60 bg-swapp-azul-petroleo/10 dark:bg-swapp-azul-oscuro/80 hover:bg-swapp-azul-petroleo/20 dark:hover:bg-swapp-azul-oscuro/90";
 
-								return (
-									<tr
-										key={b.brand_id}
-										className={`${baseRowClasses} ${rowStatusStyle}`}>
-										<td className="px-6 py-4">
-											{b.logo_url ? (
-												<img
-													src={b.logo_url}
-													className="h-10 w-10 rounded-md object-contain bg-swapp-blanco border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo"
-													alt={`Logo de ${b.name}`}
-												/>
-											) : (
-												<div className="h-10 w-10 rounded-md bg-swapp-tiza-verdoso dark:bg-swapp-azul-petroleo flex items-center justify-center text-swapp-azul-petroleo/30 dark:text-swapp-tiza-verdoso/30 transition-colors">
-													<ImageIcon className="h-5 w-5" />
-												</div>
+							return (
+								<tr
+									key={b.brand_id}
+									className={`${baseRowClasses} ${rowStatusStyle}`}>
+									{/* ORDEN */}
+									<td className="px-6 py-4 font-mono font-medium text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/50">
+										{b.display_order}
+									</td>
+
+									{/* LOGO */}
+									<td className="px-6 py-4">
+										{b.logo_url ? (
+											<img
+												src={b.logo_url}
+												className="h-10 w-10 rounded-md object-contain bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo shadow-sm p-0.5"
+												alt={`Logo de ${b.name}`}
+											/>
+										) : (
+											<div className="h-10 w-10 rounded-md bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/40 border border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo flex items-center justify-center text-swapp-azul-petroleo/30 dark:text-swapp-tiza-verdoso/30 transition-colors shadow-sm">
+												<ImageIcon className="h-5 w-5" />
+											</div>
+										)}
+									</td>
+
+									{/* NOMBRE Y SLUG */}
+									<td className="px-6 py-4">
+										<div
+											className={`font-bold text-swapp-azul-oscuro dark:text-swapp-blanco flex items-center gap-2 ${!b.is_active ? "line-through text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60" : ""}`}>
+											{b.name}
+											{b.featured && (
+												<StatusBadge
+													variant="info"
+													className="uppercase tracking-wider !px-1.5 !py-0.5 !text-[10px]">
+													Destacada
+												</StatusBadge>
 											)}
-										</td>
-										<td className="px-6 py-4">
-											<div
-												className={`font-medium text-swapp-azul-oscuro dark:text-swapp-blanco flex items-center gap-2 ${!b.is_active ? "line-through" : ""}`}>
-												{b.name}
-												{b.featured && (
-													<span className="text-[10px] bg-swapp-verde-oscuro/10 dark:bg-swapp-verde-menta/10 text-swapp-verde-oscuro dark:text-swapp-verde-menta px-2 py-0.5 rounded-full uppercase font-bold tracking-wider">
-														Destacada
-													</span>
-												)}
-											</div>
-											<div className="text-xs text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50 mt-0.5">
-												/{b.slug}
-											</div>
-										</td>
-										<td className="px-6 py-4">{b.display_order}</td>
-										<td className="px-6 py-4">
-											<span
-												className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${b.is_active ? "bg-swapp-verde-pastel/10 dark:bg-swapp-verde-menta/10 text-swapp-verde-oscuro dark:text-swapp-verde-menta" : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"}`}>
-												{b.is_active ? "Activa" : "Inactiva"}
-											</span>
-										</td>
-										<td className="px-6 py-4 text-right">
-											<div className="flex items-center justify-end">
-												<SwappTooltip text="Editar Marca">
-													<button
-														onClick={() => {
-															setEditingBrand(b);
-															setIsModalOpen(true);
-														}}
-														className="p-1.5 rounded-md text-swapp-azul-petroleo/50 hover:text-swapp-verde-oscuro dark:text-swapp-tiza-verdoso/50 dark:hover:text-swapp-verde-menta hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo transition-colors">
-														<Edit className="h-4 w-4" />
-													</button>
-												</SwappTooltip>
-											</div>
-										</td>
-									</tr>
-								);
-							})
-						)}
-					</tbody>
-				</table>
-			</div>
+										</div>
+										<div className="text-xs font-medium text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 mt-0.5">
+											/{b.slug}
+										</div>
+									</td>
+
+									{/* ESTADO CON STATUS BADGE */}
+									<td className="px-6 py-4">
+										<StatusBadge variant={b.is_active ? "primary" : "danger"}>
+											{b.is_active ? "Activa" : "Inactiva"}
+										</StatusBadge>
+									</td>
+
+									{/* ACCIONES CON TABLE ACTION ICON */}
+									<td className="px-6 py-4 text-right">
+										<div className="flex items-center justify-end">
+											<TableActionIcon
+												icon={Edit}
+												tooltip="Editar Marca"
+												onClick={() => {
+													setEditingBrand(b);
+													setIsModalOpen(true);
+												}}
+											/>
+										</div>
+									</td>
+								</tr>
+							);
+						})
+					)}
+				</tbody>
+			</GlassTableWrapper>
 
 			<NewBrandModal
 				isOpen={isModalOpen}

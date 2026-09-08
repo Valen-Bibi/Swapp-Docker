@@ -111,7 +111,7 @@ export default function CategoryAttributesModal({
 	if (!isOpen || !category) return null;
 
 	return (
-		<div className="fixed inset-0 z-[100] flex items-center justify-center bg-swapp-azul-petroleo/20 dark:bg-swapp-negro/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95">
+		<div className="fixed inset-0 z-[100] flex items-center justify-center bg-swapp-azul-petroleo/5 dark:bg-swapp-negro/30 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95">
 			{/* CONTENEDOR DEL MODAL ESTANDARIZADO */}
 			<div className="w-full max-w-2xl max-h-[85vh] flex flex-col rounded-xl bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md shadow-2xl border-t-4 border-t-swapp-verde-oscuro dark:border-t-swapp-verde-menta overflow-hidden transition-colors">
 				{/* HEADER */}
@@ -141,7 +141,7 @@ export default function CategoryAttributesModal({
 						<div className="flex flex-col items-center justify-center py-12 gap-3">
 							<Loader2 className="h-8 w-8 animate-spin text-swapp-verde-oscuro dark:text-swapp-verde-menta" />
 							<p className="text-sm text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
-								Sincronizando candado PIM...
+								Sincronizando candado...
 							</p>
 						</div>
 					) : allAttributes.length === 0 ? (

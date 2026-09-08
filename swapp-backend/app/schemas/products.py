@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 class BrandCreate(BaseModel):
@@ -241,3 +241,14 @@ class AttributeResponse(AttributeBase):
 class SubcategoryAttributeLink(BaseModel):
     attribute_id: int
     is_required: bool = False
+
+class CategoryArchiveRequest(BaseModel):
+    action: Literal["archive_products", "reassign"]
+    new_category_id: Optional[int] = None
+
+class CategoryReorderItem(BaseModel):
+    category_id: int
+    display_order: int
+
+class CategoryReorderRequest(BaseModel):
+    categories: List[CategoryReorderItem]

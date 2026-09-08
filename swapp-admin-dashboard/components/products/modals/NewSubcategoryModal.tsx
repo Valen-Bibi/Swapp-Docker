@@ -92,7 +92,7 @@ export default function NewSubcategoryModal({
 	};
 
 	return (
-		<div className="fixed inset-0 z-[100] flex items-center justify-center bg-swapp-azul-petroleo/20 dark:bg-swapp-negro/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95">
+		<div className="fixed inset-0 z-[100] flex items-center justify-center bg-swapp-azul-petroleo/5 dark:bg-swapp-negro/30 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95">
 			{/* CONTENEDOR DEL MODAL CON EL BALANCE DE OPACIDAD PERFECTO */}
 			<div className="w-full max-w-md rounded-xl bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md shadow-2xl border-t-4 border-t-swapp-verde-oscuro dark:border-t-swapp-verde-menta p-6 transition-colors">
 				<div className="mb-6 flex items-center justify-between">

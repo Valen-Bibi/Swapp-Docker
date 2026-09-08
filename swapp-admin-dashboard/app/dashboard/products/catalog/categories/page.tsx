@@ -17,15 +17,21 @@ import { toast } from "sonner";
 import PageHeader from "@/components/layout/PageHeader";
 import SearchBar from "@/components/ui/SearchBar";
 import TableSkeleton from "@/components/tables/TableSkeleton";
-import NewCategoryModal from "@/components/products/NewCategoryModal";
-import NewSubcategoryModal from "@/components/products/NewSubcategoryModal";
-import CategoryAttributesModal from "@/components/products/CategoryAttributesModal";
-import ReorderCategoriesModal from "@/components/products/ReorderCategoriesModal";
-import ArchiveCategoryModal from "@/components/products/ArchiveCategoryModal";
+import NewCategoryModal from "@/components/products/modals/NewCategoryModal";
+import NewSubcategoryModal from "@/components/products/modals/NewSubcategoryModal";
+import CategoryAttributesModal from "@/components/products/modals/CategoryAttributesModal";
+import ReorderCategoriesModal from "@/components/products/modals/ReorderCategoriesModal";
+import ArchiveCategoryModal from "@/components/products/modals/ArchiveCategoryModal";
 import { SwappTooltip } from "@/components/ui/SwappTooltip";
-import { SwappToggle } from "@/components/ui/SwappToggle";
 import { ProductService } from "@/services/product.service";
 import { Category } from "@/types/product";
+
+// --- NUEVOS COMPONENTES ESTANDARIZADOS ---
+import GlassTableWrapper from "@/components/tables/GlassTableWrapper";
+import GlassTableHead, { GlassTh } from "@/components/tables/GlassTableHead";
+import TableActionIcon from "@/components/tables/TableActionIcon";
+import StatusBadge from "@/components/ui/StatusBadge";
+import GlassFilterToggle from "@/components/ui/GlassFilterToggle";
 
 export default function CategoriesPage() {
 	const [categories, setCategories] = useState<Category[]>([]);
@@ -52,7 +58,10 @@ export default function CategoriesPage() {
 	const [isReorderModalOpen, setIsReorderModalOpen] = useState(false);
 
 	const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
-	const [categoryToArchive, setCategoryToArchive] = useState<{id: number, name: string} | null>(null);
+	const [categoryToArchive, setCategoryToArchive] = useState<{
+		id: number;
+		name: string;
+	} | null>(null);
 	const [activeProductsCount, setActiveProductsCount] = useState(0);
 
 	const [isLockModalOpen, setIsLockModalOpen] = useState(false);
@@ -88,7 +97,7 @@ export default function CategoriesPage() {
 			if (editingCat.category_id) {
 				await api.put(
 					`/api/products/admin/categories/${editingCat.category_id}`,
-					{ ...editingCat, display_order: 0 } // <-- Forzamos el 0 en actualización
+					{ ...editingCat, display_order: 0 },
 				);
 			} else {
 				await ProductService.createCategory({
@@ -96,7 +105,7 @@ export default function CategoriesPage() {
 					slug: editingCat.slug!,
 					parent_id: editingCat.parent_id,
 					is_active: editingCat.is_active,
-					display_order: 0, // <-- Forzamos el 0 en creación
+					display_order: 0,
 				});
 			}
 			toast.success("Operación exitosa", { id: toastId });
@@ -111,25 +120,28 @@ export default function CategoriesPage() {
 		}
 	};
 
-	const handleToggleStatus = async (categoryId: number, currentStatus: boolean, categoryName: string) => {
+	const handleToggleStatus = async (
+		categoryId: number,
+		currentStatus: boolean,
+		categoryName: string,
+	) => {
 		const isDeactivating = currentStatus;
 
 		if (isDeactivating) {
 			const toastId = toast.loading("Verificando dependencias...");
 			try {
-				// Preguntamos al backend si hay productos activos atados acá
 				const res = await ProductService.getCategoryProductsCount(categoryId);
 				toast.dismiss(toastId);
 
 				if (res.active_products_count > 0) {
-					// BIFURCACIÓN: Tiene productos. Abrimos el "Juez".
 					setCategoryToArchive({ id: categoryId, name: categoryName });
 					setActiveProductsCount(res.active_products_count);
 					setIsArchiveModalOpen(true);
-					return; // Cortamos la ejecución acá
+					return;
 				} else {
-					// No tiene productos. Cartel clásico.
-					const confirmed = window.confirm(`¿Estás seguro de que querés archivar la categoría "${categoryName}"?`);
+					const confirmed = window.confirm(
+						`¿Estás seguro de que querés archivar la categoría "${categoryName}"?`,
+					);
 					if (!confirmed) return;
 				}
 			} catch (error) {
@@ -141,38 +153,63 @@ export default function CategoriesPage() {
 
 		const actionText = isDeactivating ? "archivar" : "restaurar";
 		const actionToastId = toast.loading(
-			isDeactivating ? "Archivando categoría..." : "Restaurando categoría..."
+			isDeactivating ? "Archivando categoría..." : "Restaurando categoría...",
 		);
 
 		try {
 			await api.put(`/api/products/admin/categories/${categoryId}`, {
-				is_active: !isDeactivating
+				is_active: !isDeactivating,
 			});
 
 			toast.success(
-				isDeactivating ? "Categoría archivada exitosamente" : "Categoría restaurada",
-				{ id: actionToastId }
+				isDeactivating
+					? "Categoría archivada exitosamente"
+					: "Categoría restaurada",
+				{ id: actionToastId },
 			);
 			fetchCategories();
 		} catch (error: any) {
-			toast.error(error.response?.data?.detail || `Error al ${actionText} la categoría.`, { id: actionToastId });
+			toast.error(
+				error.response?.data?.detail || `Error al ${actionText} la categoría.`,
+				{ id: actionToastId },
+			);
 		}
 	};
 
-	const parentCategories = categories.filter((c) => !c.parent_id);
-	const hierarchicalCategories: Category[] = [];
+	const lowerSearchTerm = (searchTerm || "").toLowerCase();
+	const matchingIds = new Set<number>();
 
-	parentCategories.forEach((parent) => {
-		hierarchicalCategories.push(parent);
-		const children = categories.filter(
-			(c) => c.parent_id === parent.category_id,
-		);
-		hierarchicalCategories.push(...children);
+	categories.forEach((c) => {
+		if ((c.name || "").toLowerCase().includes(lowerSearchTerm)) {
+			matchingIds.add(c.category_id as number);
+
+			if (!c.parent_id) {
+				categories
+					.filter((child) => child.parent_id === c.category_id)
+					.forEach((child) => matchingIds.add(child.category_id as number));
+			} else {
+				matchingIds.add(c.parent_id);
+			}
+		}
 	});
 
-	const filteredCategories = hierarchicalCategories.filter((c) =>
-		(c.name || "").toLowerCase().includes((searchTerm || "").toLowerCase()),
-	);
+	const filteredCategories: Category[] = [];
+	const parentCategories = categories.filter((c) => !c.parent_id);
+
+	parentCategories.forEach((parent) => {
+		if (matchingIds.has(parent.category_id as number)) {
+			filteredCategories.push(parent);
+
+			const children = categories.filter(
+				(c) => c.parent_id === parent.category_id,
+			);
+			children.forEach((child) => {
+				if (matchingIds.has(child.category_id as number)) {
+					filteredCategories.push(child);
+				}
+			});
+		}
+	});
 
 	if (loading) return <TableSkeleton />;
 
@@ -186,16 +223,16 @@ export default function CategoriesPage() {
 					icon={FolderTree}
 				/>
 				<div className="flex items-center gap-4">
-					<div className="flex items-center gap-2 bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/30 px-3 py-1.5 rounded-lg border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo transition-colors">
-						<span className="text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
-							Ver Categorías Archivadas
-						</span>
-						<SwappToggle
-							checked={showInactive}
-							onChange={setShowInactive}
-							id="toggle-inactive-cats"
-						/>
-					</div>
+					{/* TOGGLE ESTANDARIZADO */}
+					<GlassFilterToggle
+						id="toggle-inactive-cats"
+						icon={Archive}
+						iconActiveColor="text-swapp-verde-oscuro dark:text-swapp-verde-menta"
+						labelOn="Viendo Archivadas"
+						labelOff="Ver Archivadas"
+						checked={showInactive}
+						onChange={setShowInactive}
+					/>
 
 					<SearchBar
 						searchTerm={searchTerm}
@@ -203,6 +240,14 @@ export default function CategoriesPage() {
 						placeholder="Buscar categoría..."
 					/>
 
+					<SwappTooltip text="Modificar el orden visual del catálogo">
+						<button
+							onClick={() => setIsReorderModalOpen(true)}
+							className="inline-flex items-center gap-2 rounded-xl bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo px-4 py-2 text-sm font-medium text-swapp-azul-oscuro dark:text-swapp-blanco transition-colors hover:bg-swapp-blanco/80 dark:hover:bg-swapp-azul-petroleo shadow-sm">
+							<ArrowUpDown className="h-4 w-4 text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70" />{" "}
+							Reordenar
+						</button>
+					</SwappTooltip>
 					<SwappTooltip text="Crear una nueva categoría principal">
 						<button
 							onClick={() => {
@@ -215,201 +260,189 @@ export default function CategoriesPage() {
 								});
 								setIsModalOpen(true);
 							}}
-							className="inline-flex items-center gap-2 rounded-lg bg-swapp-verde-pastel dark:bg-swapp-verde-menta px-4 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro transition-colors hover:bg-swapp-verde-oscuro dark:hover:bg-swapp-verde-pastel disabled:opacity-50">
+							className="inline-flex items-center gap-2 rounded-xl bg-swapp-verde-pastel dark:bg-swapp-verde-menta px-4 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro transition-colors hover:bg-swapp-verde-oscuro dark:hover:bg-swapp-verde-pastel disabled:opacity-50 shadow-sm">
 							<Plus className="h-4 w-4" /> Nueva Categoría
-						</button>
-					</SwappTooltip>
-					<SwappTooltip text="Modificar el orden visual del catálogo">
-						<button
-							onClick={() => setIsReorderModalOpen(true)}
-							className="inline-flex items-center gap-2 rounded-lg bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo px-4 py-2 text-sm font-medium text-swapp-azul-oscuro dark:text-swapp-blanco transition-colors hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo">
-							<ArrowUpDown className="h-4 w-4" /> Reordenar
 						</button>
 					</SwappTooltip>
 				</div>
 			</div>
 
-			{/* CONTENEDOR DE TABLA (GLASSMORPHISM) */}
-			<div className="rounded-xl border border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 bg-swapp-blanco/40 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm shadow-sm transition-all duration-300 overflow-visible sm:overflow-auto">
-				<table className="w-full text-left text-sm text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
-					<thead className="bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/20 border-b border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 select-none">
+			{/* CONTENEDOR DE TABLA MODULARIZADO */}
+			<GlassTableWrapper>
+				<GlassTableHead>
+					<GlassTh className="w-24">Orden</GlassTh>
+					<GlassTh>Categoría (Slug)</GlassTh>
+					<GlassTh>Jerarquía</GlassTh>
+					<GlassTh>Estado</GlassTh>
+					<GlassTh align="right">Acciones</GlassTh>
+				</GlassTableHead>
+
+				<tbody>
+					{filteredCategories.length === 0 ? (
 						<tr>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
-								Categoría (Slug)
-							</th>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
-								Jerarquía
-							</th>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
-								Orden
-							</th>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
-								Estado
-							</th>
-							<th className="px-6 py-4 text-xs tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 text-right">
-								Acciones
-							</th>
+							<td
+								colSpan={5}
+								className="px-6 py-12 text-center text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50">
+								No se encontraron categorías.
+							</td>
 						</tr>
-					</thead>
-					<tbody className="">
-						{filteredCategories.length === 0 ? (
-							<tr>
-								<td
-									colSpan={5}
-									className="px-6 py-12 text-center text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50">
-									No se encontraron categorías.
-								</td>
-							</tr>
-						) : (
-							filteredCategories.map((c) => {
-								const isChild = !!c.parent_id;
+					) : (
+						filteredCategories.map((c) => {
+							const isChild = !!c.parent_id;
 
-								// --- NUEVA LÓGICA DE BLOQUEO POR HERENCIA ---
-								const parentCategory = isChild
-									? categories.find((p) => p.category_id === c.parent_id)
-									: null;
-								const isParentArchived = parentCategory
-									? !parentCategory.is_active
-									: false;
+							const parentCategory = isChild
+								? categories.find((p) => p.category_id === c.parent_id)
+								: null;
+							const isParentArchived = parentCategory
+								? !parentCategory.is_active
+								: false;
 
-								const baseRowClasses =
-									"border-b border-swapp-tiza-verdoso/40 dark:border-swapp-azul-petroleo/40 last:border-0 transition-colors duration-200";
+							const baseRowClasses =
+								"border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50 last:border-0 transition-colors duration-200";
 
-								// Si el padre está archivado, la subcategoría hereda el estilo grisáceo aunque ella misma sea "is_active=true"
-								const rowStatusStyle =
-									c.is_active && !isParentArchived
-										? `hover:bg-swapp-blanco/60 dark:hover:bg-swapp-azul-petroleo/20 ${isChild ? "bg-swapp-tiza-verdoso/10 dark:bg-swapp-azul-petroleo/10" : ""}`
-										: "opacity-60 bg-swapp-tiza-verdoso/40 dark:bg-swapp-azul-oscuro/80 grayscale filter mix-blend-multiply dark:mix-blend-normal hover:bg-swapp-tiza-verdoso/50 dark:hover:bg-swapp-azul-oscuro/90";
+							const rowStatusStyle =
+								c.is_active && !isParentArchived
+									? `hover:bg-swapp-blanco/80 dark:hover:bg-swapp-azul-petroleo/30 ${isChild ? "bg-swapp-azul-petroleo/2 dark:bg-swapp-azul-petroleo/10" : ""}`
+									: "opacity-60 bg-swapp-azul-petroleo/10 dark:bg-swapp-azul-oscuro/80 hover:bg-swapp-azul-petroleo/20 dark:hover:bg-swapp-azul-oscuro/90";
 
-								return (
-									<tr
-										key={c.category_id}
-										className={`${baseRowClasses} ${rowStatusStyle}`}>
-										<td className="px-6 py-4">
-											<div
-												className={`font-medium flex items-center gap-2 text-swapp-azul-oscuro dark:text-swapp-blanco ${isChild ? "pl-6 border-l-2 border-swapp-verde-oscuro dark:border-swapp-verde-menta" : ""} ${!c.is_active || isParentArchived ? "line-through" : ""}`}>
-												{isChild && (
-													<span className="text-swapp-verde-menta/60">↳</span>
-												)}
-												{c.name}
-											</div>
-											<div
-												className={`text-xs text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50 ${isChild ? "pl-6" : ""}`}>
-												/{c.slug}
-											</div>
-										</td>
-										<td className="px-6 py-4 text-xs">
-											{isChild ? (
-												<span className="inline-flex items-center gap-1 rounded-full bg-swapp-verde-oscuro/10 dark:bg-swapp-verde-menta/10 px-2.5 py-1 font-semibold text-swapp-verde-oscuro dark:text-swapp-verde-menta">
-													Subcategoría
-												</span>
-											) : (
-												<span className="inline-flex items-center gap-1 rounded-full bg-swapp-azul-petroleo/10 dark:bg-swapp-tiza-verdoso/10 px-2.5 py-1 font-semibold text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
-													Principal
+							return (
+								<tr
+									key={c.category_id}
+									className={`${baseRowClasses} ${rowStatusStyle}`}>
+									<td className="px-6 py-4 font-mono font-medium text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/50">
+										{c.display_order}
+									</td>
+
+									<td className="px-6 py-4">
+										{/* SEPARACIÓN DE JERARQUÍA */}
+										<div
+											className={`flex items-center gap-2 ${
+												isChild
+													? "pl-6 border-l-2 border-swapp-verde-oscuro dark:border-swapp-verde-menta font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/90"
+													: "font-bold text-swapp-azul-oscuro dark:text-swapp-blanco"
+											} ${!c.is_active || isParentArchived ? "line-through text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60" : ""}`}>
+											{isChild && (
+												<span className="text-swapp-verde-oscuro/40 dark:text-swapp-verde-menta/60 font-normal">
+													↳
 												</span>
 											)}
-										</td>
-										<td className="px-6 py-4">{c.display_order}</td>
+											{c.name}
+										</div>
+										<div
+											className={`text-xs font-medium text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 mt-0.5 ${isChild ? "pl-6" : ""}`}>
+											/{c.slug}
+										</div>
+									</td>
 
-										{/* ESTADO CON LÓGICA HEREDADA */}
-										<td className="px-6 py-4">
-											{!c.is_active ? (
-												<span className="inline-flex rounded-full px-2 py-1 text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
-													Oculta
-												</span>
-											) : isParentArchived ? (
-												<SwappTooltip
-													text={`El padre "${parentCategory?.name}" está oculto.`}>
-													<span className="inline-flex rounded-full px-2 py-1 text-xs font-medium bg-swapp-azul-petroleo/10 dark:bg-swapp-tiza-verdoso/10 text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso cursor-help">
+									<td className="px-6 py-4">
+										{/* JERARQUÍA CON STATUS BADGE */}
+										<StatusBadge variant={isChild ? "primary" : "neutral"}>
+											{isChild ? "Subcategoría" : "Principal"}
+										</StatusBadge>
+									</td>
+
+									<td className="px-6 py-4">
+										{/* ESTADO CON STATUS BADGE */}
+										{!c.is_active ? (
+											<StatusBadge variant="danger">Oculta</StatusBadge>
+										) : isParentArchived ? (
+											<SwappTooltip
+												text={`El padre "${parentCategory?.name}" está oculto.`}>
+												<div className="w-fit">
+													<StatusBadge
+														variant="neutral"
+														className="cursor-help">
 														Bloqueada
-													</span>
-												</SwappTooltip>
+													</StatusBadge>
+												</div>
+											</SwappTooltip>
+										) : (
+											<StatusBadge variant="primary">Activa</StatusBadge>
+										)}
+									</td>
+
+									<td className="px-6 py-4 text-right">
+										{/* ACCIONES CON TABLE ACTION ICON */}
+										<div className="flex items-center justify-end gap-1">
+											{isParentArchived ? (
+												<TableActionIcon
+													icon={Ban}
+													tooltip={`Restaurá la categoría principal "${parentCategory?.name}" para interactuar con esta subcategoría.`}
+													onClick={() => {}}
+													disabled={true}
+												/>
+											) : c.is_active ? (
+												<>
+													{isChild && (
+														<TableActionIcon
+															icon={Lock}
+															tooltip="Atributos de la Subcategoría"
+															onClick={() => {
+																setSelectedCategoryForLock({
+																	id: c.category_id as number,
+																	name: c.name,
+																});
+																setIsLockModalOpen(true);
+															}}
+														/>
+													)}
+													{!isChild && (
+														<TableActionIcon
+															icon={PlusSquare}
+															tooltip="Añadir Subcategoría"
+															onClick={() => {
+																setSelectedParent({
+																	id: c.category_id as number,
+																	name: c.name,
+																});
+																setIsSubModalOpen(true);
+															}}
+														/>
+													)}
+													<TableActionIcon
+														icon={Edit}
+														tooltip="Editar Categoría"
+														onClick={() => {
+															setEditingCat(c);
+															setIsModalOpen(true);
+														}}
+													/>
+													<TableActionIcon
+														icon={Archive}
+														tooltip="Archivar Categoría"
+														variant="danger"
+														onClick={() =>
+															handleToggleStatus(
+																c.category_id as number,
+																c.is_active,
+																c.name,
+															)
+														}
+													/>
+												</>
 											) : (
-												<span className="inline-flex rounded-full px-2 py-1 text-xs font-medium bg-swapp-verde-pastel/10 dark:bg-swapp-verde-menta/10 text-swapp-verde-oscuro dark:text-swapp-verde-menta">
-													Activa
-												</span>
+												<TableActionIcon
+													icon={RotateCcw}
+													tooltip="Restaurar Categoría"
+													onClick={() =>
+														handleToggleStatus(
+															c.category_id as number,
+															c.is_active,
+															c.name,
+														)
+													}
+												/>
 											)}
-										</td>
+										</div>
+									</td>
+								</tr>
+							);
+						})
+					)}
+				</tbody>
+			</GlassTableWrapper>
 
-										{/* ACCIONES */}
-										<td className="px-6 py-4 text-right">
-											<div className="flex items-center justify-end gap-1">
-												{isParentArchived ? (
-													<SwappTooltip
-														text={`Restaurá la categoría principal "${parentCategory?.name}" para interactuar con esta subcategoría.`}>
-														<button className="p-1.5 rounded-md text-swapp-azul-petroleo/30 dark:text-swapp-tiza-verdoso/30 cursor-not-allowed">
-															<Ban className="h-4 w-4" />
-														</button>
-													</SwappTooltip>
-												) : c.is_active ? (
-													<>
-														{isChild && (
-															<SwappTooltip text="Atributos de la Subcategoría">
-																<button
-																	onClick={() => {
-																		setSelectedCategoryForLock({
-																			id: c.category_id as number,
-																			name: c.name,
-																		});
-																		setIsLockModalOpen(true);
-																	}}
-																	className="p-1.5 rounded-md text-swapp-azul-petroleo/50 hover:text-swapp-verde-oscuro dark:text-swapp-tiza-verdoso/50 dark:hover:text-swapp-verde-menta hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo transition-colors">
-																	<Lock className="h-4 w-4" />
-																</button>
-															</SwappTooltip>
-														)}
-														{!isChild && (
-															<SwappTooltip text="Añadir Subcategoría">
-																<button
-																	onClick={() => {
-																		setSelectedParent({
-																			id: c.category_id as number,
-																			name: c.name,
-																		});
-																		setIsSubModalOpen(true);
-																	}}
-																	className="p-1.5 rounded-md text-swapp-azul-petroleo/50 hover:text-swapp-verde-oscuro dark:text-swapp-tiza-verdoso/50 dark:hover:text-swapp-verde-menta hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo transition-colors">
-																	<PlusSquare className="h-4 w-4" />
-																</button>
-															</SwappTooltip>
-														)}
-														<SwappTooltip text="Editar Categoría">
-															<button
-																onClick={() => {
-																	setEditingCat(c);
-																	setIsModalOpen(true);
-																}}
-																className="p-1.5 rounded-md text-swapp-azul-petroleo/50 hover:text-swapp-verde-oscuro dark:text-swapp-tiza-verdoso/50 dark:hover:text-swapp-verde-menta hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo transition-colors">
-																<Edit className="h-4 w-4" />
-															</button>
-														</SwappTooltip>
-														<SwappTooltip text="Archivar Categoría">
-															<button
-																onClick={() => handleToggleStatus(c.category_id as number, c.is_active, c.name)}
-																className="p-1.5 rounded-md text-swapp-azul-petroleo/40 hover:text-red-500 dark:text-swapp-tiza-verdoso/40 hover:bg-red-500/10 transition-colors">
-																<Archive className="h-4 w-4" />
-															</button>
-														</SwappTooltip>
-													</>
-												) : (
-													<SwappTooltip text="Restaurar Categoría">
-														<button
-															onClick={() => handleToggleStatus(c.category_id as number, c.is_active, c.name)}
-															className="p-1.5 rounded-md text-swapp-azul-petroleo/60 hover:text-swapp-verde-oscuro dark:text-swapp-tiza-verdoso/60 dark:hover:text-swapp-verde-menta hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo transition-colors">
-															<RotateCcw className="h-4 w-4" />
-														</button>
-													</SwappTooltip>
-												)}
-											</div>
-										</td>
-									</tr>
-								);
-							})
-						)}
-					</tbody>
-				</table>
-			</div>
-
+			{/* MODALES */}
 			<NewCategoryModal
 				isOpen={isModalOpen}
 				onClose={() => setIsModalOpen(false)}
@@ -431,18 +464,18 @@ export default function CategoriesPage() {
 				category={selectedCategoryForLock}
 			/>
 			<ArchiveCategoryModal
-			isOpen={isArchiveModalOpen}
-			onClose={() => setIsArchiveModalOpen(false)}
-			category={categoryToArchive}
-			activeProductsCount={activeProductsCount}
-			categories={categories}
-			onSuccess={() => fetchCategories()}
+				isOpen={isArchiveModalOpen}
+				onClose={() => setIsArchiveModalOpen(false)}
+				category={categoryToArchive}
+				activeProductsCount={activeProductsCount}
+				categories={categories}
+				onSuccess={() => fetchCategories()}
 			/>
 			<ReorderCategoriesModal
-			isOpen={isReorderModalOpen}
-			onClose={() => setIsReorderModalOpen(false)}
-			categories={categories}
-			onSuccess={() => fetchCategories()}
+				isOpen={isReorderModalOpen}
+				onClose={() => setIsReorderModalOpen(false)}
+				categories={categories}
+				onSuccess={() => fetchCategories()}
 			/>
 		</div>
 	);

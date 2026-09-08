@@ -16,7 +16,7 @@ load_dotenv()
 
 SECRET_KEY = os.getenv("SECRET_KEY", "supersecreto_bucle_app_local_key")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 300
+ACCESS_TOKEN_EXPIRE_MINUTES = 90
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

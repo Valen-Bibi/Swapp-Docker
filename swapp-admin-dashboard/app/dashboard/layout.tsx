@@ -9,7 +9,6 @@ export default function DashboardLayout({
 	return (
 		<SessionGuard>
 			<div className="flex h-screen w-full bg-swapp-tiza-verdoso dark:bg-swapp-azul-petroleo overflow-hidden transition-colors duration-300">
-				{/* Sidebar Modularizado */}
 				<Sidebar />
 
 				<main className="flex-1 overflow-y-auto bg-swapp-tiza-verdoso dark:bg-swapp-azul-oscuro relative transition-colors duration-300">

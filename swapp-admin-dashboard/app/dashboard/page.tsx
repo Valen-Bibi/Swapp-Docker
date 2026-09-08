@@ -23,7 +23,7 @@ export default function DashboardOverviewPage() {
 		const toastId = toast.loading("Actualizando métricas...");
 		try {
 			const data = await DashboardService.getSummary();
-            setMetrics(data);
+			setMetrics(data);
 			toast.success("Métricas actualizadas", { id: toastId });
 		} catch (error) {
 			toast.error("Error al conectar con el servidor", { id: toastId });
@@ -32,12 +32,12 @@ export default function DashboardOverviewPage() {
 		}
 	};
 
-    useEffect(() => {
-        const loadInitialData = async () => {
-            await handleRefreshMetrics();
-        };
-        loadInitialData();
-    }, []);
+	useEffect(() => {
+		const loadInitialData = async () => {
+			await handleRefreshMetrics();
+		};
+		loadInitialData();
+	}, []);
 
 	return (
 		<div className="p-6 relative">
@@ -77,18 +77,19 @@ export default function DashboardOverviewPage() {
 				</div>
 
 				{/* Tarjeta 2 (¡Conectada y Real!) */}
-				<Link 
-                    href="/dashboard/products/inventory/stock?low_stock=true"
-                    className="rounded-xl border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro p-6 shadow-sm transition-all hover:shadow-md hover:border-swapp-verde-oscuro/50 dark:hover:border-swapp-verde-menta/50 group block cursor-pointer"
-                >
+				<Link
+					href="/dashboard/products/inventory/stock?low_stock=true"
+					className="rounded-xl border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro p-6 shadow-sm transition-all hover:shadow-md hover:border-swapp-verde-oscuro/50 dark:hover:border-swapp-verde-menta/50 group block cursor-pointer">
 					<div className="flex items-center justify-between pb-4">
 						<h3 className="text-sm font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 group-hover:text-swapp-azul-petroleo dark:group-hover:text-swapp-tiza-verdoso transition-colors">
 							Alertas de Stock
 						</h3>
-						<Box className={`h-5 w-5 transition-transform group-hover:scale-110 ${metrics?.low_stock_alerts && metrics.low_stock_alerts > 0 ? "text-red-500" : "text-swapp-verde-oscuro dark:text-swapp-verde-menta"}`} />
+						<Box
+							className={`h-5 w-5 transition-transform group-hover:scale-110 ${metrics?.low_stock_alerts && metrics.low_stock_alerts > 0 ? "text-red-500" : "text-swapp-verde-oscuro dark:text-swapp-verde-menta"}`}
+						/>
 					</div>
 					<div className="text-3xl font-bold text-swapp-azul-oscuro dark:text-swapp-blanco">
-                        {metrics !== null ? metrics.low_stock_alerts : "-"}
+						{metrics !== null ? metrics.low_stock_alerts : "-"}
 					</div>
 					<p className="mt-1 text-xs text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
 						Productos requieren reposición urgente

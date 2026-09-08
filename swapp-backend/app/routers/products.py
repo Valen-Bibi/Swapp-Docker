@@ -225,12 +225,11 @@ def get_all_products_admin(
     result = []
     for p in products:
         prod_schema = schemas.ProductCatalogResponse.model_validate(p)
-        prod_schema.media = [m for m in p.media if m.is_active] 
+        prod_schema.media = [m for m in p.media if m.is_active]
         result.append(prod_schema)
         
     return result
 
-# --- CATEGORÍAS Y MARCAS ---
 @router.get("/categories", response_model=List[schemas.CategoryResponse])
 def get_categories(include_inactive: bool = False, db: Session = Depends(get_db)):
     """Obtiene el árbol de categorías, con opción de incluir las archivadas"""
@@ -478,6 +477,25 @@ def create_category(
     db.add(new_category)
     db.commit()
     return {"message": "Categoría creada exitosamente"}
+
+@router.post("/categories/reorder")
+def reorder_categories(
+    payload: schemas.CategoryReorderRequest,
+    db: Session = Depends(get_db),
+    admin_user = Depends(get_current_admin_user)
+):
+    """Actualiza el display_order de múltiples categorías en una sola transacción"""
+    try:
+        for item in payload.categories:
+            db.query(models.ProductCategory)\
+              .filter(models.ProductCategory.category_id == item.category_id)\
+              .update({"display_order": item.display_order})
+        
+        db.commit()
+        return {"message": "Orden actualizado correctamente"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Error al reordenar las categorías.")
 
 @router.put("/categories/{category_id}")
 def update_category(
@@ -777,7 +795,7 @@ def create_attribute(
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
-    # 1. Buscamos si ya existe (ignorando mayúsculas/minúsculas)
+
     existing_attr = db.query(models.ProductAttribute).filter(
         func.lower(models.ProductAttribute.name) == payload.name.lower()
     ).first()
@@ -789,7 +807,6 @@ def create_attribute(
                 detail="Ya existe un atributo activo con este nombre."
             )
         else:
-            # Está archivado. Validamos que no intenten cambiar su naturaleza
             if existing_attr.is_variant != payload.is_variant:
                 tipo_viejo = "Divisor de Stock" if existing_attr.is_variant else "Ficha Técnica"
                 raise HTTPException(
@@ -797,10 +814,8 @@ def create_attribute(
                     detail=f"El atributo '{existing_attr.name}' está archivado como '{tipo_viejo}'. No podés recrearlo con un comportamiento distinto porque corrompería el historial del catálogo."
                 )
             
-            # Coincide la naturaleza: Lo restauramos
             existing_attr.is_active = True
             
-            # Procesamos los valores que llegaron desde el modal
             for val_str in payload.values:
                 existing_val = db.query(models.ProductAttributeValue).filter(
                     models.ProductAttributeValue.attribute_id == existing_attr.attribute_id,
@@ -820,8 +835,6 @@ def create_attribute(
             db.commit()
             return existing_attr
 
-    # --- AQUÍ ESTABA EL CÓDIGO FALTANTE ---
-    # FLUJO NORMAL: El atributo no existía, lo creamos desde cero
     new_attr = models.ProductAttribute(
         name=payload.name,
         is_variant=payload.is_variant,
@@ -937,6 +950,70 @@ def get_category_attributes(
             "is_required": link.is_required
         } for link in links
     ]
+
+@router.get("/categories/{category_id}/products/count")
+def count_category_products(
+    category_id: int, 
+    db: Session = Depends(get_db),
+    admin_user = Depends(get_current_admin_user)
+):
+    """Cuenta cuántos productos activos tiene una categoría (y sus subcategorías) antes de archivarla"""
+
+    subcategories = db.query(models.ProductCategory.category_id).filter(models.ProductCategory.parent_id == category_id).all()
+
+    target_ids = [category_id] + [sub[0] for sub in subcategories]
+    
+    count = db.query(models.Product).filter(
+        models.Product.category_id.in_(target_ids),
+        models.Product.is_active == True
+    ).count()
+    
+    return {"active_products_count": count}
+
+@router.post("/categories/{category_id}/archive")
+def archive_category_with_resolution(
+    category_id: int,
+    payload: schemas.CategoryArchiveRequest,
+    db: Session = Depends(get_db),
+    admin_user = Depends(get_current_admin_user)
+):
+    """Archiva la categoría y aplica la resolución elegida para sus productos (incluyendo hijos)"""
+    category = db.query(models.ProductCategory).filter(models.ProductCategory.category_id == category_id).first()
+    if not category:
+        raise HTTPException(status_code=404, detail="Categoría no encontrada.")
+
+    subcategories = db.query(models.ProductCategory.category_id).filter(models.ProductCategory.parent_id == category_id).all()
+    target_ids = [category_id] + [sub[0] for sub in subcategories]
+
+    active_products = db.query(models.Product).filter(
+        models.Product.category_id.in_(target_ids),
+        models.Product.is_active == True
+    ).all()
+
+    if payload.action == "reassign":
+        if not payload.new_category_id:
+            raise HTTPException(status_code=400, detail="Debe especificar una subcategoría de destino.")
+            
+        new_cat = db.query(models.ProductCategory).filter(models.ProductCategory.category_id == payload.new_category_id).first()
+        if not new_cat or new_cat.parent_id is None:
+            raise HTTPException(
+                status_code=400, 
+                detail="La categoría de destino no es válida o es un rubro principal (debe ser una subcategoría)."
+            )
+
+        for prod in active_products:
+            prod.category_id = payload.new_category_id
+            prod.updated_by = admin_user.staff_id
+
+    elif payload.action == "archive_products":
+        for prod in active_products:
+            prod.is_active = False
+            prod.updated_by = admin_user.staff_id
+
+    category.is_active = False
+    
+    db.commit()
+    return {"message": "Categoría archivada y productos resueltos correctamente."}
 
 
 @router.post("/categories/{category_id}/attributes")

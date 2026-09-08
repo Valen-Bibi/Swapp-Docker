@@ -267,25 +267,29 @@ export default function NewProductPage() {
 
 	return (
 		<div className="p-6 relative max-w-4xl mx-auto pb-32">
+			{/* CONTROLES Y HEADER ESTANDARIZADOS */}
 			<div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center justify-between">
+				<PageHeader
+					title="Incorporar Nuevo Producto"
+					description="Dar de alta la carcasa base de un nuevo artículo"
+					icon={PackagePlus}
+				/>
 				<div className="flex items-center gap-4">
 					<Link
 						href="/dashboard/products/catalog/master"
-						className="p-2 rounded-lg bg-swapp-blanco dark:bg-swapp-azul-oscuro border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo transition-colors">
-						<ArrowLeft className="h-5 w-5" />
+						className="inline-flex items-center gap-2 rounded-xl bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo px-4 py-2 text-sm font-medium text-swapp-azul-oscuro dark:text-swapp-tiza-verdoso hover:bg-swapp-blanco/80 dark:hover:bg-swapp-azul-petroleo transition-colors whitespace-nowrap shadow-sm">
+						<ArrowLeft className="h-4 w-4 text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70" />{" "}
+						Volver al Catálogo
 					</Link>
-					<PageHeader
-						title="Incorporar Nuevo Producto"
-						description="Dar de alta la carcasa base de un nuevo artículo"
-						icon={PackagePlus}
-					/>
 				</div>
 			</div>
 
-			<div className="rounded-xl border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro p-6 sm:p-8 shadow-sm transition-colors">
+			{/* CONTENEDOR DEL FORMULARIO ESTANDARIZADO (GLASSMORPHISM) */}
+			<div className="rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md p-6 sm:p-8 shadow-xl transition-all duration-300">
 				<form onSubmit={handleCreateProduct} className="space-y-8">
+					{/* IDENTIDAD Y PRECIOS */}
 					<div className="space-y-6">
-						<h3 className="text-sm font-bold uppercase tracking-wider text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
+						<h3 className="text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
 							Identidad y Precios de Referencia
 						</h3>
 
@@ -338,14 +342,14 @@ export default function NewProductPage() {
 							/>
 						</div>
 
-						<div className="grid grid-cols-1 gap-6 sm:grid-cols-3 border-t border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo pt-6 transition-colors">
-							<div className="space-y-1">
-								<label className="block text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
+						<div className="grid grid-cols-1 gap-6 sm:grid-cols-3 border-t border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/30 pt-6 transition-colors">
+							<div className="space-y-1.5">
+								<label className="block text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 transition-colors">
 									Categoría (Subcategoría){" "}
 									<span className="text-red-500">*</span>
 								</label>
 								<select
-									className="w-full rounded-md border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-transparent px-3 py-2.5 text-sm text-swapp-azul-oscuro dark:text-swapp-blanco outline-none transition-colors focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta"
+									className="w-full rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm px-4 py-2.5 text-sm text-swapp-azul-oscuro dark:text-swapp-blanco outline-none transition-all focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta shadow-sm cursor-pointer"
 									required
 									value={formData.category_id}
 									onChange={(e) =>
@@ -353,7 +357,7 @@ export default function NewProductPage() {
 									}>
 									<option
 										value=""
-										className="dark:bg-swapp-azul-oscuro"
+										className="bg-swapp-blanco dark:bg-swapp-azul-oscuro"
 										disabled>
 										Seleccione una subcategoría...
 									</option>
@@ -361,14 +365,14 @@ export default function NewProductPage() {
 										<optgroup
 											key={parent.category_id}
 											label={parent.name}
-											className="dark:bg-swapp-azul-oscuro font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta">
+											className="bg-swapp-blanco dark:bg-swapp-azul-oscuro font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta">
 											{subCategories
 												.filter((sub) => sub.parent_id === parent.category_id)
 												.map((sub) => (
 													<option
 														key={sub.category_id}
 														value={sub.category_id}
-														className="dark:bg-swapp-azul-oscuro font-normal text-swapp-azul-oscuro dark:text-swapp-blanco">
+														className="bg-swapp-blanco dark:bg-swapp-azul-oscuro font-medium text-swapp-azul-oscuro dark:text-swapp-blanco">
 														{sub.name}
 													</option>
 												))}
@@ -377,50 +381,54 @@ export default function NewProductPage() {
 								</select>
 							</div>
 
-							<div className="space-y-1">
-								<label className="block text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
+							<div className="space-y-1.5">
+								<label className="block text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 transition-colors">
 									Marca Registrada <span className="text-red-500">*</span>
 								</label>
 								<select
-									className="w-full rounded-md border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-transparent px-3 py-2.5 text-sm text-swapp-azul-oscuro dark:text-swapp-blanco outline-none transition-colors focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta"
+									className="w-full rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm px-4 py-2.5 text-sm text-swapp-azul-oscuro dark:text-swapp-blanco outline-none transition-all focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta shadow-sm cursor-pointer"
 									required
 									value={formData.brand_id}
 									onChange={(e) =>
 										setFormData({ ...formData, brand_id: e.target.value })
 									}>
-									<option value="" className="dark:bg-swapp-azul-oscuro">
+									<option
+										value=""
+										className="bg-swapp-blanco dark:bg-swapp-azul-oscuro">
 										Seleccione...
 									</option>
 									{brands.map((b) => (
 										<option
 											key={b.brand_id}
 											value={b.brand_id}
-											className="dark:bg-swapp-azul-oscuro">
+											className="bg-swapp-blanco dark:bg-swapp-azul-oscuro">
 											{b.name}
 										</option>
 									))}
 								</select>
 							</div>
 
-							<div className="space-y-1">
-								<label className="block text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
+							<div className="space-y-1.5">
+								<label className="block text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 transition-colors">
 									Clase de Impuesto <span className="text-red-500">*</span>
 								</label>
 								<select
-									className="w-full rounded-md border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-transparent px-3 py-2.5 text-sm text-swapp-azul-oscuro dark:text-swapp-blanco outline-none transition-colors focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta"
+									className="w-full rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm px-4 py-2.5 text-sm text-swapp-azul-oscuro dark:text-swapp-blanco outline-none transition-all focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta shadow-sm cursor-pointer"
 									required
 									value={formData.tax_class_id}
 									onChange={(e) =>
 										setFormData({ ...formData, tax_class_id: e.target.value })
 									}>
-									<option value="" className="dark:bg-swapp-azul-oscuro">
+									<option
+										value=""
+										className="bg-swapp-blanco dark:bg-swapp-azul-oscuro">
 										Seleccione...
 									</option>
 									{taxClasses.map((t) => (
 										<option
 											key={t.tax_class_id}
 											value={t.tax_class_id}
-											className="dark:bg-swapp-azul-oscuro">
+											className="bg-swapp-blanco dark:bg-swapp-azul-oscuro">
 											{t.name} ({t.rate}%)
 										</option>
 									))}
@@ -429,11 +437,11 @@ export default function NewProductPage() {
 						</div>
 					</div>
 
-					{/* --- NUEVA SECCIÓN: FICHA TÉCNICA DINÁMICA --- */}
+					{/* FICHA TÉCNICA DINÁMICA */}
 					{(isLoadingPim || structuralAttributes.length > 0) && (
-						<div className="border-t border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo pt-6 transition-colors space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
+						<div className="border-t border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/30 pt-6 transition-colors space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
 							<div className="flex items-center gap-3">
-								<h3 className="text-sm font-bold uppercase tracking-wider text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
+								<h3 className="text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
 									Ficha Técnica (Estructural)
 								</h3>
 								{isLoadingPim && (
@@ -450,8 +458,8 @@ export default function NewProductPage() {
 										}));
 
 										return (
-											<div key={attr.attribute_id} className="space-y-1">
-												<label className="block text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
+											<div key={attr.attribute_id} className="space-y-1.5">
+												<label className="block text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
 													{attr.name}{" "}
 													{attr.is_required && (
 														<span className="text-red-500">*</span>
@@ -476,32 +484,41 @@ export default function NewProductPage() {
 						</div>
 					)}
 
-					<div className="flex items-center justify-between border-t border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo pt-6 transition-colors">
+					<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/30 pt-6 transition-colors">
 						<div>
-							<h3 className="text-lg font-semibold text-swapp-azul-oscuro dark:text-swapp-blanco">
+							<h3 className="text-lg font-bold text-swapp-azul-oscuro dark:text-swapp-blanco tracking-tight">
 								Detalles y Configuración Adicional
 							</h3>
-							<p className="text-sm text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 mt-1">
+							<p className="text-sm font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 mt-1">
 								Logística extendida, SEO y multimedia avanzada
 							</p>
 						</div>
-						<SwappToggle
-							checked={showOptionalFields}
-							onChange={setShowOptionalFields}
-							id="toggle-optional-fields"
-						/>
+						<div className="flex items-center gap-3 bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md px-4 py-2 rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo transition-colors shadow-sm">
+							<span className="text-sm font-bold text-swapp-azul-oscuro dark:text-swapp-tiza-verdoso whitespace-nowrap">
+								Mostrar Opciones
+							</span>
+							<SwappToggle
+								checked={showOptionalFields}
+								onChange={setShowOptionalFields}
+								id="toggle-optional-fields"
+							/>
+						</div>
 					</div>
 
+					{/* SECCIÓN AVANZADA ACORDEÓN */}
 					<div
 						className={`transition-all duration-500 ease-in-out -m-2 p-2 ${showOptionalFields ? "max-h-[5000px] opacity-100 mt-2" : "max-h-0 opacity-0 overflow-hidden"}`}>
 						<div className="space-y-10">
 							<div className="space-y-6">
 								{formData.is_published && (
-									<div className="flex items-center gap-2 rounded-lg bg-swapp-verde-oscuro/10 dark:bg-swapp-verde-menta/10 p-3 text-sm text-swapp-verde-oscuro dark:text-swapp-verde-menta border border-swapp-verde-oscuro/20 dark:border-swapp-verde-menta/20 transition-colors animate-in fade-in">
-										<AlertCircle className="h-4 w-4 shrink-0" />
+									<div className="flex items-center gap-2 rounded-xl bg-swapp-verde-oscuro/10 dark:bg-swapp-verde-menta/10 p-4 text-sm font-medium text-swapp-verde-oscuro dark:text-swapp-verde-menta border border-swapp-verde-oscuro/20 dark:border-swapp-verde-menta/20 transition-colors animate-in fade-in shadow-sm">
+										<AlertCircle className="h-5 w-5 shrink-0" />
 										<p>
-											Al optar por <strong>Publicar inmediatamente</strong>, los
-											campos de descripciones e imágenes pasan a ser
+											Al optar por{" "}
+											<strong className="font-bold">
+												Publicar inmediatamente
+											</strong>
+											, los campos de descripciones e imágenes pasan a ser
 											obligatorios.
 										</p>
 									</div>
@@ -530,8 +547,8 @@ export default function NewProductPage() {
 								/>
 							</div>
 
-							<div className="space-y-6 border-t border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo pt-6 transition-colors">
-								<h4 className="text-sm font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 flex items-center justify-between">
+							<div className="space-y-6 border-t border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/30 pt-6 transition-colors">
+								<h4 className="text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
 									Multimedia Avanzada
 								</h4>
 								<div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
@@ -546,7 +563,7 @@ export default function NewProductPage() {
 												<img
 													src={mainImagePreview}
 													alt="Principal"
-													className="h-32 w-32 object-cover rounded-xl border-2 border-swapp-verde-oscuro dark:border-swapp-verde-menta shadow-sm"
+													className="h-32 w-32 object-cover rounded-xl border border-swapp-verde-oscuro/40 dark:border-swapp-verde-menta/40 shadow-md bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm p-1"
 												/>
 												<button
 													type="button"
@@ -576,7 +593,7 @@ export default function NewProductPage() {
 														<img
 															src={url}
 															alt={`Gallery ${idx}`}
-															className="h-20 w-20 object-cover rounded-lg border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo shadow-sm"
+															className="h-20 w-20 object-cover rounded-lg border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm shadow-sm p-0.5"
 														/>
 														<button
 															type="button"
@@ -592,8 +609,8 @@ export default function NewProductPage() {
 								</div>
 							</div>
 
-							<div className="space-y-6 border-t border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo pt-6 transition-colors">
-								<h4 className="text-sm font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+							<div className="space-y-6 border-t border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/30 pt-6 transition-colors">
+								<h4 className="text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
 									Posicionamiento y SEO
 								</h4>
 								<div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -631,8 +648,8 @@ export default function NewProductPage() {
 								/>
 							</div>
 
-							<div className="space-y-6 border-t border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo pt-6 transition-colors">
-								<h4 className="text-sm font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+							<div className="space-y-6 border-t border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/30 pt-6 transition-colors">
+								<h4 className="text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
 									Logística Física y Envíos
 								</h4>
 								<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -667,12 +684,12 @@ export default function NewProductPage() {
 											})
 										}
 									/>
-									<div className="space-y-1">
-										<label className="block text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
+									<div className="space-y-1.5">
+										<label className="block text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 transition-colors">
 											Unidad de Peso
 										</label>
 										<select
-											className="w-full rounded-md border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-transparent px-3 py-2.5 text-sm text-swapp-azul-oscuro dark:text-swapp-blanco outline-none transition-colors focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta"
+											className="w-full rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm px-4 py-2.5 text-sm text-swapp-azul-oscuro dark:text-swapp-blanco outline-none transition-all focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta shadow-sm cursor-pointer"
 											value={formData.weight_unit}
 											onChange={(e) =>
 												setFormData({
@@ -680,16 +697,24 @@ export default function NewProductPage() {
 													weight_unit: e.target.value,
 												})
 											}>
-											<option value="kg" className="dark:bg-swapp-azul-oscuro">
+											<option
+												value="kg"
+												className="bg-swapp-blanco dark:bg-swapp-azul-oscuro">
 												Kilogramos (kg)
 											</option>
-											<option value="g" className="dark:bg-swapp-azul-oscuro">
+											<option
+												value="g"
+												className="bg-swapp-blanco dark:bg-swapp-azul-oscuro">
 												Gramos (g)
 											</option>
-											<option value="lb" className="dark:bg-swapp-azul-oscuro">
+											<option
+												value="lb"
+												className="bg-swapp-blanco dark:bg-swapp-azul-oscuro">
 												Libras (lb)
 											</option>
-											<option value="oz" className="dark:bg-swapp-azul-oscuro">
+											<option
+												value="oz"
+												className="bg-swapp-blanco dark:bg-swapp-azul-oscuro">
 												Onzas (oz)
 											</option>
 										</select>
@@ -744,8 +769,8 @@ export default function NewProductPage() {
 								</div>
 							</div>
 
-							<div className="space-y-6 border-t border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo pt-6 transition-colors">
-								<h4 className="text-sm font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+							<div className="space-y-6 border-t border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/30 pt-6 transition-colors">
+								<h4 className="text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
 									Archivos y Productos Digitales (Opcional)
 								</h4>
 								<div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
@@ -784,7 +809,7 @@ export default function NewProductPage() {
 								</div>
 							</div>
 
-							<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 pt-6 border-t border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo transition-colors">
+							<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 pt-6 border-t border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/30 transition-colors">
 								<div className="space-y-4">
 									<SwappCheckbox
 										label="Es un envase retornable (Habilitar escaneo de IA)"
@@ -824,16 +849,17 @@ export default function NewProductPage() {
 						</div>
 					</div>
 
-					<div className="mt-8 flex justify-end gap-3 border-t border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo pt-6 transition-colors">
+					{/* FOOTER Y BOTONES */}
+					<div className="mt-8 flex justify-end gap-3 border-t border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/30 pt-6 transition-colors">
 						<Link
 							href="/dashboard/products/catalog/master"
-							className="rounded-lg px-6 py-2.5 text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo transition-colors">
+							className="rounded-xl px-6 py-2.5 text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso hover:bg-swapp-blanco/80 dark:hover:bg-swapp-azul-petroleo transition-colors">
 							Cancelar
 						</Link>
 						<button
 							type="submit"
 							disabled={isSaving}
-							className="flex items-center gap-2 rounded-lg bg-swapp-verde-oscuro dark:bg-swapp-verde-menta px-6 py-2.5 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro transition-colors hover:bg-swapp-azul-oceano dark:hover:bg-swapp-verde-pastel disabled:opacity-50">
+							className="flex items-center gap-2 rounded-xl bg-swapp-verde-pastel dark:bg-swapp-verde-menta px-6 py-2.5 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro transition-colors hover:bg-swapp-verde-oscuro dark:hover:bg-swapp-verde-pastel disabled:opacity-50 shadow-sm">
 							<Save className="h-4 w-4" />
 							{isSaving ? "Guardando..." : "Crear Carcasa"}
 						</button>

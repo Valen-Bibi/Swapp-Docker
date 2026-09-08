@@ -24,11 +24,12 @@ export default function ArchiveCategoryModal({
 	categories,
 	onSuccess,
 }: ArchiveCategoryModalProps) {
-	const [action, setAction] = useState<"archive_products" | "reassign">("archive_products");
+	const [action, setAction] = useState<"archive_products" | "reassign">(
+		"archive_products",
+	);
 	const [newCategoryId, setNewCategoryId] = useState<string>("");
 	const [isSaving, setIsSaving] = useState(false);
 
-	// --- CERRAR CON ESCAPE ---
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (e.key === "Escape" && isOpen) {
@@ -67,13 +68,18 @@ export default function ArchiveCategoryModal({
 				new_category_id: action === "reassign" ? Number(newCategoryId) : null,
 			});
 
-			toast.success("Categoría archivada y productos resueltos con éxito", { id: toastId });
+			toast.success("Categoría archivada y productos resueltos con éxito", {
+				id: toastId,
+			});
 			onSuccess();
 			onClose();
 		} catch (error: any) {
-			toast.error(error.response?.data?.detail || "Error al archivar la categoría.", {
-				id: toastId,
-			});
+			toast.error(
+				error.response?.data?.detail || "Error al archivar la categoría.",
+				{
+					id: toastId,
+				},
+			);
 		} finally {
 			setIsSaving(false);
 		}
@@ -83,12 +89,14 @@ export default function ArchiveCategoryModal({
 		.filter(
 			(c) =>
 				c.is_active &&
-				c.parent_id !== null && 
+				c.parent_id !== null &&
 				c.category_id !== category.id &&
-				c.parent_id !== category.id
+				c.parent_id !== category.id,
 		)
 		.map((c) => {
-			const parentName = categories.find((p) => p.category_id === c.parent_id)?.name || "Subcategoría";
+			const parentName =
+				categories.find((p) => p.category_id === c.parent_id)?.name ||
+				"Subcategoría";
 			return {
 				label: `${parentName} > ${c.name}`,
 				value: String(c.category_id),
@@ -96,9 +104,8 @@ export default function ArchiveCategoryModal({
 		});
 
 	return (
-		<div className="fixed inset-0 z-[100] flex items-center justify-center bg-swapp-azul-petroleo/20 dark:bg-swapp-negro/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95">
+		<div className="fixed inset-0 z-[100] flex items-center justify-center bg-swapp-azul-petroleo/5 dark:bg-swapp-negro/30 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95">
 			<div className="w-full max-w-xl max-h-[90vh] flex flex-col rounded-xl bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md shadow-2xl border-t-4 border-t-swapp-verde-oscuro dark:border-t-swapp-verde-menta overflow-hidden transition-colors">
-				
 				{/* HEADER ESTANDARIZADO */}
 				<div className="p-6 border-b border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo flex items-start justify-between shrink-0 transition-colors">
 					<div>
@@ -122,25 +129,27 @@ export default function ArchiveCategoryModal({
 				</div>
 
 				<div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
-					
 					{/* CAJA DE ADVERTENCIA */}
 					<div className="mb-6 flex items-start gap-3 rounded-xl bg-red-500/10 dark:bg-red-500/10 p-4 text-sm text-red-700 dark:text-red-400 border border-red-500/20 dark:border-red-500/20 transition-colors animate-in fade-in">
 						<AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
 						<p className="leading-relaxed">
-							Esta categoría contiene <strong>{activeProductsCount} productos activos</strong>. Para proceder con el archivado, debes decidir qué hacer con ellos para no generar stock huérfano.
+							Esta categoría contiene{" "}
+							<strong>{activeProductsCount} productos activos</strong>. Para
+							proceder con el archivado, debes decidir qué hacer con ellos para
+							no generar stock huérfano.
 						</p>
 					</div>
 
 					{/* HEREDAMOS TRANSPARENCIA A LOS INPUTS */}
-					<form onSubmit={handleArchive} className="space-y-6 animate-in fade-in [&_input]:!bg-transparent">
-						
+					<form
+						onSubmit={handleArchive}
+						className="space-y-6 animate-in fade-in [&_input]:!bg-transparent">
 						{/* SISTEMA DE TARJETAS (RADIO CARDS) ESTANDARIZADO */}
 						<div className="space-y-3">
 							<label className="block text-sm font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
 								Acción a realizar
 							</label>
 							<div className="grid grid-cols-1 gap-4">
-								
 								{/* Tarjeta A: Archivar en Cascada */}
 								<button
 									type="button"
@@ -151,13 +160,18 @@ export default function ArchiveCategoryModal({
 											: "border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo bg-transparent hover:bg-swapp-blanco/60 dark:hover:bg-swapp-azul-petroleo/20"
 									}`}>
 									<div className="flex items-center gap-2 mb-2">
-										<Archive className={`h-5 w-5 ${action === "archive_products" ? "text-swapp-verde-oscuro dark:text-swapp-verde-menta" : "text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50"}`} />
-										<span className={`font-semibold text-sm ${action === "archive_products" ? "text-swapp-verde-oscuro dark:text-swapp-verde-menta" : "text-swapp-azul-oscuro dark:text-swapp-blanco"}`}>
+										<Archive
+											className={`h-5 w-5 ${action === "archive_products" ? "text-swapp-verde-oscuro dark:text-swapp-verde-menta" : "text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50"}`}
+										/>
+										<span
+											className={`font-semibold text-sm ${action === "archive_products" ? "text-swapp-verde-oscuro dark:text-swapp-verde-menta" : "text-swapp-azul-oscuro dark:text-swapp-blanco"}`}>
 											Archivar productos en cascada
 										</span>
 									</div>
-									<p className={`text-[11px] leading-relaxed text-left ${action === "archive_products" ? "text-swapp-verde-oscuro/80 dark:text-swapp-verde-menta/80" : "text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70"}`}>
-										Ocultará temporalmente del catálogo todos los productos (y sus variantes) asignados a esta categoría.
+									<p
+										className={`text-[11px] leading-relaxed text-left ${action === "archive_products" ? "text-swapp-verde-oscuro/80 dark:text-swapp-verde-menta/80" : "text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70"}`}>
+										Ocultará temporalmente del catálogo todos los productos (y
+										sus variantes) asignados a esta categoría.
 									</p>
 								</button>
 
@@ -171,13 +185,18 @@ export default function ArchiveCategoryModal({
 											: "border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo bg-transparent hover:bg-swapp-blanco/60 dark:hover:bg-swapp-azul-petroleo/20"
 									}`}>
 									<div className="flex items-center gap-2 mb-2">
-										<FolderOutput className={`h-5 w-5 ${action === "reassign" ? "text-swapp-verde-oscuro dark:text-swapp-verde-menta" : "text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50"}`} />
-										<span className={`font-semibold text-sm ${action === "reassign" ? "text-swapp-verde-oscuro dark:text-swapp-verde-menta" : "text-swapp-azul-oscuro dark:text-swapp-blanco"}`}>
+										<FolderOutput
+											className={`h-5 w-5 ${action === "reassign" ? "text-swapp-verde-oscuro dark:text-swapp-verde-menta" : "text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50"}`}
+										/>
+										<span
+											className={`font-semibold text-sm ${action === "reassign" ? "text-swapp-verde-oscuro dark:text-swapp-verde-menta" : "text-swapp-azul-oscuro dark:text-swapp-blanco"}`}>
 											Reasignar y Migrar
 										</span>
 									</div>
-									<p className={`text-[11px] leading-relaxed text-left ${action === "reassign" ? "text-swapp-verde-oscuro/80 dark:text-swapp-verde-menta/80" : "text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70"}`}>
-										Moverá los {activeProductsCount} productos hacia una nueva categoría activa antes de archivar la actual.
+									<p
+										className={`text-[11px] leading-relaxed text-left ${action === "reassign" ? "text-swapp-verde-oscuro/80 dark:text-swapp-verde-menta/80" : "text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70"}`}>
+										Moverá los {activeProductsCount} productos hacia una nueva
+										categoría activa antes de archivar la actual.
 									</p>
 								</button>
 							</div>
@@ -187,7 +206,8 @@ export default function ArchiveCategoryModal({
 						{action === "reassign" && (
 							<div className="pt-2 animate-in fade-in slide-in-from-top-4 pb-2">
 								<label className="block text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso mb-2">
-									Seleccioná la subcategoría de destino <span className="text-red-500">*</span>
+									Seleccioná la subcategoría de destino{" "}
+									<span className="text-red-500">*</span>
 								</label>
 								<SwappSearchableSelect
 									options={validDestinations}

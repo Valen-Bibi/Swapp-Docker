@@ -3,13 +3,13 @@
 
 @theme {
   --color-swapp-negro: #000000;
-  --color-swapp-azul-oscuro: #10131B;
-  --color-swapp-azul-petroleo: #172638;
-  --color-swapp-azul-oceano: #132D46;
-  --color-swapp-verde-oscuro: #2F6F4E;
-  --color-swapp-verde-pastel: #5FA878;
-  --color-swapp-verde-menta: #9BD6B3;
-  --color-swapp-tiza-verdoso: #F6F8FF;
+  --color-swapp-azul-oscuro: #172638;
+  --color-swapp-azul-petroleo: #264B6B;
+  --color-swapp-azul-oceano: #85B2CC;
+  --color-swapp-verde-oscuro: #1D3D2B;
+  --color-swapp-verde-pastel: #3D7052;
+  --color-swapp-verde-menta: #8DC9A0;
+  --color-swapp-tiza-verdoso: #F2F6F8;
   --color-swapp-blanco: #FFFFFF;
 
   --color-background: var(--background);

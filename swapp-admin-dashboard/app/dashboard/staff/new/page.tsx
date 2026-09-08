@@ -54,7 +54,8 @@ export default function NewStaffPage() {
 
 	return (
 		<div className="p-6 relative">
-			<div className="mb-8 flex items-center justify-between">
+			{/* CONTROLES Y HEADER */}
+			<div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<PageHeader
 					title="Alta de Personal"
 					description="Generar credenciales de acceso seguro para el panel"
@@ -62,12 +63,13 @@ export default function NewStaffPage() {
 				/>
 			</div>
 
-			<div className="rounded-xl border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro p-6 shadow-sm max-w-2xl transition-colors">
+			{/* CONTENEDOR DEL FORMULARIO ESTANDARIZADO (GLASSMORPHISM) */}
+			<div className="rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md p-6 sm:p-8 shadow-xl max-w-2xl transition-all duration-300">
 				<form onSubmit={handleSubmit} className="space-y-6">
 					{/* NOMBRES */}
 					<div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-						<div className="space-y-2">
-							<label className="text-sm font-medium text-swapp-azul-petroleo/80 dark:text-swapp-tiza-verdoso/80 transition-colors">
+						<div className="space-y-1.5">
+							<label className="block text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 transition-colors">
 								Nombre
 							</label>
 							<input
@@ -75,12 +77,12 @@ export default function NewStaffPage() {
 								name="first_name"
 								value={formData.first_name}
 								onChange={handleChange}
-								className="w-full rounded-lg border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-transparent px-4 py-2.5 text-swapp-azul-oscuro dark:text-swapp-blanco placeholder:text-swapp-azul-petroleo/40 dark:placeholder:text-swapp-tiza-verdoso/40 outline-none transition-all focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta"
+								className="w-full rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm px-4 py-2.5 text-swapp-azul-oscuro dark:text-swapp-blanco placeholder:text-swapp-azul-petroleo/40 dark:placeholder:text-swapp-tiza-verdoso/40 outline-none transition-all focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta shadow-sm"
 								placeholder="Ej. Juan"
 							/>
 						</div>
-						<div className="space-y-2">
-							<label className="text-sm font-medium text-swapp-azul-petroleo/80 dark:text-swapp-tiza-verdoso/80 transition-colors">
+						<div className="space-y-1.5">
+							<label className="block text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 transition-colors">
 								Apellido
 							</label>
 							<input
@@ -88,15 +90,15 @@ export default function NewStaffPage() {
 								name="last_name"
 								value={formData.last_name}
 								onChange={handleChange}
-								className="w-full rounded-lg border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-transparent px-4 py-2.5 text-swapp-azul-oscuro dark:text-swapp-blanco placeholder:text-swapp-azul-petroleo/40 dark:placeholder:text-swapp-tiza-verdoso/40 outline-none transition-all focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta"
+								className="w-full rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm px-4 py-2.5 text-swapp-azul-oscuro dark:text-swapp-blanco placeholder:text-swapp-azul-petroleo/40 dark:placeholder:text-swapp-tiza-verdoso/40 outline-none transition-all focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta shadow-sm"
 								placeholder="Ej. Pérez"
 							/>
 						</div>
 					</div>
 
 					{/* CORREO */}
-					<div className="space-y-2">
-						<label className="text-sm font-medium text-swapp-azul-petroleo/80 dark:text-swapp-tiza-verdoso/80 transition-colors">
+					<div className="space-y-1.5">
+						<label className="block text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 transition-colors">
 							Correo Electrónico
 						</label>
 						<input
@@ -105,14 +107,14 @@ export default function NewStaffPage() {
 							name="email"
 							value={formData.email}
 							onChange={handleChange}
-							className="w-full rounded-lg border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-transparent px-4 py-2.5 text-swapp-azul-oscuro dark:text-swapp-blanco placeholder:text-swapp-azul-petroleo/40 dark:placeholder:text-swapp-tiza-verdoso/40 outline-none transition-all focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta"
+							className="w-full rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm px-4 py-2.5 text-swapp-azul-oscuro dark:text-swapp-blanco placeholder:text-swapp-azul-petroleo/40 dark:placeholder:text-swapp-tiza-verdoso/40 outline-none transition-all focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta shadow-sm"
 							placeholder="correo@swapp.com"
 						/>
 					</div>
 
 					{/* CONTRASEÑA TEMPORAL */}
-					<div className="space-y-2">
-						<label className="text-sm font-medium text-swapp-azul-petroleo/80 dark:text-swapp-tiza-verdoso/80 transition-colors">
+					<div className="space-y-1.5">
+						<label className="block text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 transition-colors">
 							Contraseña de Acceso
 						</label>
 						<input
@@ -121,43 +123,51 @@ export default function NewStaffPage() {
 							name="password"
 							value={formData.password}
 							onChange={handleChange}
-							className="w-full rounded-lg border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-transparent px-4 py-2.5 text-swapp-azul-oscuro dark:text-swapp-blanco placeholder:text-swapp-azul-petroleo/40 dark:placeholder:text-swapp-tiza-verdoso/40 outline-none transition-all focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta"
+							className="w-full rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm px-4 py-2.5 text-swapp-azul-oscuro dark:text-swapp-blanco placeholder:text-swapp-azul-petroleo/40 dark:placeholder:text-swapp-tiza-verdoso/40 outline-none transition-all focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta shadow-sm"
 							placeholder="Asigna una contraseña segura"
 						/>
 					</div>
 
 					{/* ROL */}
-					<div className="space-y-2">
-						<label className="text-sm font-medium text-swapp-azul-petroleo/80 dark:text-swapp-tiza-verdoso/80 flex items-center gap-2 transition-colors">
-							<ShieldCheck className="h-4 w-4 text-swapp-verde-menta" />
+					<div className="space-y-1.5">
+						<label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 transition-colors">
+							<ShieldCheck className="h-4 w-4 text-swapp-verde-oscuro dark:text-swapp-verde-menta" />
 							Nivel de Permisos
 						</label>
 						<select
 							name="role"
 							value={formData.role}
 							onChange={handleChange}
-							className="w-full rounded-lg border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro px-4 py-2.5 text-swapp-azul-oscuro dark:text-swapp-blanco outline-none transition-all focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta cursor-pointer">
-							<option value="viewer" className="dark:bg-swapp-azul-oscuro">
+							className="w-full rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm px-4 py-2.5 text-swapp-azul-oscuro dark:text-swapp-blanco outline-none transition-all focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta cursor-pointer shadow-sm">
+							<option
+								value="viewer"
+								className="bg-swapp-blanco dark:bg-swapp-azul-oscuro">
 								Viewer (Solo lectura)
 							</option>
-							<option value="editor" className="dark:bg-swapp-azul-oscuro">
+							<option
+								value="editor"
+								className="bg-swapp-blanco dark:bg-swapp-azul-oscuro">
 								Editor (Puede modificar productos)
 							</option>
-							<option value="manager" className="dark:bg-swapp-azul-oscuro">
+							<option
+								value="manager"
+								className="bg-swapp-blanco dark:bg-swapp-azul-oscuro">
 								Manager (Gestión de stock e inventario)
 							</option>
-							<option value="admin" className="dark:bg-swapp-azul-oscuro">
+							<option
+								value="admin"
+								className="bg-swapp-blanco dark:bg-swapp-azul-oscuro">
 								Administrador (Gestión total)
 							</option>
 						</select>
 					</div>
 
-					{/* BOTÓN DE GUARDAR */}
-					<div className="pt-4 flex justify-end">
+					{/* BOTÓN DE GUARDAR ESTANDARIZADO */}
+					<div className="pt-6 flex justify-end border-t border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/30 transition-colors">
 						<button
 							type="submit"
 							disabled={isSubmitting}
-							className="inline-flex items-center gap-2 rounded-lg bg-swapp-verde-oscuro dark:bg-swapp-verde-oscuro px-6 py-2.5 font-medium text-swapp-blanco dark:text-swapp-azul-oscuro shadow-sm transition-all hover:bg-swapp-azul-oceano dark:hover:bg-swapp-blanco disabled:opacity-50">
+							className="inline-flex items-center gap-2 rounded-xl bg-swapp-verde-pastel dark:bg-swapp-verde-menta px-6 py-2.5 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro shadow-sm transition-all hover:bg-swapp-verde-oscuro dark:hover:bg-swapp-verde-pastel disabled:opacity-50">
 							<Save className="h-4 w-4" />
 							{isSubmitting ? "Guardando..." : "Registrar Cuenta"}
 						</button>
