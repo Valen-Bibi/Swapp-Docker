@@ -59,18 +59,18 @@ export default function AttributesPage() {
 
 	const handleDeleteAttribute = async (attributeId: number) => {
 		const confirmed = window.confirm(
-			"¿Estás seguro de que querés archivar este atributo? Dejará de estar disponible para nuevos productos y subcategorías.",
+			"¿Estás seguro de que querés eliminar este atributo? Dejará de estar disponible para nuevos productos y subcategorías.",
 		);
 		if (!confirmed) return;
 
-		const toastId = toast.loading("Archivando atributo...");
+		const toastId = toast.loading("Eliminando atributo...");
 		try {
 			await ProductService.deleteAttribute(attributeId);
-			toast.success("Atributo archivado correctamente", { id: toastId });
+			toast.success("Atributo eliminado correctamente", { id: toastId });
 			fetchAttributes();
 		} catch (error: any) {
 			toast.error(
-				error.response?.data?.detail || "Error al archivar el atributo",
+				error.response?.data?.detail || "Error al eliminar el atributo",
 				{
 					id: toastId,
 				},
@@ -206,7 +206,7 @@ export default function AttributesPage() {
 										<div className="flex items-center justify-end gap-2">
 											<TableActionIcon
 												icon={Trash2}
-												tooltip="Archivar Atributo"
+												tooltip="Eliminar Atributo"
 												variant="danger"
 												onClick={() => handleDeleteAttribute(attr.attribute_id)}
 											/>

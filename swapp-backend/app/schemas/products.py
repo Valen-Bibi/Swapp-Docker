@@ -79,6 +79,7 @@ class ProductVariantCreate(BaseModel):
     sku: str
     price: float
     cost_price: float
+    refill_price: Optional[float] = None #
     stock_quantity: int = 0
     variant_attributes: Optional[Dict[str, Any]] = Field(default_factory=dict)
     low_stock_threshold: Optional[int] = None
@@ -87,6 +88,7 @@ class ProductVariantUpdate(BaseModel):
     sku: Optional[str] = None
     price: Optional[float] = None
     cost_price: Optional[float] = None
+    refill_price: Optional[float] = None
     stock_quantity: Optional[int] = None
     variant_attributes: Optional[Dict[str, Any]] = None
     low_stock_threshold: Optional[int] = None
@@ -99,6 +101,7 @@ class ProductVariantResponse(BaseModel):
     sku: str
     price: float
     cost_price: float
+    refill_price: Optional[float] = None # <-- NUEVO
     stock_quantity: int
     low_stock_threshold: int
     variant_attributes: Optional[Dict[str, Any]] = None
@@ -146,9 +149,11 @@ class ProductCreate(BaseModel):
     category_id: int
     brand_id: int
     tax_class_id: int
-    base_price: Optional[float] = 0.0
-    cost_price: Optional[float] = 0.0
 
+    reference_price: Optional[float] = 0.0
+    reference_cost: Optional[float] = 0.0
+    reference_refill_price: Optional[float] = None
+    
     short_description: Optional[str] = None
     description: Optional[str] = None
     is_returnable: bool = False

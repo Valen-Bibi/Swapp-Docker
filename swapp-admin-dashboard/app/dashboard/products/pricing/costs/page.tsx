@@ -215,9 +215,10 @@ export default function CostsPage() {
 
 							const baseRowClasses =
 								"border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50 last:border-0 transition-colors duration-200";
+
 							const rowStatusStyle =
 								p.is_active !== false
-									? `hover:bg-swapp-blanco/80 dark:hover:bg-swapp-azul-petroleo/30 ${isExpanded ? "bg-swapp-blanco/80 dark:hover:bg-swapp-azul-petroleo/30" : ""}`
+									? `hover:bg-swapp-blanco/80 dark:hover:bg-swapp-azul-petroleo/30 ${isExpanded ? "bg-swapp-blanco/80 dark:bg-swapp-azul-petroleo/30" : ""}`
 									: "opacity-60 bg-swapp-azul-petroleo/10 dark:bg-swapp-azul-oscuro/80 hover:bg-swapp-azul-petroleo/20 dark:hover:bg-swapp-azul-oscuro/90";
 
 							return (
@@ -306,7 +307,7 @@ export default function CostsPage() {
 															Costo Interno
 														</th>
 														<th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/70">
-															Precio Base
+															Precio Base / Recarga
 														</th>
 														<th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/70">
 															Precio Oferta
@@ -377,10 +378,21 @@ export default function CostsPage() {
 																		: "-"}
 																</td>
 
-																{/* PRECIO BASE */}
+																{/* PRECIO BASE / RECARGA */}
 																<td
 																	className={`px-4 py-3 font-bold ${activeDiscount ? "text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40 line-through text-[10px]" : "text-swapp-verde-oscuro dark:text-swapp-verde-menta"}`}>
-																	{formatCurrency(v.price)}
+																	<div className="flex flex-col gap-0.5">
+																		<span>{formatCurrency(v.price)}</span>
+																		{p.is_returnable &&
+																			v.refill_price != null && (
+																				<SwappTooltip text="Precio de Recarga (Logística Inversa)">
+																					<span className="text-[10px] font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 no-underline">
+																						Recarga:{" "}
+																						{formatCurrency(v.refill_price)}
+																					</span>
+																				</SwappTooltip>
+																			)}
+																	</div>
 																</td>
 
 																{/* PRECIO OFERTA */}

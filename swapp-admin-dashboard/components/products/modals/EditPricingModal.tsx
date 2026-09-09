@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Landmark, TrendingUp, Save } from "lucide-react";
+import { X, Landmark, TrendingUp, Save, Recycle } from "lucide-react";
 import { toast } from "sonner";
 import { ProductService } from "@/services/product.service";
 import { SwappInput } from "@/components/ui/SwappInput";
@@ -24,6 +24,7 @@ export default function EditPricingModal({
 }: EditPricingModalProps) {
 	const [basePrice, setBasePrice] = useState<number>(0);
 	const [costPrice, setCostPrice] = useState<number | "">("");
+	const [refillPrice, setRefillPrice] = useState<number | "">("");
 	const [isSaving, setIsSaving] = useState(false);
 
 	// --- CERRAR CON ESCAPE ---
@@ -42,6 +43,7 @@ export default function EditPricingModal({
 			if (variant) {
 				setBasePrice(variant.price || 0);
 				setCostPrice(variant.cost_price || "");
+				setRefillPrice(variant.refill_price || "");
 			} else {
 				const p = product as any;
 				const refPrice = p.reference_price ?? p.base_price ?? 0;
@@ -49,6 +51,7 @@ export default function EditPricingModal({
 
 				setBasePrice(refPrice);
 				setCostPrice(refCost);
+				setRefillPrice("");
 			}
 		}
 	}, [isOpen, product, variant]);
@@ -72,6 +75,11 @@ export default function EditPricingModal({
 					{
 						price: basePrice,
 						cost_price: costPrice === "" ? 0 : costPrice,
+						refill_price: product.is_returnable
+							? refillPrice === ""
+								? null
+								: refillPrice
+							: undefined,
 					},
 				);
 			} else {
@@ -179,6 +187,32 @@ export default function EditPricingModal({
 								</div>
 							</div>
 						</div>
+
+						{/* MOSTRAR SOLO SI ES VARIANTE DE UN PRODUCTO RETORNABLE */}
+						{product.is_returnable && variant && (
+							<div className="space-y-4 pt-4 border-t border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50">
+								<h3 className="text-sm font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 flex items-center gap-2">
+									<Recycle className="h-4 w-4 text-swapp-verde-oscuro dark:text-swapp-verde-menta" />
+									Logística Inversa
+								</h3>
+
+								<div className="w-1/2 pr-2">
+									<SwappInput
+										label="Precio de Recarga ($)"
+										helpText="- Opcional"
+										type="number"
+										step="0.01"
+										placeholder="Ej: 15000"
+										value={refillPrice}
+										onChange={(e) =>
+											setRefillPrice(
+												e.target.value === "" ? "" : parseFloat(e.target.value),
+											)
+										}
+									/>
+								</div>
+							</div>
+						)}
 
 						{/* FOOTER CON NUEVOS COLORES DE BOTÓN */}
 						<div className="mt-6 flex justify-end gap-3 pt-4 border-t border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo transition-colors">

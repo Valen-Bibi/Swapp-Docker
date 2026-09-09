@@ -21,9 +21,7 @@ export default function NewOrderPage() {
 	const methods = useForm<CreateOrderValues>({
 		resolver: zodResolver(createOrderSchema),
 		defaultValues: {
-			customer_name: "",
-			customer_phone: "",
-			customer_email: "",
+			client_id: 0,
 			delivery_address: "",
 			delivery_zone: "",
 			scheduled_delivery_date: "",
@@ -50,7 +48,6 @@ export default function NewOrderPage() {
 
 	return (
 		<div className="p-6 relative">
-			{/* CONTROLES Y HEADER ESTANDARIZADOS */}
 			<div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<PageHeader
 					title="Nuevo Pedido Manual"
@@ -59,7 +56,6 @@ export default function NewOrderPage() {
 				/>
 
 				<div className="flex items-center gap-4">
-					{/* Botón Volver con Glassmorphism */}
 					<button
 						onClick={() => router.back()}
 						className="inline-flex items-center gap-2 rounded-xl bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo px-4 py-2 text-sm font-medium text-swapp-azul-oscuro dark:text-swapp-tiza-verdoso hover:bg-swapp-blanco/80 dark:hover:bg-swapp-azul-petroleo transition-colors whitespace-nowrap shadow-sm">
@@ -69,7 +65,6 @@ export default function NewOrderPage() {
 				</div>
 			</div>
 
-			{/* CONTENEDOR DEL FORMULARIO ESTANDARIZADO (GLASSMORPHISM) */}
 			<div className="rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md shadow-xl transition-all duration-300 p-6 sm:p-8">
 				<FormProvider {...methods}>
 					<form

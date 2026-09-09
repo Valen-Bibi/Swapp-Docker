@@ -117,10 +117,15 @@ export default function OrdersPage() {
 		}
 	};
 
+	// --- FILTROS ACTUALIZADOS CON LA TABLA CLIENTES ---
 	const filteredOrders = orders.filter((order) => {
+		const clientFullName =
+			`${order.client?.first_name} ${order.client?.last_name}`.toLowerCase();
+		const clientPhone = order.client?.whatsapp_number || "";
+
 		const matchesSearch =
-			order.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			order.customer_phone.includes(searchTerm) ||
+			clientFullName.includes(searchTerm.toLowerCase()) ||
+			clientPhone.includes(searchTerm) ||
 			order.order_uuid.includes(searchTerm);
 
 		const matchesStatus =
@@ -142,12 +147,14 @@ export default function OrdersPage() {
 		return matchesSearch && matchesStatus && matchesDate;
 	});
 
+	// --- ORDENAMIENTO ACTUALIZADO ---
 	const {
 		sortedData: processedOrders,
 		sortKey,
 		sortDirection,
 		handleSort,
 	} = useTableSort(filteredOrders, {
+		client: (o) => `${o.client?.first_name} ${o.client?.last_name}`,
 		date: (o) => new Date(o.scheduled_delivery_date || o.created_at).getTime(),
 		total: (o) => o.total_amount,
 		status: (o) => o.status,
@@ -192,7 +199,6 @@ export default function OrdersPage() {
 				/>
 
 				<div className="flex flex-wrap items-center gap-4">
-					{/* Toggle estandarizado para Entregas de Hoy */}
 					<div className="flex items-center gap-3 bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md px-3 py-1.5 rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo transition-colors shadow-sm">
 						<Calendar
 							className={`h-4 w-4 transition-colors ${showTodayOnly ? "text-swapp-verde-oscuro dark:text-swapp-verde-menta" : "text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50"}`}
@@ -230,12 +236,12 @@ export default function OrdersPage() {
 			{/* CONTENEDOR DE TABLA ESTANDARIZADO (GLASSMORPHISM) */}
 			<div className="rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md shadow-xl transition-all duration-300 overflow-visible sm:overflow-auto">
 				<table className="w-full text-left text-sm text-swapp-azul-oscuro dark:text-swapp-blanco min-w-[800px]">
-					{/* CABECERA ENTERPRISE GRID MÁS OSCURA */}
 					<thead className="bg-swapp-azul-petroleo/10 dark:bg-swapp-azul-petroleo/40 border-b border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo select-none">
 						<tr>
+							{/* ACTUALIZADO EL COLUMKEY PARA EL NUEVO ORDENAMIENTO */}
 							<SortableHeader
 								label="Cliente / Contacto"
-								columnKey="customer_name"
+								columnKey="client"
 								currentSortKey={sortKey}
 								currentDirection={sortDirection}
 								onSort={handleSort}
@@ -280,12 +286,18 @@ export default function OrdersPage() {
 									(acc, item) => acc + (item.expected_return_qty || 0),
 									0,
 								);
-								const cleanPhone = order.customer_phone.replace(/\D/g, "");
+
+								// Datos limpios del cliente
+								const clientFullName =
+									`${order.client?.first_name || ""} ${order.client?.last_name || ""}`.trim() ||
+									"Cliente Desconocido";
+								const cleanPhone = (
+									order.client?.whatsapp_number || ""
+								).replace(/\D/g, "");
 
 								const baseRowClasses =
 									"border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50 last:border-0 transition-colors duration-200";
 
-								// Si el pedido está cancelado, aplicamos estilo tenue
 								const rowStatusStyle =
 									order.status === "cancelled"
 										? "opacity-60 bg-swapp-azul-petroleo/10 dark:bg-swapp-azul-oscuro/80 hover:bg-swapp-azul-petroleo/20 dark:hover:bg-swapp-azul-oscuro/90"
@@ -298,21 +310,23 @@ export default function OrdersPage() {
 											<td className="px-6 py-4">
 												<div className="flex flex-col gap-1.5">
 													<span className="font-bold text-swapp-azul-oscuro dark:text-swapp-blanco text-base">
-														{order.customer_name}
+														{clientFullName}
 													</span>
 													<div className="flex items-center gap-2 text-xs">
 														<span className="font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
-															{order.customer_phone}
+															{order.client?.whatsapp_number || "Sin teléfono"}
 														</span>
-														<SwappTooltip text="WhatsApp Cliente">
-															<a
-																href={`https://web.whatsapp.com/send?phone=${cleanPhone}&text=Hola%20${order.customer_name},%20te%20escribimos%20de%20Swapp%20por%20tu%20pedido.`}
-																target="_blank"
-																rel="noopener noreferrer"
-																className="text-emerald-600 hover:text-emerald-700 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 p-1 rounded-md transition-colors shadow-sm">
-																<MessageCircle className="h-3.5 w-3.5" />
-															</a>
-														</SwappTooltip>
+														{cleanPhone && (
+															<SwappTooltip text="WhatsApp Cliente">
+																<a
+																	href={`https://web.whatsapp.com/send?phone=${cleanPhone}&text=Hola%20${order.client?.first_name || ""},%20te%20escribimos%20de%20Swapp%20por%20tu%20pedido.`}
+																	target="_blank"
+																	rel="noopener noreferrer"
+																	className="text-emerald-600 hover:text-emerald-700 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 p-1 rounded-md transition-colors shadow-sm">
+																	<MessageCircle className="h-3.5 w-3.5" />
+																</a>
+															</SwappTooltip>
+														)}
 													</div>
 												</div>
 											</td>
@@ -386,7 +400,6 @@ export default function OrdersPage() {
 
 											<td className="px-6 py-4">
 												<div className="flex items-center justify-end gap-2">
-													{/* Botón Acordeón */}
 													<button
 														onClick={() => toggleRow(order.order_uuid)}
 														className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo bg-swapp-blanco/60 dark:bg-swapp-azul-oscuro/60 hover:bg-swapp-blanco dark:hover:bg-swapp-azul-petroleo transition-colors text-swapp-verde-oscuro dark:text-swapp-verde-menta font-sans font-bold text-xs shadow-sm">
@@ -450,7 +463,6 @@ export default function OrdersPage() {
 														className={`grid transition-all duration-300 ease-in-out ${isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
 														<div className="overflow-hidden">
 															<div className="px-6 py-4 flex flex-col gap-4">
-																{/* Notas del Repartidor */}
 																{order.logistics_notes && (
 																	<div className="flex items-start gap-2 p-3 rounded-xl bg-yellow-500/10 dark:bg-yellow-500/5 border border-yellow-500/20 shadow-sm backdrop-blur-sm">
 																		<FileText className="h-4 w-4 text-yellow-600 dark:text-yellow-500 mt-0.5" />
@@ -465,7 +477,6 @@ export default function OrdersPage() {
 																	</div>
 																)}
 
-																{/* Tabla de Productos Anidada */}
 																<div className="rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 overflow-hidden bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md shadow-sm">
 																	<table className="w-full text-xs text-left">
 																		<thead className="bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/20 border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50">

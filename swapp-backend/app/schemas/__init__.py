@@ -29,3 +29,11 @@ from.orders import (
     OrderUpdate,
     OrderResponse
 )
+
+from .clients import (
+    ClientBase,
+    ClientCreate,
+    ClientUpdate,
+    ClientResponse,
+    ClientSearchResponse,
+)

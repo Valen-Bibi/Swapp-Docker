@@ -54,6 +54,9 @@ export default function Sidebar() {
 	const [isInventoryExpanded, setIsInventoryExpanded] = useState(
 		safePathname.includes("/dashboard/products/inventory"),
 	);
+	const [isClientsExpanded, setIsClientsExpanded] = useState(
+		safePathname.includes("/dashboard/clients"),
+	);
 
 	useEffect(() => {
 		const token = Cookies.get("admin_token");
@@ -75,6 +78,8 @@ export default function Sidebar() {
 			setIsPricingExpanded(true);
 		if (safePathname.includes("/dashboard/products/inventory"))
 			setIsInventoryExpanded(true);
+		// FIX: Ahora verifica la ruta de clientes correctamente
+		if (safePathname.includes("/dashboard/clients")) setIsClientsExpanded(true);
 	}, [safePathname]);
 
 	const handleLogout = () => {
@@ -178,6 +183,18 @@ export default function Sidebar() {
 		{ path: "/dashboard/orders/new", label: "Carga Manual", icon: PlusSquare },
 	];
 	const activeOrdersIndex = ordersLinks.findIndex(
+		(link) => safePathname === link.path,
+	);
+
+	// FIX: Se removió el duplicado
+	const clientsLinks = [
+		{
+			path: "/dashboard/clients",
+			label: "ABM Clientes",
+			icon: Users,
+		},
+	];
+	const activeClientsIndex = clientsLinks.findIndex(
 		(link) => safePathname === link.path,
 	);
 
@@ -453,34 +470,71 @@ export default function Sidebar() {
 					</div>
 				</div>
 
-				{/* ---------------- USUARIOS ---------------- */}
+				{/* ---------------- Entidades ---------------- */}
 				<div>
 					{isCollapsed ? (
 						<hr className="mx-2 mb-2 border-t border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo transition-all duration-300" />
 					) : (
 						<p className="px-4 text-sm font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta uppercase tracking-widest mb-3 animate-in fade-in duration-300">
-							Usuarios
+							Entidades
 						</p>
 					)}
 
 					<div
 						className={`space-y-1 transition-all duration-300 ${!isCollapsed ? "ml-4" : ""}`}>
+						{/* Menú Expandible: Clientes */}
 						<div className="flex flex-col gap-1">
-							<SwappTooltip text={isCollapsed ? "Clientes (Próximamente)" : ""}>
-								<div
-									className={`overflow-hidden transition-all duration-300 ease-in-out relative flex flex-col gap-1 ${!isCollapsed ? "max-h-[400px] opacity-100 mt-1 pl-[14px] py-1.5" : "max-h-0 opacity-0"}`}>
-									<div className="absolute left-0 top-0 bottom-0 w-[2px] bg-swapp-azul-petroleo/10 dark:bg-swapp-azul-petroleo/40 rounded-full" />
-
-									<Link
-										href="#"
-										className={`flex items-center w-full gap-2 px-3 h-[40px] text-sm text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40 rounded-lg cursor-not-allowed relative z-10`}>
-										<Users className="h-4 w-4 shrink-0" />
-										<span className="whitespace-nowrap">
-											Clientes (Próximamente)
-										</span>
-									</Link>
-								</div>
+							<SwappTooltip text={isCollapsed ? "Clientes" : ""}>
+								<button
+									onClick={() =>
+										handleMenuClick(isClientsExpanded, setIsClientsExpanded)
+									}
+									className={getNavButtonClasses(
+										safePathname.includes("/dashboard/clients"),
+									)}>
+									<div className="flex items-center gap-3">
+										<Users className="h-5 w-5 shrink-0" />
+										{!isCollapsed && (
+											<span className="font-medium whitespace-nowrap text-sm">
+												Clientes
+											</span>
+										)}
+									</div>
+									{/* FIX: Ahora mira su propio estado para girar la flecha */}
+									{!isCollapsed && (
+										<ChevronDown
+											className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isClientsExpanded ? "rotate-180" : ""}`}
+										/>
+									)}
+								</button>
 							</SwappTooltip>
+
+							<div
+								className={`overflow-hidden transition-all duration-300 ease-in-out relative flex flex-col gap-1 ${!isCollapsed && isClientsExpanded ? "max-h-[400px] opacity-100 mt-1 pl-[14px] py-1.5" : "max-h-0 opacity-0"}`}>
+								{/* LÍNEA DE GUÍA (RIEL) ESTANDARIZADA */}
+								<div className="absolute left-0 top-0 bottom-0 w-[2px] bg-swapp-azul-petroleo/10 dark:bg-swapp-azul-petroleo/40 rounded-full" />
+
+								{activeClientsIndex >= 0 && (
+									<div
+										// PASTILLA (ASCENSOR GLASSMORPHISM)
+										className="absolute left-[14px] right-0 top-1.5 h-[40px] z-10 rounded-lg bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 shadow-md transition-transform duration-300 ease-out pointer-events-none"
+										style={{
+											transform: `translateY(${activeClientsIndex * 44}px)`,
+										}}>
+										<span className="absolute -left-[14px] top-1/2 -translate-y-1/2 h-3/5 w-[2px] bg-swapp-verde-oscuro dark:bg-swapp-verde-menta rounded-full shadow-[0_0_8px_rgba(29,61,43,0.4)] dark:shadow-[0_0_8px_rgba(141,201,160,0.4)]" />
+									</div>
+								)}
+
+								{clientsLinks.map((link, idx) => (
+									<Link
+										key={link.path}
+										href={link.path}
+										className={getNavLinkClasses(activeClientsIndex === idx)}>
+										<link.icon className="h-4 w-4 shrink-0" />
+										<span className="whitespace-nowrap">{link.label}</span>
+									</Link>
+								))}
+							</div>
 						</div>
 					</div>
 				</div>

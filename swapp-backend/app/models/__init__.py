@@ -25,7 +25,8 @@ from .products import (
 from .inventory import (
     ProductPriceHistory, 
     ProductDiscount, 
-    InventoryMovement
+    InventoryMovement,
+    ReturnablePhysicalStock
 )
 
 from .ai import (
@@ -37,4 +38,9 @@ from .orders import (
     OrderItem,
     OrderStatusHistory,
     Payment
+)
+
+from .clients import (
+    Client,
+    ClientContainerLedger
 )

@@ -25,7 +25,6 @@ const OrderItemRow = ({
 	const unitPrice = watch(`items.${index}.unit_price`);
 	const subtotal = watch(`items.${index}.subtotal`);
 	const requiresReturn = watch(`items.${index}.requires_return`);
-	const expectedReturnQty = watch(`items.${index}.expected_return_qty`);
 	const quantity = watch(`items.${index}.quantity`);
 
 	// Observamos la campaña aplicada para la UI
@@ -34,7 +33,8 @@ const OrderItemRow = ({
 	const selectedProduct = products.find((p) => p.product_id === productId);
 
 	// CENTRALIZAMOS LAS CLASES DEL INPUT USANDO TU PALETA ESTRICTA
-	const inputStyles = "w-full rounded-md border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro px-3 py-2 text-sm text-swapp-azul-oscuro dark:text-swapp-tiza-verdoso outline-none focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta transition-colors disabled:opacity-50";
+	const inputStyles =
+		"w-full rounded-md border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro px-3 py-2 text-sm text-swapp-azul-oscuro dark:text-swapp-tiza-verdoso outline-none focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta transition-colors disabled:opacity-50";
 
 	return (
 		<tr className="border-b border-swapp-tiza-verdoso/40 dark:border-swapp-azul-petroleo/40 last:border-0 transition-colors duration-200 hover:bg-swapp-blanco/60 dark:hover:bg-swapp-azul-petroleo/20">
@@ -107,7 +107,6 @@ const OrderItemRow = ({
 									(v) => v.variant_id === newVariantId,
 								);
 
-								// Validación estricta para TypeScript y lógica de descuentos
 								if (variant && selectedProduct) {
 									const basePrice = Number(variant.price);
 									let finalPrice = basePrice;
@@ -190,6 +189,8 @@ const OrderItemRow = ({
 										newQty * currentUnitPrice,
 									);
 
+									// Si cambian la cantidad entregada, forzamos a que el retorno esperado
+									// vuelva a igualarse a la nueva cantidad por defecto.
 									if (isReturnable) {
 										setValue(`items.${index}.expected_return_qty`, newQty);
 									}
@@ -198,10 +199,37 @@ const OrderItemRow = ({
 						)}
 					/>
 
+					{/* NUEVO INPUT INTERACTIVO PARA RETORNOS */}
 					{requiresReturn && (
-						<div className="flex items-center gap-1 text-[10px] text-swapp-verde-oscuro dark:text-swapp-verde-menta font-medium bg-swapp-verde-pastel/10 dark:bg-swapp-verde-menta/10 px-2 py-1 rounded-full w-max border border-swapp-verde-pastel/20 dark:border-swapp-verde-menta/20">
-							<Recycle className="h-3 w-3" />
-							Recoger: {expectedReturnQty}
+						<div className="flex items-center gap-1.5 mt-1 bg-swapp-verde-pastel/10 dark:bg-swapp-verde-menta/10 px-2 py-1.5 rounded-lg border border-swapp-verde-pastel/20 dark:border-swapp-verde-menta/20 w-max transition-colors">
+							<Recycle className="h-3.5 w-3.5 text-swapp-verde-oscuro dark:text-swapp-verde-menta" />
+							<span className="text-[10px] font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta uppercase tracking-wider">
+								Recoger:
+							</span>
+							<Controller
+								control={control}
+								name={`items.${index}.expected_return_qty`}
+								render={({ field }) => (
+									<input
+										type="number"
+										min="0"
+										max={quantity || 0}
+										className="w-60 h-7 rounded bg-swapp-blanco dark:bg-swapp-azul-oscuro border border-swapp-verde-oscuro/30 dark:border-swapp-verde-menta/30 px-1 py-0.5 text-center text-xs font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta outline-none focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta transition-all"
+										value={field.value ?? ""}
+										onChange={(e) => {
+											let val = parseInt(e.target.value);
+											if (isNaN(val)) val = 0;
+
+											// Regla de Negocio: No puede devolver más de lo que recibe en este pedido
+											if (val > (quantity || 0)) val = quantity || 0;
+											// Regla de Negocio: No existen retornos negativos
+											if (val < 0) val = 0;
+
+											field.onChange(val);
+										}}
+									/>
+								)}
+							/>
 						</div>
 					)}
 				</div>
@@ -214,7 +242,6 @@ const OrderItemRow = ({
 						{formatCurrency(subtotal || 0)}
 					</span>
 
-					{/* Badge de Oferta si aplica */}
 					{campaignName && (
 						<span className="inline-flex items-center gap-1 text-[9px] font-medium text-swapp-verde-oscuro dark:text-swapp-verde-menta bg-swapp-verde-pastel/20 dark:bg-swapp-verde-menta/10 px-1.5 py-0.5 rounded uppercase tracking-wider w-max mt-0.5 border border-swapp-verde-pastel/20 dark:border-swapp-verde-menta/20">
 							<Tag className="h-2.5 w-2.5" />
@@ -307,10 +334,18 @@ export default function OrderItemsList() {
 				<table className="w-full text-left text-sm text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
 					<thead className="bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/20 border-b border-swapp-tiza-verdoso/60 dark:border-swapp-azul-petroleo/60 select-none">
 						<tr>
-							<th className="px-4 py-3 text-xs uppercase tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 w-1/3">Producto</th>
-							<th className="px-4 py-3 text-xs uppercase tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 w-1/4">Variante (SKU)</th>
-							<th className="px-4 py-3 text-xs uppercase tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 w-1/6">Cantidad</th>
-							<th className="px-4 py-3 text-xs uppercase tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 w-1/6">Total</th>
+							<th className="px-4 py-3 text-xs uppercase tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 w-1/3">
+								Producto
+							</th>
+							<th className="px-4 py-3 text-xs uppercase tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 w-1/4">
+								Variante (SKU)
+							</th>
+							<th className="px-4 py-3 text-xs uppercase tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 w-1/6">
+								Cantidad
+							</th>
+							<th className="px-4 py-3 text-xs uppercase tracking-wider text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 w-1/6">
+								Total
+							</th>
 							<th className="px-4 py-3 w-16 text-right"></th>
 						</tr>
 					</thead>
@@ -326,7 +361,8 @@ export default function OrderItemsList() {
 								<td
 									colSpan={5}
 									className="px-4 py-8 text-center text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/50 italic">
-									No hay ítems en el pedido. Presiona "Agregar Ítem" para comenzar.
+									No hay ítems en el pedido. Presiona "Agregar Ítem" para
+									comenzar.
 								</td>
 							</tr>
 						) : (

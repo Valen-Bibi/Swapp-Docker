@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, ConfigDict
+from .clients import ClientResponse
 
 class OrderItemCreate(BaseModel):
     product_id: int
@@ -39,9 +40,7 @@ class OrderItemResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class OrderCreate(BaseModel):
-    customer_name: str
-    customer_phone: str
-    customer_email: Optional[str] = None
+    client_id: int
     delivery_address: str
     delivery_zone: Optional[str] = None
     scheduled_delivery_date: Optional[datetime] = None
@@ -59,21 +58,26 @@ class OrderUpdate(BaseModel):
     logistics_notes: Optional[str] = None
     total_amount: Optional[float] = None
 
+class OrderClientInfo(BaseModel):
+    first_name: str
+    last_name: str
+    whatsapp_number: str
+
+    model_config = ConfigDict(from_attributes=True)
+
 class OrderResponse(BaseModel):
     order_id: int
     order_uuid: uuid.UUID
-    customer_name: str
-    customer_phone: str
-    customer_email: Optional[str] = None
+    client_id: int
+    client: Optional[ClientResponse] = None
     delivery_address: str
     delivery_zone: Optional[str] = None
     status: str
     total_amount: float
-    logistics_notes: Optional[str] = None
     scheduled_delivery_date: Optional[datetime] = None
+    logistics_notes: Optional[str] = None
     created_at: datetime
     updated_at: datetime
-    created_by: Optional[int] = None
     
     items: List[OrderItemResponse] = []
 

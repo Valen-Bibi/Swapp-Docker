@@ -60,7 +60,7 @@ export default function ArchiveCategoryModal({
 		}
 
 		setIsSaving(true);
-		const toastId = toast.loading("Procesando el archivado en cascada...");
+		const toastId = toast.loading("Procesando la desactivación en cascada...");
 
 		try {
 			await ProductService.archiveCategoryWithResolution(category.id, {
@@ -68,14 +68,14 @@ export default function ArchiveCategoryModal({
 				new_category_id: action === "reassign" ? Number(newCategoryId) : null,
 			});
 
-			toast.success("Categoría archivada y productos resueltos con éxito", {
+			toast.success("Categoría desactivada y productos resueltos con éxito", {
 				id: toastId,
 			});
 			onSuccess();
 			onClose();
 		} catch (error: any) {
 			toast.error(
-				error.response?.data?.detail || "Error al archivar la categoría.",
+				error.response?.data?.detail || "Error al Inactivar la categoría.",
 				{
 					id: toastId,
 				},
@@ -114,7 +114,7 @@ export default function ArchiveCategoryModal({
 							Resolución de Dependencias
 						</h2>
 						<p className="text-sm text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 mt-1.5 font-medium transition-colors">
-							Archivando:{" "}
+							Desactivando:{" "}
 							<span className="font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta">
 								{category.name}
 							</span>
@@ -135,8 +135,8 @@ export default function ArchiveCategoryModal({
 						<p className="leading-relaxed">
 							Esta categoría contiene{" "}
 							<strong>{activeProductsCount} productos activos</strong>. Para
-							proceder con el archivado, debes decidir qué hacer con ellos para
-							no generar stock huérfano.
+							proceder con el desactivación, debes decidir qué hacer con ellos
+							para no generar stock huérfano.
 						</p>
 					</div>
 
@@ -150,7 +150,7 @@ export default function ArchiveCategoryModal({
 								Acción a realizar
 							</label>
 							<div className="grid grid-cols-1 gap-4">
-								{/* Tarjeta A: Archivar en Cascada */}
+								{/* Tarjeta A: Desactivar en Cascada */}
 								<button
 									type="button"
 									onClick={() => setAction("archive_products")}
@@ -165,7 +165,7 @@ export default function ArchiveCategoryModal({
 										/>
 										<span
 											className={`font-semibold text-sm ${action === "archive_products" ? "text-swapp-verde-oscuro dark:text-swapp-verde-menta" : "text-swapp-azul-oscuro dark:text-swapp-blanco"}`}>
-											Archivar productos en cascada
+											Desactivar productos en cascada
 										</span>
 									</div>
 									<p
@@ -196,7 +196,7 @@ export default function ArchiveCategoryModal({
 									<p
 										className={`text-[11px] leading-relaxed text-left ${action === "reassign" ? "text-swapp-verde-oscuro/80 dark:text-swapp-verde-menta/80" : "text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70"}`}>
 										Moverá los {activeProductsCount} productos hacia una nueva
-										categoría activa antes de archivar la actual.
+										categoría activa antes de desactivar la actual.
 									</p>
 								</button>
 							</div>

@@ -236,7 +236,7 @@ export default function MasterCatalogPage() {
 	) => {
 		const isDeactivating = currentStatus;
 		const toastId = toast.loading(
-			isDeactivating ? "Archivando variante..." : "Restaurando variante...",
+			isDeactivating ? "Desactivando variante..." : "Activando variante...",
 		);
 
 		try {
@@ -245,8 +245,8 @@ export default function MasterCatalogPage() {
 			});
 			toast.success(
 				isDeactivating
-					? "Variante archivada exitosamente"
-					: "Variante restaurada",
+					? "Variante desactivada exitosamente"
+					: "Variante activada",
 				{ id: toastId },
 			);
 			fetchProducts();
@@ -265,8 +265,8 @@ export default function MasterCatalogPage() {
 		const isDeactivating = currentStatus;
 		const toastId = toast.loading(
 			isDeactivating
-				? "Archivando producto base..."
-				: "Restaurando producto base...",
+				? "Desactivando producto base..."
+				: "Activando producto base...",
 		);
 
 		try {
@@ -275,8 +275,8 @@ export default function MasterCatalogPage() {
 			});
 			toast.success(
 				isDeactivating
-					? "Producto archivado exitosamente"
-					: "Producto restaurado",
+					? "Producto desactivado exitosamente"
+					: "Producto activado",
 				{ id: toastId },
 			);
 			fetchProducts();
@@ -366,8 +366,8 @@ export default function MasterCatalogPage() {
 						id="toggle-inactive-products"
 						icon={Archive}
 						iconActiveColor="text-swapp-verde-oscuro dark:text-swapp-verde-menta"
-						labelOn="Viendo Archivados"
-						labelOff="Ver Archivados"
+						labelOn="Viendo Inactivos"
+						labelOff="Ver Inactivos"
 						checked={showInactiveProducts}
 						onChange={setShowInactiveProducts}
 					/>
@@ -439,7 +439,12 @@ export default function MasterCatalogPage() {
 								(m: any) =>
 									m.media_type === "image" && m.media_subtype === "main",
 							)?.file_url;
+
+							// LÓGICA DE CONTADORES ACTUALIZADA
 							const totalVariantsCount = p.variants?.length || 0;
+							const activeVariantsCount =
+								p.variants?.filter((v: any) => v.is_active).length || 0;
+
 							const isShowingInactive = !!showInactiveVariants[p.product_uuid!];
 							const visibleVariants =
 								p.variants?.filter((v) => isShowingInactive || v.is_active) ||
@@ -497,9 +502,9 @@ export default function MasterCatalogPage() {
 													onClick={() => toggleRow(p.product_uuid!)}
 													className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo bg-swapp-blanco/60 dark:bg-swapp-azul-oscuro/60 hover:bg-swapp-blanco dark:hover:bg-swapp-azul-petroleo transition-colors text-swapp-verde-oscuro dark:text-swapp-verde-menta font-sans font-bold shadow-sm">
 													<Layers className="h-3.5 w-3.5" />
-													{totalVariantsCount === 1
+													{activeVariantsCount === 1
 														? "1 Variante"
-														: `${totalVariantsCount} Variantes`}
+														: `${activeVariantsCount} Variantes`}
 													{isExpanded ? (
 														<ChevronDown className="h-4 w-4" />
 													) : (
@@ -572,7 +577,7 @@ export default function MasterCatalogPage() {
 														/>
 														<TableActionIcon
 															icon={Archive}
-															tooltip="Archivar Producto Base"
+															tooltip="Desactivar Producto Base"
 															variant="danger"
 															onClick={() =>
 																toggleProductStatus(
@@ -585,7 +590,7 @@ export default function MasterCatalogPage() {
 												) : (
 													<TableActionIcon
 														icon={RotateCcw}
-														tooltip="Restaurar Producto Base"
+														tooltip="Activar Producto Base"
 														onClick={() =>
 															toggleProductStatus(p.product_uuid!, p.is_active)
 														}
@@ -598,6 +603,30 @@ export default function MasterCatalogPage() {
 									{/* SUBTABLA DE VARIANTES (MODULARIZADA CON ANIMATED TABLE ROW) */}
 									{totalVariantsCount > 0 && (
 										<AnimatedTableRow isExpanded={isExpanded} colSpan={6}>
+											{/* NUEVO TOOLBAR SUPERIOR PARA LAS VARIANTES */}
+											<div className="bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/20 border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50 px-4 py-2 flex items-center justify-between">
+												<span className="text-[10px] font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+													Desglose de Variantes Físicas
+												</span>
+												<div className="flex items-center gap-2">
+													<span className="text-[10px] font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+														Mostrar Inactivas
+													</span>
+													<div className="scale-[0.80] origin-right flex items-center">
+														<SwappToggle
+															checked={isShowingInactive}
+															onChange={(val) =>
+																setShowInactiveVariants((prev) => ({
+																	...prev,
+																	[p.product_uuid!]: val,
+																}))
+															}
+															id={`toggle-${p.product_uuid}`}
+														/>
+													</div>
+												</div>
+											</div>
+
 											<table className="w-full text-xs text-left">
 												{/* CABECERA VARIANTES */}
 												<thead className="bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/20 border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50">
@@ -606,28 +635,7 @@ export default function MasterCatalogPage() {
 															Img
 														</th>
 														<th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/70 w-1/4">
-															<div className="flex items-center gap-2">
-																<SwappTooltip
-																	text={
-																		isShowingInactive
-																			? "Ocultar Archivados"
-																			: "Mostrar Archivados"
-																	}>
-																	<div className="scale-[0.80] origin-left flex items-center">
-																		<SwappToggle
-																			checked={isShowingInactive}
-																			onChange={(val) =>
-																				setShowInactiveVariants((prev) => ({
-																					...prev,
-																					[p.product_uuid!]: val,
-																				}))
-																			}
-																			id={`toggle-${p.product_uuid}`}
-																		/>
-																	</div>
-																</SwappTooltip>
-																<span>SKU Específico</span>
-															</div>
+															SKU Específico
 														</th>
 														<th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/70 w-2/4">
 															Atributos (PIM)
@@ -650,8 +658,8 @@ export default function MasterCatalogPage() {
 															<td
 																colSpan={6}
 																className="px-4 py-6 text-center text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50 italic">
-																Todas las variantes están archivadas. Encendé el
-																switch para verlas.
+																Todas las variantes están inactivas. Encendé el
+																switch superior para verlas.
 															</td>
 														</tr>
 													) : (
@@ -810,9 +818,28 @@ export default function MasterCatalogPage() {
 																		)}
 																	</td>
 
-																	<td className="px-4 py-2.5 font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta align-middle">
-																		${Number(v.price).toLocaleString("es-AR")}
+																	{/* COLUMNA DE PRECIOS (SOLO LECTURA) */}
+																	<td className="px-4 py-2.5 align-middle">
+																		<div className="flex flex-col gap-0.5">
+																			<span className="font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta">
+																				$
+																				{Number(v.price || 0).toLocaleString(
+																					"es-AR",
+																				)}
+																			</span>
+																			{p.is_returnable && v.refill_price && (
+																				<SwappTooltip text="Precio al entregar envase">
+																					<span className="text-[10px] font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+																						Recarga: $
+																						{Number(
+																							v.refill_price,
+																						).toLocaleString("es-AR")}
+																					</span>
+																				</SwappTooltip>
+																			)}
+																		</div>
 																	</td>
+
 																	<td className="px-4 py-2.5 align-middle">
 																		<span
 																			className={`font-bold ${v.stock_quantity > 0 ? "text-swapp-verde-pastel dark:text-swapp-verde-menta" : "text-red-500"}`}>
@@ -860,7 +887,7 @@ export default function MasterCatalogPage() {
 																						/>
 																						<TableActionIcon
 																							icon={Archive}
-																							tooltip="Archivar Variante"
+																							tooltip="Desactivar Variante"
 																							variant="danger"
 																							size="sm"
 																							onClick={() =>
@@ -875,7 +902,7 @@ export default function MasterCatalogPage() {
 																				) : (
 																					<TableActionIcon
 																						icon={RotateCcw}
-																						tooltip="Restaurar Variante"
+																						tooltip="Activar Variante"
 																						size="sm"
 																						onClick={() =>
 																							toggleVariantStatus(

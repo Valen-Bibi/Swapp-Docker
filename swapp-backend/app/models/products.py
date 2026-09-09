@@ -116,6 +116,7 @@ class Product(Base):
     product_uuid = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, nullable=False)
 
     name = Column(String(255), nullable=False)
+    model = Column(String(100), nullable=True, index=True)
     slug = Column(String(255), unique=True, nullable=False)
     description = Column(Text, nullable=True)
     short_description = Column(String(500), nullable=True)
@@ -124,6 +125,7 @@ class Product(Base):
     
     currency = Column(String(3), default='ARS')
     reference_price = Column(Numeric(10, 2), nullable=True)
+    reference_refill_price = Column(Numeric(10, 2), nullable=True)
     reference_cost = Column(Numeric(10, 2), nullable=True)
     track_inventory = Column(Boolean, default=True)
     allow_backorder = Column(Boolean, default=False)
@@ -192,6 +194,7 @@ class ProductVariant(Base):
     
     sku = Column(String(50), unique=True, index=True)
     price = Column(Numeric(10,2), default=0.0, nullable=False)
+    refill_price = Column(Numeric(10, 2), nullable=True)
     cost_price = Column(Numeric(10,2), default=0.0, nullable=False)
     stock_quantity = Column(Integer, default=0)
     

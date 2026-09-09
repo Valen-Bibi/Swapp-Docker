@@ -27,8 +27,7 @@ class ProductDiscount(Base):
 
     discount_id = Column(BigInteger, primary_key=True, autoincrement=True)
     product_id = Column(BigInteger, ForeignKey("swapp.products.product_id", ondelete="CASCADE"), nullable=False)
-    
-    # --- MODIFICADO: Ahora es un ARRAY para múltiples variantes ---
+
     variant_ids = Column(ARRAY(BigInteger), nullable=True)
     
     name = Column(String(255), nullable=False) 
@@ -73,3 +72,23 @@ class InventoryMovement(Base):
     product = relationship("Product", back_populates="inventory_movements")
     variant = relationship("ProductVariant")
     user = relationship("staff_users", foreign_keys=[created_by])
+
+class ReturnablePhysicalStock(Base):
+    __tablename__ = "returnable_physical_stock"
+    __table_args__ = {"schema": "swapp"}
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    # Vinculamos al producto padre (Ej: "Cilindro CO2 SodaStream")
+    product_id = Column(BigInteger, ForeignKey("swapp.products.product_id", ondelete="CASCADE"), unique=True, nullable=False)
+    
+    # Los 3 estados puros de los "fierros" en tu galpón
+    stock_full = Column(Integer, default=0, nullable=False)
+    reserved_stock = Column(Integer, default=0, nullable=False)
+    stock_empty = Column(Integer, default=0, nullable=False)
+    stock_quarantine = Column(Integer, default=0, nullable=False)
+    last_audited_at = Column(DateTime(timezone=True), nullable=True)
+    
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # Relación inversa (asegurate de tener importado 'relationship' de sqlalchemy.orm)
+    product = relationship("Product", backref="returnable_stock")

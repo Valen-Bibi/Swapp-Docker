@@ -33,13 +33,11 @@ export default function EditOrderModal({
 		},
 	});
 
-	// Cargamos los datos del pedido cuando se abre el modal
 	useEffect(() => {
 		if (order && isOpen) {
 			reset({
 				delivery_address: order.delivery_address || "",
 				delivery_zone: order.delivery_zone || "",
-				// Formateamos la fecha para el input datetime-local
 				scheduled_delivery_date: order.scheduled_delivery_date
 					? new Date(order.scheduled_delivery_date).toISOString().slice(0, 16)
 					: "",
@@ -53,7 +51,6 @@ export default function EditOrderModal({
 	const onSubmit = async (data: any) => {
 		const toastId = toast.loading("Actualizando pedido...");
 		try {
-			// Convertimos strings vacíos a null para respetar tu esquema de FastAPI
 			const payload = {
 				...data,
 				delivery_zone: data.delivery_zone || null,
@@ -78,7 +75,7 @@ export default function EditOrderModal({
 	const inputBaseClass =
 		"w-full rounded-md border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta transition-all placeholder:text-swapp-azul-petroleo/40 dark:placeholder:text-swapp-tiza-verdoso/40";
 	const labelBaseClass =
-		"text-xs font-semibold text-swapp-azul-oscuro dark:text-swapp-blanco mb-1.5 block";
+		"text-xs font-bold uppercase tracking-wider text-swapp-azul-oscuro dark:text-swapp-blanco mb-1.5 block";
 
 	return (
 		<div className="fixed inset-0 z-[999] flex items-center justify-center bg-swapp-negro/50 dark:bg-swapp-negro/70 backdrop-blur-sm p-4 animate-in fade-in">
@@ -89,8 +86,10 @@ export default function EditOrderModal({
 						<h3 className="text-lg font-bold text-swapp-azul-oscuro dark:text-swapp-blanco">
 							Editar Logística del Pedido
 						</h3>
-						<p className="text-xs text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 mt-1">
-							{order.customer_name} • {order.customer_phone}
+						{/* ACTUALIZADO: Leyendo datos desde el objeto Client */}
+						<p className="text-xs font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 mt-1">
+							{order.client?.first_name} {order.client?.last_name} •{" "}
+							{order.client?.whatsapp_number}
 						</p>
 					</div>
 					<button

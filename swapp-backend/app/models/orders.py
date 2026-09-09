@@ -12,9 +12,8 @@ class Order(Base):
     order_id = Column(BigInteger, primary_key=True, autoincrement=True)
     order_uuid = Column(UUID(as_uuid=True), default=uuid.uuid4, unique=True, nullable=False)
     
-    customer_name = Column(String(150), nullable=False)
-    customer_phone = Column(String(50), nullable=False)
-    customer_email = Column(String(255), nullable=True)
+    client_id = Column(BigInteger, ForeignKey("swapp.clients.client_id", ondelete="RESTRICT"), nullable=False)
+    
     delivery_address = Column(Text, nullable=False)
     delivery_zone = Column(String(100), nullable=True)
     scheduled_delivery_date = Column(DateTime(timezone=True), nullable=True)
@@ -29,11 +28,10 @@ class Order(Base):
     
     created_by = Column(BigInteger, ForeignKey("swapp.staff_users.staff_id"))
 
-    # Relaciones existentes
+    client = relationship("Client", back_populates="orders")
     items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
     creator = relationship("staff_users", foreign_keys=[created_by])
     
-    # --- NUEVAS RELACIONES FASE 2 ---
     status_history = relationship("OrderStatusHistory", back_populates="order", cascade="all, delete-orphan")
     payments = relationship("Payment", back_populates="order", cascade="all, delete-orphan")
 

@@ -108,8 +108,8 @@ export default function BrandsPage() {
 						id="toggle-inactive-brands"
 						icon={Archive}
 						iconActiveColor="text-swapp-verde-oscuro dark:text-swapp-verde-menta"
-						labelOn="Viendo Archivadas"
-						labelOff="Ver Archivadas"
+						labelOn="Viendo Inactivas"
+						labelOff="Ver Inactivas"
 						checked={showInactive}
 						onChange={setShowInactive}
 					/>

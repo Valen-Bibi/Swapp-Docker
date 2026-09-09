@@ -140,7 +140,7 @@ export default function CategoriesPage() {
 					return;
 				} else {
 					const confirmed = window.confirm(
-						`¿Estás seguro de que querés archivar la categoría "${categoryName}"?`,
+						`¿Estás seguro de que querés desactivar la categoría "${categoryName}"?`,
 					);
 					if (!confirmed) return;
 				}
@@ -151,9 +151,9 @@ export default function CategoriesPage() {
 			}
 		}
 
-		const actionText = isDeactivating ? "archivar" : "restaurar";
+		const actionText = isDeactivating ? "desactivar" : "restaurar";
 		const actionToastId = toast.loading(
-			isDeactivating ? "Archivando categoría..." : "Restaurando categoría...",
+			isDeactivating ? "Desactivando categoría..." : "Restaurando categoría...",
 		);
 
 		try {
@@ -163,7 +163,7 @@ export default function CategoriesPage() {
 
 			toast.success(
 				isDeactivating
-					? "Categoría archivada exitosamente"
+					? "Categoría desactivada exitosamente"
 					: "Categoría restaurada",
 				{ id: actionToastId },
 			);
@@ -228,8 +228,8 @@ export default function CategoriesPage() {
 						id="toggle-inactive-cats"
 						icon={Archive}
 						iconActiveColor="text-swapp-verde-oscuro dark:text-swapp-verde-menta"
-						labelOn="Viendo Archivadas"
-						labelOff="Ver Archivadas"
+						labelOn="Viendo Inactivas"
+						labelOff="Ver Inactivas"
 						checked={showInactive}
 						onChange={setShowInactive}
 					/>
@@ -409,7 +409,7 @@ export default function CategoriesPage() {
 													/>
 													<TableActionIcon
 														icon={Archive}
-														tooltip="Archivar Categoría"
+														tooltip="Desactivar Categoría"
 														variant="danger"
 														onClick={() =>
 															handleToggleStatus(

@@ -753,6 +753,7 @@ def create_product_variant_admin(
         sku=variant_in.sku,
         price=final_price,
         cost_price=final_cost,
+        refill_price=variant_in.refill_price,
         stock_quantity=variant_in.stock_quantity or 0,
         variant_attributes=variant_in.variant_attributes,
         is_active=True
@@ -957,7 +958,6 @@ def count_category_products(
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
-    """Cuenta cuántos productos activos tiene una categoría (y sus subcategorías) antes de archivarla"""
 
     subcategories = db.query(models.ProductCategory.category_id).filter(models.ProductCategory.parent_id == category_id).all()
 

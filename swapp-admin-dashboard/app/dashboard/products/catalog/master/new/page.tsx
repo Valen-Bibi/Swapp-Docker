@@ -44,8 +44,9 @@ export default function NewProductPage() {
 	const [formData, setFormData] = useState({
 		name: "",
 		slug: "",
-		cost_price: 0,
-		base_price: 0,
+		reference_cost: 0,
+		reference_price: 0,
+		refill_price: 0,
 		brand_id: "",
 		category_id: "",
 		tax_class_id: "",
@@ -214,6 +215,10 @@ export default function NewProductPage() {
 
 			const newProductResponse = await ProductService.create({
 				...formData,
+				reference_refill_price:
+					formData.is_returnable && formData.refill_price > 0
+						? formData.refill_price
+						: null,
 				custom_attributes:
 					Object.keys(cleanCustomAttributes).length > 0
 						? cleanCustomAttributes
@@ -289,59 +294,121 @@ export default function NewProductPage() {
 				<form onSubmit={handleCreateProduct} className="space-y-8">
 					{/* IDENTIDAD Y PRECIOS */}
 					<div className="space-y-6">
-						<h3 className="text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
-							Identidad y Precios de Referencia
-						</h3>
-
-						<div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-							<SwappInput
-								label="Nombre Comercial"
-								placeholder="Ej: Botella Térmica..."
-								required
-								value={formData.name}
-								onChange={handleNameChange}
-							/>
-							<SwappInput
-								label="URL Amigable (Slug)"
-								required
-								value={formData.slug}
-								onChange={(e) =>
-									setFormData({
-										...formData,
-										slug: generateSlug(e.target.value),
-									})
-								}
-							/>
-							<SwappInput
-								label="Costo de Referencia ($)"
-								type="text"
-								formatThousands
-								step="0.01"
-								min="0"
-								value={formData.cost_price === 0 ? "" : formData.cost_price}
-								onChange={(e) =>
-									setFormData({
-										...formData,
-										cost_price: parseFloat(e.target.value) || 0,
-									})
-								}
-							/>
-							<SwappInput
-								label="Precio Base de Referencia ($)"
-								type="text"
-								formatThousands
-								step="0.01"
-								min="0"
-								value={formData.base_price === 0 ? "" : formData.base_price}
-								onChange={(e) =>
-									setFormData({
-										...formData,
-										base_price: parseFloat(e.target.value) || 0,
-									})
-								}
-							/>
+						{/* HEADER DE LA SECCIÓN CON EL NUEVO TOGGLE */}
+						<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/30 pb-4 transition-colors">
+							<h3 className="text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+								Identidad y Precios de Referencia
+							</h3>
+							<div className="flex items-center gap-3 bg-swapp-verde-pastel/10 dark:bg-swapp-verde-menta/10 px-4 py-2 rounded-xl border border-swapp-verde-pastel/20 dark:border-swapp-verde-menta/20 transition-colors shadow-sm">
+								<span className="text-sm font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta">
+									Es un envase retornable
+								</span>
+								<SwappToggle
+									checked={formData.is_returnable}
+									onChange={(val) =>
+										setFormData({
+											...formData,
+											is_returnable: val,
+											// Si lo apaga, blanqueamos el precio de recarga
+											refill_price: val ? formData.refill_price : 0,
+										})
+									}
+									id="toggle-returnable"
+								/>
+							</div>
 						</div>
 
+						{/* GRILLA DE INPUTS CON ANIMACIÓN PARA LA RECARGA */}
+						<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+							<div className="sm:col-span-2">
+								<SwappInput
+									label="Nombre Comercial"
+									placeholder="Ej: Botella Térmica..."
+									required
+									value={formData.name}
+									onChange={handleNameChange}
+								/>
+							</div>
+							<div className="sm:col-span-2">
+								<SwappInput
+									label="URL Amigable (Slug)"
+									required
+									value={formData.slug}
+									onChange={(e) =>
+										setFormData({
+											...formData,
+											slug: generateSlug(e.target.value),
+										})
+									}
+								/>
+							</div>
+
+							{/* COSTO: Siempre ocupa 2 columnas en Desktop */}
+							<div className="sm:col-span-2">
+								<SwappInput
+									label="Costo de Referencia ($)"
+									type="text"
+									formatThousands
+									step="0.01"
+									min="0"
+									value={
+										formData.reference_cost === 0 ? "" : formData.reference_cost
+									}
+									onChange={(e) =>
+										setFormData({
+											...formData,
+											reference_cost: parseFloat(e.target.value) || 0,
+										})
+									}
+								/>
+
+								<div
+									className={`transition-all duration-300 ${formData.is_returnable ? "sm:col-span-1" : "sm:col-span-2"}`}>
+									<SwappInput
+										label="Precio Base de Referencia ($)"
+										type="text"
+										formatThousands
+										step="0.01"
+										min="0"
+										value={
+											formData.reference_price === 0
+												? ""
+												: formData.reference_price
+										}
+										onChange={(e) =>
+											setFormData({
+												...formData,
+												reference_price: parseFloat(e.target.value) || 0,
+											})
+										}
+									/>
+								</div>
+							</div>
+
+							{/* RECARGA: Aparece mágicamente */}
+							{formData.is_returnable && (
+								<div className="sm:col-span-1 animate-in fade-in slide-in-from-left-4 duration-300">
+									<SwappInput
+										label="Precio de Referencia Recarga ($)"
+										type="text"
+										formatThousands
+										step="0.01"
+										min="0"
+										value={
+											formData.refill_price === 0 ? "" : formData.refill_price
+										}
+										onChange={(e) =>
+											setFormData({
+												...formData,
+												refill_price: parseFloat(e.target.value) || 0,
+											})
+										}
+									/>
+								</div>
+							)}
+						</div>
+
+						{/* RESTO DEL FORMULARIO INTACTO */}
 						<div className="grid grid-cols-1 gap-6 sm:grid-cols-3 border-t border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/30 pt-6 transition-colors">
 							<div className="space-y-1.5">
 								<label className="block text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 transition-colors">
@@ -811,17 +878,7 @@ export default function NewProductPage() {
 
 							<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 pt-6 border-t border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/30 transition-colors">
 								<div className="space-y-4">
-									<SwappCheckbox
-										label="Es un envase retornable (Habilitar escaneo de IA)"
-										id="is_returnable"
-										checked={formData.is_returnable}
-										onChange={(e) =>
-											setFormData({
-												...formData,
-												is_returnable: e.target.checked,
-											})
-										}
-									/>
+									{/* EL CHECKBOX DE is_returnable FUE ELIMINADO DE ACÁ Y MOVIDO ARRIBA */}
 									<SwappCheckbox
 										label="Publicar inmediatamente en la tienda"
 										id="is_published"

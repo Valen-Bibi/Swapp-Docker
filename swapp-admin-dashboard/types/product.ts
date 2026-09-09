@@ -31,6 +31,7 @@ export interface ProductVariant {
   variant_uuid?: string;
   sku: string;
   price: number;
+  refill_price: number;
   cost_price: number;
   sale_price?: number | null;
   stock_quantity: number;

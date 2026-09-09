@@ -5,7 +5,7 @@ import uuid
 import io
 from typing import Optional, List
 from datetime import timedelta
-from contextlib import asynccontextmanager # <-- Importación necesaria para el lifespan
+from contextlib import asynccontextmanager
 
 from pydantic import BaseModel
 from fastapi import FastAPI, Depends, HTTPException, status, File, UploadFile, Form
@@ -19,7 +19,7 @@ from PIL import Image
 
 from . import models, database, auth, schemas
 from .database import engine, get_db, Base
-from .routers import products, auth_routes, staff, orders, dashboard_routes
+from .routers import products, auth_routes, staff, orders, dashboard_routes, clients
 
 ml_models = {}
 
@@ -77,6 +77,7 @@ app.include_router(auth_routes.router)
 app.include_router(staff.router)
 app.include_router(orders.router)
 app.include_router(dashboard_routes.router)
+app.include_router(clients.router)
 
 @app.post("/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):

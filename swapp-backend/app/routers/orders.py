@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 from typing import List
 from uuid import UUID
-from datetime import datetime, timezone
 
 from .. import models, schemas
 from ..database import get_db
@@ -17,10 +16,14 @@ def create_order_admin(
     admin_user = Depends(get_current_admin_user)
 ):
     try:
+        # 1. Verificamos que el cliente exista
+        client = db.query(models.Client).filter(models.Client.client_id == order_data.client_id).first()
+        if not client:
+            raise HTTPException(status_code=400, detail="El cliente seleccionado no existe.")
+
+        # 2. Creamos la Orden usando la relación
         new_order = models.Order(
-            customer_name=order_data.customer_name,
-            customer_phone=order_data.customer_phone,
-            customer_email=order_data.customer_email,
+            client_id=order_data.client_id,
             delivery_address=order_data.delivery_address,
             delivery_zone=order_data.delivery_zone,
             scheduled_delivery_date=order_data.scheduled_delivery_date,
@@ -30,8 +33,9 @@ def create_order_admin(
             created_by=admin_user.staff_id
         )
         db.add(new_order)
-        db.flush() # Flush nos da el new_order.order_id sin cerrar la transacción
+        db.flush() 
 
+        # 3. Lógica de Items e Inventario
         for item in order_data.items:
             product = db.query(models.Product).filter(models.Product.product_id == item.product_id).first()
             if not product:
@@ -54,7 +58,6 @@ def create_order_admin(
             db.add(new_item)
 
             if item.variant_id:
-                # 1. Buscamos la variante y BLOQUEAMOS LA FILA hasta que termine la transacción
                 variant = db.query(models.ProductVariant).filter(
                     models.ProductVariant.variant_id == item.variant_id
                 ).with_for_update().first()
@@ -62,21 +65,17 @@ def create_order_admin(
                 if not variant:
                     raise HTTPException(status_code=400, detail=f"La variante con ID {item.variant_id} no existe.")
 
-                # 2. Calculamos los valores de stock
                 stock_before = variant.stock_quantity
                 stock_after = stock_before - item.quantity
-
-                # 3. Aplicamos el descuento FÍSICO al stock real
                 variant.stock_quantity = stock_after
 
-                # 4. Registramos el movimiento con el historial perfecto
                 sale_movement = models.InventoryMovement(
                     product_id=item.product_id,
                     variant_id=item.variant_id,
                     movement_type='sale',
                     quantity=-(item.quantity),
-                    stock_before=stock_before,       # <--- DATO SOLUCIONADO
-                    stock_after=stock_after,         # <--- DATO SOLUCIONADO
+                    stock_before=stock_before,
+                    stock_after=stock_after,
                     reference_id=new_order.order_id,
                     reference_type='order',
                     reason=f"Venta reservada en pedido {new_order.order_uuid}",
@@ -102,8 +101,11 @@ def get_orders(
     db: Session = Depends(get_db), 
     admin_user = Depends(get_current_admin_user)
 ):
-
-    query = db.query(models.Order).options(joinedload(models.Order.items))
+    # ACTUALIZADO: Agregamos joinedload de client
+    query = db.query(models.Order).options(
+        joinedload(models.Order.items),
+        joinedload(models.Order.client)
+    )
     
     if status_filter:
         query = query.filter(models.Order.status == status_filter)
@@ -113,15 +115,18 @@ def get_orders(
     orders = query.order_by(models.Order.created_at.desc()).all()
     return orders
 
-
 @router.get("/{order_uuid}", response_model=schemas.OrderResponse)
 def get_order_detail(
     order_uuid: UUID,
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
+    # ACTUALIZADO: Agregamos joinedload de client
     order = db.query(models.Order)\
-              .options(joinedload(models.Order.items))\
+              .options(
+                  joinedload(models.Order.items),
+                  joinedload(models.Order.client)
+              )\
               .filter(models.Order.order_uuid == order_uuid)\
               .first()
               
@@ -129,7 +134,6 @@ def get_order_detail(
         raise HTTPException(status_code=404, detail="Pedido no encontrado")
         
     return order
-
 
 @router.patch("/{order_uuid}/status")
 def update_order_status(
@@ -145,29 +149,23 @@ def update_order_status(
     old_status = order.status
     order.status = new_status
 
-    # Lógica de devolución de stock por Cancelación
     if new_status == 'cancelled' and old_status != 'cancelled':
         for item in order.items:
             if item.variant_id:
-                # 1. Buscamos la variante con bloqueo
                 variant = db.query(models.ProductVariant).filter(
                     models.ProductVariant.variant_id == item.variant_id
                 ).with_for_update().first()
 
                 if variant:
-                    # 2. Calculamos devolviendo el stock
                     stock_before = variant.stock_quantity
                     stock_after = stock_before + item.quantity
-
-                    # 3. Restauramos el stock físico
                     variant.stock_quantity = stock_after
 
-                    # 4. Registramos el historial de la devolución
                     return_movement = models.InventoryMovement(
                         product_id=item.product_id,
                         variant_id=item.variant_id,
                         movement_type='return',
-                        quantity=item.quantity, # Cantidad en positivo porque es un ingreso
+                        quantity=item.quantity,
                         stock_before=stock_before,
                         stock_after=stock_after,
                         reference_id=order.order_id,
@@ -191,7 +189,6 @@ def update_order_details(
     if not order:
         raise HTTPException(status_code=404, detail="Pedido no encontrado")
         
-    # Actualizamos solo los campos que vengan en el payload
     update_dict = update_data.model_dump(exclude_unset=True)
     for key, value in update_dict.items():
         setattr(order, key, value)
