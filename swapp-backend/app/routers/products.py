@@ -266,7 +266,6 @@ def update_product_admin(
     
     update_data = product_update.model_dump(exclude_unset=True)
 
-    # --- NUEVA REGLA: BLINDAJE DE SUBCATEGORÍA AL EDITAR ---
     if 'category_id' in update_data and update_data['category_id'] is not None:
         category = db.query(models.ProductCategory).filter(models.ProductCategory.category_id == update_data['category_id']).first()
         if not category:
@@ -285,16 +284,81 @@ def update_product_admin(
         if existing_slug:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="La URL amigable (slug) ya está en uso.")
 
+    # --- INTELIGENCIA DE TRANSICIÓN ---
+    was_multiple = product.has_variants
+    is_multiple = update_data.get('has_variants', product.has_variants)
+    
+    if was_multiple and not is_multiple:
+        # DOWNGRADE (O REVERSIÓN): De Múltiple a Único
+        new_sku = update_data.pop('sku', None)
+        new_stock = update_data.pop('stock_quantity', 0)
+        
+        if not new_sku:
+            raise HTTPException(status_code=400, detail="Debe proporcionar un nuevo SKU único para desactivar las variantes.")
+            
+        # 1. Inactivar todas las variantes previas
+        db.query(models.ProductVariant).filter(
+            models.ProductVariant.product_id == product.product_id
+        ).update({"is_active": False}, synchronize_session=False)
+        
+        # 2. Revisar si el SKU ya existe
+        existing_sku_variant = db.query(models.ProductVariant).filter(models.ProductVariant.sku == new_sku).first()
+        
+        ref_price = update_data.get('reference_price', product.reference_price) or 0.0
+        ref_cost = update_data.get('reference_cost', product.reference_cost) or 0.0
+        is_ret = update_data.get('is_returnable', product.is_returnable)
+        ref_refill = update_data.get('reference_refill_price', product.reference_refill_price) if is_ret else None
+
+        if existing_sku_variant:
+            if existing_sku_variant.product_id != product.product_id:
+                raise HTTPException(status_code=400, detail="El SKU ingresado ya está en uso en otro producto.")
+            else:
+                # Es nuestro propio fantasma (reciclaje perfecto)
+                existing_sku_variant.is_active = True
+                existing_sku_variant.variant_attributes = None
+                existing_sku_variant.price = ref_price
+                existing_sku_variant.cost_price = ref_cost
+                existing_sku_variant.refill_price = ref_refill
+                existing_sku_variant.stock_quantity = new_stock
+                db.add(existing_sku_variant)
+        else:
+            # 3. Crear variante fantasma nueva
+            ghost_variant = models.ProductVariant(
+                product_id=product.product_id,
+                sku=new_sku.upper(),
+                price=ref_price,
+                cost_price=ref_cost,
+                refill_price=ref_refill,
+                stock_quantity=new_stock,
+                variant_attributes=None,
+                is_active=True
+            )
+            db.add(ghost_variant)
+            db.flush()
+            
+    elif not was_multiple and is_multiple:
+        # UPGRADE: De Único a Múltiple
+        # Inactivamos el fantasma para limpiar el catálogo
+        db.query(models.ProductVariant).filter(
+            models.ProductVariant.product_id == product.product_id,
+            models.ProductVariant.is_active == True
+        ).update({"is_active": False}, synchronize_session=False)
+        
+        update_data.pop('sku', None)
+        update_data.pop('stock_quantity', None)
+    else:
+        # Sin cambios estructurales, ignorar inputs fantasma
+        update_data.pop('sku', None)
+        update_data.pop('stock_quantity', None)
+
     for key, value in update_data.items():
         setattr(product, key, value)
 
     product.updated_by = admin_user.staff_id
-    
     db.commit()
     db.refresh(product)
     
     return {"message": "Producto actualizado correctamente", "product_uuid": str(product.product_uuid)}
-
 # --- ACTUALIZACIÓN DE VARIANTE (HIJO) ---
 @router.put("/{product_uuid}/variants/{variant_uuid}")
 def update_product_variant_admin(
@@ -675,6 +739,7 @@ def create_product_admin(
     try:
         new_product = models.Product(
             name=product_in.name,
+            model=product_in.model,
             slug=product_in.slug,
             short_description=product_in.short_description,
             description=product_in.description,
@@ -684,8 +749,9 @@ def create_product_admin(
             brand_id=product_in.brand_id,
             category_id=product_in.category_id,
             tax_class_id=product_in.tax_class_id,
-            reference_price=product_in.base_price, 
-            reference_cost=product_in.cost_price,
+            reference_price=product_in.reference_price,
+            reference_cost=product_in.reference_cost,
+            reference_refill_price=product_in.reference_refill_price,
             meta_title=product_in.meta_title,
             meta_description=product_in.meta_description,
             meta_keywords=product_in.meta_keywords,
@@ -697,17 +763,60 @@ def create_product_admin(
             file_size=product_in.file_size,
             file_extension=product_in.file_extension,
             custom_attributes=product_in.custom_attributes,
-            has_variants=False,
+            has_variants=product_in.has_variants,
             created_by=admin_user.staff_id, 
             updated_by=admin_user.staff_id,
             sold_count=0 
         )
         db.add(new_product)
+        db.flush() # Guardamos temporalmente para obtener el product_id
+
+        # --- LÓGICA DE VARIANTE FANTASMA ---
+        if not product_in.has_variants:
+            if not product_in.sku:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El SKU es obligatorio para productos simples.")
+            
+            existing_sku = db.query(models.ProductVariant).filter(models.ProductVariant.sku == product_in.sku).first()
+            if existing_sku:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El SKU ingresado ya está en uso.")
+
+            ghost_variant = models.ProductVariant(
+                product_id=new_product.product_id,
+                sku=product_in.sku,
+                price=product_in.reference_price or 0.0,
+                cost_price=product_in.reference_cost or 0.0,
+                refill_price=product_in.reference_refill_price if product_in.is_returnable else None,
+                stock_quantity=product_in.stock_quantity or 0,
+                variant_attributes=None,
+                is_active=True
+            )
+            db.add(ghost_variant)
+            db.flush()
+
+            # Creamos el historial de precios para la variante fantasma
+            db.add(models.ProductPriceHistory(
+                product_id=new_product.product_id,
+                variant_id=ghost_variant.variant_id,
+                old_value=0,
+                new_value=ghost_variant.price,
+                record_type="base_price"
+            ))
+            db.add(models.ProductPriceHistory(
+                product_id=new_product.product_id,
+                variant_id=ghost_variant.variant_id,
+                old_value=0,
+                new_value=ghost_variant.cost_price,
+                record_type="cost_price"
+            ))
+
         db.commit()
         db.refresh(new_product)
         
         return {"message": "Carcasa creada con éxito", "product_uuid": str(new_product.product_uuid)}
         
+    except HTTPException:
+        db.rollback()
+        raise
     except Exception as e:
         db.rollback()
         raise HTTPException(

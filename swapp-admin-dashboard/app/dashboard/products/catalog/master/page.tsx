@@ -64,6 +64,26 @@ export default function MasterCatalogPage() {
 	const [draftValues, setDraftValues] = useState<Record<string, string>>({});
 	const [activePimSchema, setActivePimSchema] = useState<any[]>([]);
 	const [isLoadingPim, setIsLoadingPim] = useState(false);
+	const [upgradeGhostData, setUpgradeGhostData] = useState<{productUuid: string, sku: string, stock: number} | null>(null);
+
+	const handleRevertUpgrade = async () => {
+		if (!upgradeGhostData) return;
+		const toastId = toast.loading("Cancelando conversión...");
+		try {
+			await ProductService.update(upgradeGhostData.productUuid, {
+				has_variants: false,
+				sku: upgradeGhostData.sku,
+				stock_quantity: upgradeGhostData.stock
+			});
+			toast.success("Producto devuelto a formato único.", { id: toastId });
+			fetchProducts();
+		} catch (error: any) {
+			toast.error("Error al revertir.", { id: toastId });
+		} finally {
+			setUpgradeGhostData(null);
+			setIsNewVariantModalOpen(false);
+		}
+	};
 
 	const [showInactiveVariants, setShowInactiveVariants] = useState<
 		Record<string, boolean>
@@ -145,7 +165,9 @@ export default function MasterCatalogPage() {
 		setDraftSku(variant.sku || "");
 		setDraftValues(variant.variant_attributes || {});
 
-		if (!p.category_id) {
+		// Si es un producto único (fantasma), no validamos estructura PIM
+		const isSimpleProduct = (p as any).has_variants === false;
+		if (!p.category_id || isSimpleProduct) {
 			setActivePimSchema([]);
 			return;
 		}
@@ -361,7 +383,6 @@ export default function MasterCatalogPage() {
 					icon={Box}
 				/>
 				<div className="flex items-center gap-4">
-					{/* TOGGLE ESTANDARIZADO */}
 					<GlassFilterToggle
 						id="toggle-inactive-products"
 						icon={Archive}
@@ -389,7 +410,6 @@ export default function MasterCatalogPage() {
 				</div>
 			</div>
 
-			{/* CONTENEDOR DE TABLA ESTANDARIZADO CON CLASE DINÁMICA */}
 			<GlassTableWrapper containerClassName={editingVariantId ? "pb-48" : ""}>
 				<GlassTableHead>
 					<GlassTh className="w-24">Imagen</GlassTh>
@@ -440,7 +460,6 @@ export default function MasterCatalogPage() {
 									m.media_type === "image" && m.media_subtype === "main",
 							)?.file_url;
 
-							// LÓGICA DE CONTADORES ACTUALIZADA
 							const totalVariantsCount = p.variants?.length || 0;
 							const activeVariantsCount =
 								p.variants?.filter((v: any) => v.is_active).length || 0;
@@ -450,6 +469,10 @@ export default function MasterCatalogPage() {
 								p.variants?.filter((v) => isShowingInactive || v.is_active) ||
 								[];
 							const isExpanded = expandedRows.includes(p.product_uuid!);
+							
+							// Casteamos a any temporalmente para atajar si "has_variants" o "model" son undefined
+							const hasMultipleVariants = (p as any).has_variants !== false;
+							const pModel = (p as any).model;
 
 							const baseRowClasses =
 								"border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50 last:border-0 transition-colors duration-200";
@@ -476,11 +499,11 @@ export default function MasterCatalogPage() {
 											)}
 										</td>
 
-										{/* NOMBRE Y SLUG (PARENT BOLD) */}
+										{/* NOMBRE, MARCA, MODELO Y SLUG */}
 										<td className="px-6 py-4">
 											<div
 												className={`font-bold text-swapp-azul-oscuro dark:text-swapp-blanco ${!p.is_active ? "line-through text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60" : ""}`}>
-												{p.name}
+												{p.name}{pModel ? ` - ${pModel}` : ""}
 											</div>
 											<div className="text-xs text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 flex items-center gap-1 mt-0.5 font-medium">
 												{p.brand?.name && (
@@ -495,9 +518,66 @@ export default function MasterCatalogPage() {
 											</div>
 										</td>
 
-										{/* DESPLEGABLE DE VARIANTES */}
+										{/* COLUMNA DINÁMICA: ACORDEÓN VS. SKU ÚNICO */}
 										<td className="px-6 py-4 font-mono text-xs text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
-											{totalVariantsCount > 0 ? (
+											{!hasMultipleVariants && p.variants && p.variants.length > 0 ? (
+												editingVariantId === p.variants[0].variant_uuid ? (
+													<div className="flex items-center gap-1 animate-in fade-in zoom-in-95 duration-200">
+														<input
+															type="text"
+															className="w-32 rounded-md border border-swapp-verde-oscuro dark:border-swapp-verde-menta bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 px-2 py-1 text-xs text-swapp-azul-oscuro dark:text-swapp-blanco outline-none focus:ring-1 focus:ring-swapp-verde-oscuro transition-all uppercase shadow-sm"
+															value={draftSku}
+															onChange={(e) => setDraftSku(e.target.value.toUpperCase())}
+															autoFocus
+														/>
+														<button 
+															onClick={() => saveVariant(p.product_uuid!, p.variants![0].variant_uuid!)} 
+															disabled={isSavingVariant} 
+															className="p-1 rounded-md text-emerald-600 hover:bg-emerald-500/10 transition-colors">
+															{isSavingVariant ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+														</button>
+														<button 
+															onClick={cancelEditingVariant} 
+															disabled={isSavingVariant} 
+															className="p-1 rounded-md text-red-600 hover:bg-red-500/10 transition-colors">
+															<X className="h-4 w-4" />
+														</button>
+													</div>
+												) : (
+													<div className="flex flex-col gap-0.5">
+														<div className="flex items-center gap-1.5 group/sku">
+															<span className={`font-medium ${!p.variants[0].is_active ? "line-through opacity-60" : "text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/90"}`}>
+																{p.variants[0].sku}
+															</span>
+															<div className="flex opacity-0 group-hover/sku:opacity-100 transition-opacity">
+																<SwappTooltip text="Copiar SKU">
+																	<button
+																		onClick={() => handleCopySku(p.variants![0].sku)}
+																		className="p-1 rounded-md text-swapp-azul-petroleo/50 hover:text-swapp-verde-oscuro dark:text-swapp-tiza-verdoso/50 dark:hover:text-swapp-verde-menta transition-colors">
+																		<Copy className="h-3.5 w-3.5" />
+																	</button>
+																</SwappTooltip>
+																<SwappTooltip text="Editar SKU Físico">
+																	<button
+																		onClick={() => startEditingVariant(p.variants![0], p)}
+																		className="p-1 rounded-md text-swapp-azul-petroleo/50 hover:text-swapp-verde-oscuro dark:text-swapp-tiza-verdoso/50 dark:hover:text-swapp-verde-menta transition-colors">
+																		<Edit className="h-3.5 w-3.5" />
+																	</button>
+																</SwappTooltip>
+															</div>
+														</div>
+														<div className="flex items-center gap-1.5 mt-0.5">
+															<span className={`text-[10px] font-sans font-bold ${p.variants[0].stock_quantity > 0 ? "text-swapp-verde-pastel dark:text-swapp-verde-menta" : "text-red-500"}`}>
+																{p.variants[0].stock_quantity} un.
+															</span>
+															<span className="text-[10px] text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40">•</span>
+															<span className="text-[10px] font-sans font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta">
+																${Number(p.variants[0].price || 0).toLocaleString("es-AR")}
+															</span>
+														</div>
+													</div>
+												)
+											) : totalVariantsCount > 0 ? (
 												<button
 													onClick={() => toggleRow(p.product_uuid!)}
 													className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo bg-swapp-blanco/60 dark:bg-swapp-azul-oscuro/60 hover:bg-swapp-blanco dark:hover:bg-swapp-azul-petroleo transition-colors text-swapp-verde-oscuro dark:text-swapp-verde-menta font-sans font-bold shadow-sm">
@@ -559,14 +639,16 @@ export default function MasterCatalogPage() {
 											<div className="flex items-center justify-end gap-1">
 												{p.is_active ? (
 													<>
-														<TableActionIcon
-															icon={PlusSquare}
-															tooltip="Añadir Variante Física"
-															onClick={() => {
-																setSelectedProduct(p);
-																setIsNewVariantModalOpen(true);
-															}}
-														/>
+														{hasMultipleVariants && (
+															<TableActionIcon
+																icon={PlusSquare}
+																tooltip="Añadir Variante Física"
+																onClick={() => {
+																	setSelectedProduct(p);
+																	setIsNewVariantModalOpen(true);
+																}}
+															/>
+														)}
 														<TableActionIcon
 															icon={Edit}
 															tooltip="Editar Estructura General"
@@ -600,8 +682,8 @@ export default function MasterCatalogPage() {
 										</td>
 									</tr>
 
-									{/* SUBTABLA DE VARIANTES (MODULARIZADA CON ANIMATED TABLE ROW) */}
-									{totalVariantsCount > 0 && (
+									{/* SUBTABLA DE VARIANTES (Solo se muestra si tiene múltiples variantes) */}
+									{hasMultipleVariants && totalVariantsCount > 0 && (
 										<AnimatedTableRow isExpanded={isExpanded} colSpan={6}>
 											{/* NUEVO TOOLBAR SUPERIOR PARA LAS VARIANTES */}
 											<div className="bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/20 border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50 px-4 py-2 flex items-center justify-between">
@@ -822,18 +904,12 @@ export default function MasterCatalogPage() {
 																	<td className="px-4 py-2.5 align-middle">
 																		<div className="flex flex-col gap-0.5">
 																			<span className="font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta">
-																				$
-																				{Number(v.price || 0).toLocaleString(
-																					"es-AR",
-																				)}
+																				${Number(v.price || 0).toLocaleString("es-AR")}
 																			</span>
 																			{p.is_returnable && v.refill_price && (
 																				<SwappTooltip text="Precio al entregar envase">
 																					<span className="text-[10px] font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
-																						Recarga: $
-																						{Number(
-																							v.refill_price,
-																						).toLocaleString("es-AR")}
+																						Recarga: ${Number(v.refill_price).toLocaleString("es-AR")}
 																					</span>
 																				</SwappTooltip>
 																			)}
@@ -938,13 +1014,35 @@ export default function MasterCatalogPage() {
 				brands={brands}
 				categories={categories}
 				taxClasses={taxClasses}
-				onSuccess={fetchProducts}
+				onSuccess={(isUpgrade, ghostVariant) => {
+					fetchProducts();
+					if (isUpgrade && ghostVariant) {
+						setUpgradeGhostData({
+							productUuid: editingProduct!.product_uuid!,
+							sku: ghostVariant.sku,
+							stock: ghostVariant.stock_quantity || 0
+						});
+						setSelectedProduct({ ...editingProduct, has_variants: true } as Product);
+						setIsNewVariantModalOpen(true);
+					}
+				}}
 			/>
 			<NewVariantModal
 				isOpen={isNewVariantModalOpen}
-				onClose={() => setIsNewVariantModalOpen(false)}
+				onClose={() => {
+					if (upgradeGhostData) {
+						handleRevertUpgrade();
+					} else {
+						setIsNewVariantModalOpen(false);
+					}
+				}}
 				product={selectedProduct}
-				onSuccess={fetchProducts}
+				onSuccess={() => {
+					// Si se salvó con éxito, vaciamos la trampa y cerramos
+					setUpgradeGhostData(null);
+					setIsNewVariantModalOpen(false);
+					fetchProducts();
+				}}
 			/>
 
 			{/* MODAL DE IMÁGENES ESTANDARIZADO */}

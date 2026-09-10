@@ -79,7 +79,7 @@ class ProductVariantCreate(BaseModel):
     sku: str
     price: float
     cost_price: float
-    refill_price: Optional[float] = None #
+    refill_price: Optional[float] = None
     stock_quantity: int = 0
     variant_attributes: Optional[Dict[str, Any]] = Field(default_factory=dict)
     low_stock_threshold: Optional[int] = None
@@ -101,7 +101,7 @@ class ProductVariantResponse(BaseModel):
     sku: str
     price: float
     cost_price: float
-    refill_price: Optional[float] = None # <-- NUEVO
+    refill_price: Optional[float] = None 
     stock_quantity: int
     low_stock_threshold: int
     variant_attributes: Optional[Dict[str, Any]] = None
@@ -113,7 +113,12 @@ class ProductResponse(BaseModel):
     product_id: int
     product_uuid: uuid.UUID
     name: str
+    model: Optional[str] = None       # <-- NUEVO
+    has_variants: bool                # <-- NUEVO
     is_returnable: bool
+    reference_price: Optional[float] = None
+    reference_cost: Optional[float] = None
+    reference_refill_price: Optional[float] = None
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -121,6 +126,8 @@ class ProductCatalogResponse(BaseModel):
     product_id: int
     product_uuid: uuid.UUID
     name: str
+    model: Optional[str] = None       # <-- NUEVO
+    has_variants: bool                # <-- NUEVO
     slug: str
     is_published: bool
     is_featured: bool
@@ -129,6 +136,7 @@ class ProductCatalogResponse(BaseModel):
     is_active: bool
     reference_price: Optional[float] = None
     reference_cost: Optional[float] = None
+    reference_refill_price: Optional[float] = None
 
     description: Optional[str] = None
     short_description: Optional[str] = None
@@ -146,6 +154,13 @@ class ProductCatalogResponse(BaseModel):
 class ProductCreate(BaseModel):
     name: str
     slug: str
+    model: Optional[str] = None       # <-- NUEVO
+    has_variants: bool = False        # <-- NUEVO (Por defecto creará variante fantasma)
+    
+    # --- DATOS PARA VARIANTE FANTASMA (Requeridos en Front si has_variants=False) ---
+    sku: Optional[str] = None         # <-- NUEVO
+    stock_quantity: Optional[int] = 0 # <-- NUEVO
+
     category_id: int
     brand_id: int
     tax_class_id: int
@@ -179,12 +194,18 @@ class ProductCreate(BaseModel):
 class ProductUpdate(BaseModel):
     name: Optional[str] = None
     slug: Optional[str] = None
+    model: Optional[str] = None
+    has_variants: Optional[bool] = None
+
+    sku: Optional[str] = None
+    stock_quantity: Optional[int] = None
     
     category_id: Optional[int] = None
     brand_id: Optional[int] = None
     tax_class_id: Optional[int] = None
     reference_price: Optional[float] = None
     reference_cost: Optional[float] = None
+    reference_refill_price: Optional[float] = None
     
     short_description: Optional[str] = None
     description: Optional[str] = None

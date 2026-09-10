@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Trash2, AlertCircle, Save } from "lucide-react";
+import { X, Trash2, AlertCircle, Save, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { ProductService } from "@/services/product.service";
 import { SwappInput } from "@/components/ui/SwappInput";
@@ -10,6 +10,7 @@ import { SwappCheckbox } from "@/components/ui/SwappCheckbox";
 import { SwappDropzone } from "@/components/ui/SwappDropzone";
 import { SwappTextarea } from "@/components/ui/SwappTextarea";
 import { SwappToggle } from "@/components/ui/SwappToggle";
+import { SwappTooltip } from "@/components/ui/SwappTooltip";
 import { Product, Brand, Category, TaxClass } from "@/types/product";
 
 interface EditStructureModalProps {
@@ -19,7 +20,7 @@ interface EditStructureModalProps {
 	brands: Brand[];
 	categories: Category[];
 	taxClasses: TaxClass[];
-	onSuccess: () => void;
+	onSuccess: (isUpgrade?: boolean, ghostVariant?: any) => void;
 }
 
 export default function EditStructureModal({
@@ -34,6 +35,10 @@ export default function EditStructureModal({
 	const [editingProduct, setEditingProduct] = useState<Partial<Product>>({});
 	const [isSaving, setIsSaving] = useState(false);
 	const [showOptionalFields, setShowOptionalFields] = useState(false);
+
+	// Estados Downgrade a Variante Fantasma
+	const [ghostSku, setGhostSku] = useState("");
+	const [ghostStock, setGhostStock] = useState(0);
 
 	// Estados Multimedia
 	const [newImageFile, setNewImageFile] = useState<File | null>(null);
@@ -72,6 +77,9 @@ export default function EditStructureModal({
 			setNewGalleryPreviews([]);
 			setMediaToDelete([]);
 			setShowOptionalFields(false);
+			
+			setGhostSku("");
+			setGhostStock(0);
 
 			setDimLength((product.dimensions as any)?.length || 0);
 			setDimWidth((product.dimensions as any)?.width || 0);
@@ -157,9 +165,55 @@ export default function EditStructureModal({
 		);
 	};
 
+	const handleGenerateGhostSKU = () => {
+		const formatSkuSegment = (text: string | null | undefined, fallback = "XXX") => {
+			if (!text || text.trim() === "") return fallback;
+			const cleanText = text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+			if (cleanText.length === 0) return fallback;
+			return cleanText.length >= 3 ? cleanText.substring(0, 3) : cleanText.padEnd(3, "X");
+		};
+
+		const prodCode = formatSkuSegment(editingProduct.name, "PRO");
+		const brandName = brands.find((b) => b.brand_id.toString() === editingProduct.brand_id?.toString())?.name;
+		const brandCode = formatSkuSegment(brandName, "SWA");
+		const modelCode = formatSkuSegment((editingProduct as any).model, "GEN");
+		const attrCode = "UNI"; // Al hacer downgrade, pasamos a no tener atributos
+		const countCode = "001"; // Pasa a ser la única variante física
+
+		setGhostSku(`${prodCode}-${brandCode}-${modelCode}-${attrCode}-${countCode}`);
+		toast.success("SKU Inteligente auto-generado", { position: "top-center" });
+	};
+
 	const handleEditSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		if (!editingProduct || !editingProduct.product_uuid) return;
+
+		// --- VALIDACIONES DE REQUISITOS DE PUBLICACIÓN ---
+		if (editingProduct.is_published) {
+			if (!previewUrl && !newImageFile) {
+				toast.error("Para publicar, la Imagen Principal es obligatoria.");
+				return;
+			}
+			if (existingGallery.length === 0 && newGalleryFiles.length === 0) {
+				toast.error("Para publicar, debés tener al menos 1 imagen en la galería.");
+				return;
+			}
+			if (!editingProduct.short_description?.trim()) {
+				toast.error("Para publicar, la Descripción Corta es obligatoria.");
+				return;
+			}
+			if (!editingProduct.description?.trim()) {
+				toast.error("Para publicar, la Descripción Extendida es obligatoria.");
+				return;
+			}
+		}
+
+		const isDowngrading = product?.has_variants && (editingProduct as any).has_variants === false;
+		
+		if (isDowngrading && !ghostSku.trim()) {
+			toast.error("Debés asignar un SKU para el inventario unificado.");
+			return;
+		}
 
 		setIsSaving(true);
 		const toastId = toast.loading("Procesando actualización...");
@@ -204,20 +258,23 @@ export default function EditStructureModal({
 
 			await ProductService.update(editingProduct.product_uuid, {
 				...safeUpdateData,
-				brand_id: safeUpdateData.brand_id
-					? Number(safeUpdateData.brand_id)
-					: null,
-				category_id: safeUpdateData.category_id
-					? Number(safeUpdateData.category_id)
-					: null,
-				tax_class_id: safeUpdateData.tax_class_id
-					? Number(safeUpdateData.tax_class_id)
-					: null,
+				sku: isDowngrading ? ghostSku : undefined,
+				stock_quantity: isDowngrading ? ghostStock : undefined,
+				brand_id: safeUpdateData.brand_id ? Number(safeUpdateData.brand_id) : null,
+				category_id: safeUpdateData.category_id ? Number(safeUpdateData.category_id) : null,
+				tax_class_id: safeUpdateData.tax_class_id ? Number(safeUpdateData.tax_class_id) : null,
 				dimensions: dimensionsObj,
 			});
 
 			toast.success("Estructura actualizada exitosamente.", { id: toastId });
-			onSuccess();
+			
+			// Si hicimos UPGRADE, le pasamos los datos del fantasma al padre
+			const isUpgrading = !product?.has_variants && (editingProduct as any).has_variants === true;
+			if (isUpgrading && product?.variants && product.variants.length > 0) {
+				onSuccess(true, product.variants[0]);
+			} else {
+				onSuccess(false, null);
+			}
 			onClose();
 		} catch (error: any) {
 			toast.error(error.response?.data?.detail || "Error al actualizar.", {
@@ -244,11 +301,11 @@ export default function EditStructureModal({
 		{ value: "oz", label: "oz" },
 	];
 
+	const isDowngrading = product?.has_variants && (editingProduct as any).has_variants === false;
+
 	return (
 		<div className="fixed inset-0 z-[100] flex items-center justify-center bg-swapp-azul-petroleo/5 dark:bg-swapp-negro/30 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95">
-			{/* CONTENEDOR DEL MODAL SIN BORDES EXTERNOS, SOLO BORDER-T */}
 			<div className="w-full max-w-4xl max-h-[90vh] flex flex-col rounded-xl bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md shadow-2xl border-t-4 border-t-swapp-verde-oscuro dark:border-t-swapp-verde-menta overflow-hidden transition-colors">
-				{/* HEADER CON DIVISOR AZUL PETRÓLEO */}
 				<div className="p-6 border-b border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo flex items-center justify-between shrink-0 transition-colors">
 					<h2 className="text-xl font-bold text-swapp-azul-oscuro dark:text-swapp-blanco">
 						Editar Estructura: {editingProduct.name}
@@ -266,34 +323,119 @@ export default function EditStructureModal({
 						onSubmit={handleEditSubmit}
 						className="space-y-8 [&_input]:!bg-transparent [&_select]:!bg-transparent [&_textarea]:!bg-transparent">
 						<div className="space-y-6">
-							<h3 className="text-sm font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
-								Identidad del Producto
-							</h3>
+							
+							<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/30 pb-4 transition-colors">
+								<h3 className="text-sm font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+									Estructura e Identidad
+								</h3>
+								<div className="flex items-center gap-3 bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/20 px-3 py-1.5 rounded-xl border border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/30 transition-colors shadow-sm">
+									<span className="text-sm font-bold text-swapp-azul-oscuro dark:text-swapp-tiza-verdoso">
+										Tiene múltiples variantes
+									</span>
+									<SwappToggle
+										checked={(editingProduct as any).has_variants !== false}
+										onChange={(val) =>
+											setEditingProduct({
+												...editingProduct,
+												has_variants: val,
+											} as any)
+										}
+										id="toggle-has-variants-edit"
+									/>
+								</div>
+							</div>
 
-							<div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-								<SwappInput
-									label="Nombre Comercial"
-									required
-									value={editingProduct.name || ""}
-									onChange={(e) =>
-										setEditingProduct({
-											...editingProduct,
-											name: e.target.value,
-											slug: generateSlug(e.target.value),
-										})
-									}
-								/>
-								<SwappInput
-									label="URL Amigable (Slug)"
-									required
-									value={editingProduct.slug || ""}
-									onChange={(e) =>
-										setEditingProduct({
-											...editingProduct,
-											slug: e.target.value,
-										})
-									}
-								/>
+							{isDowngrading && (
+								<div className="border border-red-500/30 bg-red-500/10 p-4 rounded-xl space-y-4 animate-in fade-in slide-in-from-top-2 shadow-sm">
+									<div className="flex items-start gap-3">
+										<AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+										<p className="text-sm text-red-700 dark:text-red-300 leading-relaxed font-medium">
+											Atención: Estás por desactivar el uso de variantes. Todas las opciones existentes se archivarán y el producto pasará a ser único.
+										</p>
+									</div>
+									<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-swapp-blanco/40 dark:bg-swapp-negro/20 p-3 rounded-lg border border-red-500/20">
+										<div className="space-y-1.5">
+											<label className="block text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+												Nuevo SKU Único <span className="text-red-500">*</span>
+											</label>
+											<div className="flex gap-2">
+												<input
+													type="text"
+													required
+													className="w-full rounded-md border border-red-500/30 px-3 py-2 text-sm font-mono text-swapp-azul-oscuro dark:text-swapp-blanco outline-none focus:border-red-500 uppercase bg-transparent"
+													placeholder="Ej: SWA-BOT-UNI-X9Y"
+													value={ghostSku}
+													onChange={(e) => setGhostSku(e.target.value.toUpperCase())}
+												/>
+												<SwappTooltip text="Auto-generar SKU">
+													<button
+														type="button"
+														onClick={handleGenerateGhostSKU}
+														className="flex shrink-0 items-center justify-center rounded-md border border-red-500/30 bg-red-500/20 px-3 text-red-600 hover:bg-red-500 hover:text-white transition-all">
+														<Wand2 className="h-5 w-5" />
+													</button>
+												</SwappTooltip>
+											</div>
+										</div>
+										<div className="space-y-1.5">
+											<label className="block text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+												Stock Inicial
+											</label>
+											<input
+												type="number"
+												min="0"
+												className="w-full rounded-md border border-red-500/30 px-3 py-2 text-sm text-swapp-azul-oscuro dark:text-swapp-blanco outline-none focus:border-red-500 bg-transparent"
+												value={ghostStock === 0 ? "" : ghostStock}
+												onChange={(e) => setGhostStock(parseInt(e.target.value) || 0)}
+											/>
+										</div>
+									</div>
+								</div>
+							)}
+
+							<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+								<div className="sm:col-span-2">
+									<SwappInput
+										label="Nombre Comercial"
+										required
+										value={editingProduct.name || ""}
+										onChange={(e) => {
+											const name = e.target.value;
+											setEditingProduct({
+												...editingProduct,
+												name: name,
+												slug: generateSlug(`${name} ${(editingProduct as any).model || ""}`),
+											});
+										}}
+									/>
+								</div>
+								<div className="sm:col-span-2">
+									<SwappInput
+										label="Modelo de Fábrica"
+										value={(editingProduct as any).model || ""}
+										onChange={(e) => {
+											const model = e.target.value;
+											setEditingProduct({
+												...editingProduct,
+												model: model,
+												slug: generateSlug(`${editingProduct.name || ""} ${model}`),
+											} as any);
+										}}
+									/>
+								</div>
+								<div className="sm:col-span-4">
+									<SwappInput
+										label="URL Amigable (Slug)"
+										required
+										value={editingProduct.slug || ""}
+										onChange={(e) =>
+											setEditingProduct({
+												...editingProduct,
+												slug: e.target.value,
+											})
+										}
+									/>
+								</div>
 							</div>
 
 							<div className="grid grid-cols-1 gap-6 sm:grid-cols-3 border-t border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo pt-6 transition-colors">
@@ -302,7 +444,6 @@ export default function EditStructureModal({
 										Categoría (Subcategoría){" "}
 										<span className="text-red-500">*</span>
 									</label>
-									{/* Mantenemos Native Select acá para usar optgroups, pero heredará transparencia */}
 									<select
 										className="w-full rounded-md border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo bg-transparent px-3 py-2.5 text-sm text-swapp-azul-oscuro dark:text-swapp-blanco outline-none transition-colors focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta"
 										required
@@ -393,8 +534,21 @@ export default function EditStructureModal({
 							className={`transition-all duration-500 ease-in-out -m-2 p-2 ${showOptionalFields ? "max-h-[5000px] opacity-100 mt-2" : "max-h-0 opacity-0 overflow-hidden"}`}>
 							<div className="space-y-10">
 								<div className="space-y-6">
+									{/* ALERTA DE PUBLICACIÓN (Idéntica a la pantalla New) */}
+									{editingProduct.is_published && (
+										<div className="flex items-center gap-2 rounded-xl bg-swapp-verde-oscuro/10 dark:bg-swapp-verde-menta/10 p-4 text-sm font-medium text-swapp-verde-oscuro dark:text-swapp-verde-menta border border-swapp-verde-oscuro/20 dark:border-swapp-verde-menta/20 transition-colors animate-in fade-in shadow-sm">
+											<AlertCircle className="h-5 w-5 shrink-0" />
+											<p>
+												Al optar por{" "}
+												<strong className="font-bold">Publicar en tienda</strong>,
+												los campos de descripciones e imágenes pasan a ser obligatorios.
+											</p>
+										</div>
+									)}
+
 									<SwappInput
-										label="Descripción Corta (Catálogo)"
+										label={`Descripción Corta (Catálogo) ${editingProduct.is_published ? "*" : ""}`}
+										required={editingProduct.is_published}
 										value={editingProduct.short_description || ""}
 										onChange={(e) =>
 											setEditingProduct({
@@ -404,8 +558,9 @@ export default function EditStructureModal({
 										}
 									/>
 									<SwappTextarea
-										label="Descripción Extendida (Detalle)"
+										label={`Descripción Extendida (Detalle) ${editingProduct.is_published ? "*" : ""}`}
 										rows={4}
+										required={editingProduct.is_published}
 										value={editingProduct.description || ""}
 										onChange={(e) =>
 											setEditingProduct({
@@ -423,7 +578,7 @@ export default function EditStructureModal({
 									<div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
 										<div className="space-y-3">
 											<SwappDropzone
-												label="Imagen Principal (Reemplazar)"
+												label={`Imagen Principal (Reemplazar) ${editingProduct.is_published ? "*" : ""}`}
 												helpText="JPG, PNG o WEBP. Max 5MB."
 												onDropAction={handleImageDrop}
 											/>
@@ -449,7 +604,7 @@ export default function EditStructureModal({
 										</div>
 										<div className="space-y-3">
 											<SwappDropzone
-												label="Agregar a la Galería"
+												label={`Agregar a la Galería ${editingProduct.is_published ? "*" : ""}`}
 												helpText="Podés subir varias imágenes extra."
 												onDropAction={handleGalleryDrop}
 												maxFiles={5}

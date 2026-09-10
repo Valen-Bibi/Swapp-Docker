@@ -177,7 +177,6 @@ export default function StockPage() {
 				/>
 
 				<div className="flex items-center gap-4">
-					{/* TOGGLE ESTANDARIZADO */}
 					<GlassFilterToggle
 						id="toggle-low-stock"
 						icon={AlertTriangle}
@@ -207,7 +206,8 @@ export default function StockPage() {
 						currentDirection={sortDirection}
 						onSort={handleSort}
 					/>
-					<GlassTh>Variantes Físicas</GlassTh>
+					{/* Cambiamos la etiqueta para que tenga sentido con SKUs únicos */}
+					<GlassTh>Variantes / SKU</GlassTh>
 					<SortableHeader
 						label="Tipo"
 						columnKey="type"
@@ -216,19 +216,21 @@ export default function StockPage() {
 						onSort={handleSort}
 					/>
 					<SortableHeader
-						label="Stock Global"
+						label="Stock"
 						columnKey="stock"
 						currentSortKey={sortKey}
 						currentDirection={sortDirection}
 						onSort={handleSort}
 					/>
+					{/* NUEVA COLUMNA DE ACCIONES */}
+					<GlassTh className="text-right">Acciones</GlassTh>
 				</GlassTableHead>
 
 				<tbody>
 					{processedProducts.length === 0 ? (
 						<tr>
 							<td
-								colSpan={5}
+								colSpan={6}
 								className="px-6 py-12 text-center text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50">
 								No se encontraron productos en el inventario.
 							</td>
@@ -241,7 +243,6 @@ export default function StockPage() {
 							)?.file_url;
 
 							const variantsCount = product.variants?.length || 0;
-							const isExpanded = expandedRows.includes(product.product_uuid!);
 							const totalStock =
 								product.variants?.reduce(
 									(acc, v) => acc + v.stock_quantity,
@@ -251,6 +252,11 @@ export default function StockPage() {
 							const hasAnyLowStock = product.variants?.some(
 								(v) => v.stock_quantity <= (v.low_stock_threshold ?? 5),
 							);
+
+							// --- LÓGICA DE DETECCIÓN DE PRODUCTO ÚNICO ---
+							const isSingleProduct = product.has_variants === false;
+							const defaultVariant = isSingleProduct && variantsCount > 0 ? product.variants![0] : null;
+							const isExpanded = expandedRows.includes(product.product_uuid!) && !isSingleProduct;
 
 							const baseRowClasses =
 								"border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50 last:border-0 transition-colors duration-200";
@@ -280,25 +286,31 @@ export default function StockPage() {
 											{product.name}
 										</td>
 
-										{/* DESPLEGABLE DE VARIANTES */}
+										{/* DESPLEGABLE O SKU ÚNICO */}
 										<td className="px-6 py-4 font-mono text-xs text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
-											{variantsCount > 0 ? (
-												<button
-													onClick={() => toggleRow(product.product_uuid!)}
-													className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo bg-swapp-blanco/60 dark:bg-swapp-azul-oscuro/60 hover:bg-swapp-blanco dark:hover:bg-swapp-azul-petroleo transition-colors text-swapp-verde-oscuro dark:text-swapp-verde-menta font-sans font-bold shadow-sm">
-													<Layers className="h-3.5 w-3.5" />
-													{variantsCount === 1
-														? "1 Variante"
-														: `${variantsCount} Variantes`}
-													{isExpanded ? (
-														<ChevronDown className="h-4 w-4" />
-													) : (
-														<ChevronRight className="h-4 w-4" />
-													)}
-												</button>
+											{!isSingleProduct ? (
+												variantsCount > 0 ? (
+													<button
+														onClick={() => toggleRow(product.product_uuid!)}
+														className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo bg-swapp-blanco/60 dark:bg-swapp-azul-oscuro/60 hover:bg-swapp-blanco dark:hover:bg-swapp-azul-petroleo transition-colors text-swapp-verde-oscuro dark:text-swapp-verde-menta font-sans font-bold shadow-sm">
+														<Layers className="h-3.5 w-3.5" />
+														{variantsCount === 1
+															? "1 Variante"
+															: `${variantsCount} Variantes`}
+														{isExpanded ? (
+															<ChevronDown className="h-4 w-4" />
+														) : (
+															<ChevronRight className="h-4 w-4" />
+														)}
+													</button>
+												) : (
+													<span className="text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40">
+														-
+													</span>
+												)
 											) : (
-												<span className="text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40">
-													-
+												<span className="bg-swapp-blanco/60 dark:bg-swapp-azul-oscuro/60 border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/40 px-2.5 py-1.5 rounded-md text-[11px] font-bold shadow-sm inline-block">
+													{defaultVariant?.sku || "-"}
 												</span>
 											)}
 										</td>
@@ -312,20 +324,114 @@ export default function StockPage() {
 											</StatusBadge>
 										</td>
 
-										{/* STOCK GLOBAL CON STATUS BADGE */}
+										{/* STOCK GLOBAL O INDIVIDUAL */}
 										<td className="px-6 py-4">
-											<StatusBadge
-												variant={hasAnyLowStock ? "danger" : "primary"}>
-												{totalStock} unidades globales
-											</StatusBadge>
+											{!isSingleProduct ? (
+												<StatusBadge
+													variant={hasAnyLowStock ? "danger" : "primary"}>
+													{totalStock} unidades globales
+												</StatusBadge>
+											) : (
+												defaultVariant && editingThresholdId === defaultVariant.variant_uuid ? (
+													<input
+														type="number"
+														min="0"
+														className="w-20 rounded-md border border-swapp-verde-oscuro dark:border-swapp-verde-menta bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm px-2 py-1 text-xs text-swapp-azul-oscuro dark:text-swapp-blanco outline-none shadow-sm focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta transition-all"
+														value={draftThreshold}
+														onChange={(e) =>
+															setDraftThreshold(
+																e.target.value === "" ? "" : parseInt(e.target.value),
+															)
+														}
+														placeholder="Umbral"
+													/>
+												) : (
+													<div className="flex flex-col items-start gap-1">
+														<StatusBadge variant={hasAnyLowStock ? "danger" : "primary"}>
+															{totalStock} un.
+														</StatusBadge>
+														{defaultVariant && (
+															<span className="text-[10px] text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 font-medium">
+																Umbral: {defaultVariant.low_stock_threshold ?? 5}
+															</span>
+														)}
+													</div>
+												)
+											)}
+										</td>
+
+										{/* ACCIONES (SOLO PARA PRODUCTOS ÚNICOS) */}
+										<td className="px-6 py-4 text-right align-middle">
+											{!isSingleProduct ? (
+												<span className="text-[10px] uppercase font-bold text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40">
+													Desplegar ↓
+												</span>
+											) : (
+												defaultVariant && (
+													<div className="flex items-center justify-end gap-1.5">
+														{editingThresholdId === defaultVariant.variant_uuid ? (
+															<>
+																<TableActionIcon
+																	icon={Check}
+																	tooltip="Guardar"
+																	variant="glass-success"
+																	size="sm"
+																	disabled={isSavingThreshold}
+																	onClick={() =>
+																		saveThreshold(
+																			product.product_uuid!,
+																			defaultVariant.variant_uuid!,
+																		)
+																	}
+																/>
+																<TableActionIcon
+																	icon={X}
+																	tooltip="Cancelar"
+																	variant="glass-danger"
+																	size="sm"
+																	disabled={isSavingThreshold}
+																	onClick={cancelEditingThreshold}
+																/>
+															</>
+														) : (
+															<>
+																<TableActionIcon
+																	icon={Edit}
+																	tooltip="Editar Umbral"
+																	size="sm"
+																	onClick={() => startEditingThreshold(defaultVariant)}
+																/>
+																<div className="w-px h-4 bg-swapp-azul-petroleo/20 dark:bg-swapp-azul-petroleo mx-1" />
+																<TableActionIcon
+																	icon={Plus}
+																	tooltip="Ingreso"
+																	variant="glass-primary"
+																	size="sm"
+																	onClick={() =>
+																		handleMovementClick(product, defaultVariant, "ingreso")
+																	}
+																/>
+																<TableActionIcon
+																	icon={Minus}
+																	tooltip="Egreso"
+																	variant="glass-danger"
+																	size="sm"
+																	onClick={() =>
+																		handleMovementClick(product, defaultVariant, "egreso")
+																	}
+																/>
+															</>
+														)}
+													</div>
+												)
+											)}
 										</td>
 									</tr>
 
-									{/* ACORDEÓN DESPLEGABLE (VARIANTES) - MODULARIZADO */}
-									{variantsCount > 0 && (
-										<AnimatedTableRow isExpanded={isExpanded} colSpan={5}>
+									{/* ACORDEÓN DESPLEGABLE (SOLO PARA PRODUCTOS CON VARIANTES) */}
+									{!isSingleProduct && variantsCount > 0 && (
+										<AnimatedTableRow isExpanded={isExpanded} colSpan={6}>
 											<table className="w-full text-xs text-left">
-												{/* CABECERA VARIANTES */}
 												<thead className="bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/20 border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50">
 													<tr>
 														<th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/70 w-1/5">
@@ -362,12 +468,10 @@ export default function StockPage() {
 															<tr
 																key={v.variant_uuid}
 																className={`${baseVariantRowClasses} ${variantRowStatusStyle}`}>
-																{/* SKU */}
 																<td className="px-4 py-3 font-mono text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/90 font-medium">
 																	{v.sku}
 																</td>
 
-																{/* ATRIBUTOS */}
 																<td className="px-4 py-3">
 																	{v.variant_attributes ? (
 																		<div className="flex flex-wrap gap-1.5">
@@ -388,7 +492,6 @@ export default function StockPage() {
 																	)}
 																</td>
 
-																{/* UMBRAL */}
 																<td className="px-4 py-3 align-middle">
 																	{isEditing ? (
 																		<input
@@ -411,7 +514,6 @@ export default function StockPage() {
 																	)}
 																</td>
 
-																{/* STOCK INDIVIDUAL */}
 																<td className="px-4 py-3 align-middle">
 																	<span
 																		className={`font-bold ${!isLowStock ? "text-swapp-verde-oscuro dark:text-swapp-verde-menta" : "text-red-600 dark:text-red-400"}`}>
@@ -419,7 +521,6 @@ export default function StockPage() {
 																	</span>
 																</td>
 
-																{/* ACCIONES DE LA VARIANTE */}
 																<td className="px-4 py-2 text-right align-middle">
 																	{isEditing ? (
 																		<div className="flex items-center justify-end gap-1.5">

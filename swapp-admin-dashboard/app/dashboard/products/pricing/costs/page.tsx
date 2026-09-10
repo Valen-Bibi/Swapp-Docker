@@ -164,8 +164,9 @@ export default function CostsPage() {
 				<GlassTableHead>
 					<GlassTh className="w-16">Imagen</GlassTh>
 					<GlassTh>Producto General</GlassTh>
-					<GlassTh>Variantes Físicas</GlassTh>
-					<GlassTh>Costo / Margen Ref.</GlassTh>
+					{/* Cambiamos la etiqueta para productos únicos */}
+					<GlassTh>Variantes / SKU</GlassTh>
+					<GlassTh>Costos y Precios</GlassTh>
 					<GlassTh align="right">Acciones</GlassTh>
 				</GlassTableHead>
 
@@ -186,22 +187,21 @@ export default function CostsPage() {
 							)?.file_url;
 
 							const variantsCount = p.variants?.length || 0;
-							const isExpanded = expandedRows.includes(p.product_uuid!);
+							
+							// --- LÓGICA DE DETECCIÓN DE PRODUCTO ÚNICO ---
+							const isSingleProduct = p.has_variants === false;
+							const defaultVariant = isSingleProduct && variantsCount > 0 ? p.variants![0] : null;
+							const isExpanded = expandedRows.includes(p.product_uuid!) && !isSingleProduct;
 
-							const refCost =
-								(p as any).reference_cost ?? p.variants?.[0]?.cost_price ?? 0;
-							const refPriceBase =
-								(p as any).reference_price ?? p.variants?.[0]?.price ?? 0;
+							// Cálculos para producto con múltiples variantes (Referencia)
+							const refCost = (p as any).reference_cost ?? p.variants?.[0]?.cost_price ?? 0;
+							const refPriceBase = (p as any).reference_price ?? p.variants?.[0]?.price ?? 0;
 
 							let refPriceFinal = refPriceBase;
 							if (p.variants?.[0] && p.active_discounts) {
 								const refDiscount = p.active_discounts.find((d: any) => {
-									const isGlobal =
-										!d.variant_uuids || d.variant_uuids.length === 0;
-									return (
-										isGlobal ||
-										d.variant_uuids.includes(p.variants![0].variant_uuid)
-									);
+									const isGlobal = !d.variant_uuids || d.variant_uuids.length === 0;
+									return isGlobal || d.variant_uuids.includes(p.variants![0].variant_uuid);
 								});
 								if (refDiscount) {
 									refPriceFinal =
@@ -210,8 +210,28 @@ export default function CostsPage() {
 											: Math.max(0, refPriceBase - refDiscount.value);
 								}
 							}
-
 							const refMargin = calculateMargin(refCost, refPriceFinal);
+
+							// Cálculos exactos para producto único
+							let singleFinalPrice = 0;
+							let singleActiveDiscount = null;
+							let singleMargin: number | null = null;
+
+							if (defaultVariant) {
+								singleActiveDiscount = p.active_discounts?.find((d: any) => {
+									const isGlobal = !d.variant_uuids || d.variant_uuids.length === 0;
+									return isGlobal || d.variant_uuids.includes(defaultVariant.variant_uuid);
+								});
+
+								singleFinalPrice = defaultVariant.price;
+								if (singleActiveDiscount) {
+									singleFinalPrice =
+										singleActiveDiscount.discount_type === "percentage"
+											? defaultVariant.price * (1 - singleActiveDiscount.value / 100)
+											: Math.max(0, defaultVariant.price - singleActiveDiscount.value);
+								}
+								singleMargin = calculateMargin(defaultVariant.cost_price, singleFinalPrice);
+							}
 
 							const baseRowClasses =
 								"border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50 last:border-0 transition-colors duration-200";
@@ -245,59 +265,118 @@ export default function CostsPage() {
 											{p.name}
 										</td>
 
-										{/* DESPLEGABLE DE VARIANTES */}
+										{/* DESPLEGABLE O SKU ÚNICO */}
 										<td className="px-6 py-4 font-mono text-xs text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
-											{variantsCount > 0 ? (
-												<button
-													onClick={() => toggleRow(p.product_uuid!)}
-													className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo bg-swapp-blanco/60 dark:bg-swapp-azul-oscuro/60 hover:bg-swapp-blanco dark:hover:bg-swapp-azul-petroleo transition-colors text-swapp-verde-oscuro dark:text-swapp-verde-menta font-sans font-bold shadow-sm">
-													<Layers className="h-3.5 w-3.5" />
-													{variantsCount === 1
-														? "1 Variante"
-														: `${variantsCount} Variantes`}
-													{isExpanded ? (
-														<ChevronDown className="h-4 w-4" />
-													) : (
-														<ChevronRight className="h-4 w-4" />
-													)}
-												</button>
+											{!isSingleProduct ? (
+												variantsCount > 0 ? (
+													<button
+														onClick={() => toggleRow(p.product_uuid!)}
+														className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo bg-swapp-blanco/60 dark:bg-swapp-azul-oscuro/60 hover:bg-swapp-blanco dark:hover:bg-swapp-azul-petroleo transition-colors text-swapp-verde-oscuro dark:text-swapp-verde-menta font-sans font-bold shadow-sm">
+														<Layers className="h-3.5 w-3.5" />
+														{variantsCount === 1
+															? "1 Variante"
+															: `${variantsCount} Variantes`}
+														{isExpanded ? (
+															<ChevronDown className="h-4 w-4" />
+														) : (
+															<ChevronRight className="h-4 w-4" />
+														)}
+													</button>
+												) : (
+													<span className="text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40">
+														-
+													</span>
+												)
 											) : (
-												<span className="text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40">
-													-
+												<span className="bg-swapp-blanco/60 dark:bg-swapp-azul-oscuro/60 border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/40 px-2.5 py-1.5 rounded-md text-[11px] font-bold shadow-sm inline-block">
+													{defaultVariant?.sku || "-"}
 												</span>
 											)}
 										</td>
 
-										{/* COSTO / MARGEN REF CON STATUS BADGE */}
+										{/* COSTO Y PRECIOS DINÁMICOS */}
 										<td className="px-6 py-4 text-xs">
-											<div className="flex items-center gap-3">
-												<span className="font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
-													Costo: {refCost ? formatCurrency(refCost) : "-"}
-												</span>
-												{refMargin !== null && (
-													<StatusBadge
-														variant={refMargin > 0 ? "success" : "danger"}>
-														({refMargin}%)
-													</StatusBadge>
-												)}
-											</div>
+											{!isSingleProduct ? (
+												// LÓGICA MULTI-VARIANTE (VALORES DE REFERENCIA)
+												<div className="flex items-center gap-3">
+													<span className="font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+														Costo Ref: {refCost ? formatCurrency(refCost) : "-"}
+													</span>
+													{refMargin !== null && (
+														<StatusBadge variant={refMargin > 0 ? "success" : "danger"}>
+															({refMargin}%)
+														</StatusBadge>
+													)}
+												</div>
+											) : (
+												// LÓGICA PRODUCTO ÚNICO (VALORES EXACTOS)
+												defaultVariant ? (
+													<div className="flex items-center gap-4">
+														<div className="flex flex-col gap-1">
+															<span className="font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+																Costo: {defaultVariant.cost_price ? formatCurrency(defaultVariant.cost_price) : "-"}
+															</span>
+															<div className="flex items-center gap-2">
+																<span className={`font-bold ${singleActiveDiscount ? "text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40 line-through text-[10px]" : "text-swapp-verde-oscuro dark:text-swapp-verde-menta"}`}>
+																	{formatCurrency(defaultVariant.price)}
+																</span>
+																{singleActiveDiscount && (
+																	<span className="font-bold text-emerald-600 dark:text-emerald-400">
+																		{formatCurrency(singleFinalPrice)}
+																	</span>
+																)}
+															</div>
+															{p.is_returnable && defaultVariant.refill_price != null && (
+																<span className="text-[10px] font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+																	Recarga: {formatCurrency(defaultVariant.refill_price)}
+																</span>
+															)}
+														</div>
+														{singleMargin !== null && (
+															<StatusBadge variant={singleMargin > 0 ? "success" : "danger"}>
+																{singleMargin}%
+															</StatusBadge>
+														)}
+													</div>
+												) : (
+													<span className="text-swapp-azul-petroleo/30 dark:text-swapp-tiza-verdoso/30">-</span>
+												)
+											)}
 										</td>
 
 										{/* ACCIONES */}
 										<td className="px-6 py-4 text-right">
-											<TableActionIcon
-												icon={Edit}
-												tooltip="Ajustar Valores de Referencia"
-												onClick={() => handleEditClick(p, null)}
-											/>
+											{!isSingleProduct ? (
+												<TableActionIcon
+													icon={Edit}
+													tooltip="Ajustar Valores de Referencia"
+													onClick={() => handleEditClick(p, null)}
+												/>
+											) : (
+												defaultVariant && (
+													<div className="flex items-center justify-end gap-1.5">
+														<TableActionIcon
+															icon={History}
+															tooltip="Ver Historial"
+															size="sm"
+															onClick={() => handleHistoryClick(p, defaultVariant)}
+														/>
+														<TableActionIcon
+															icon={Edit}
+															tooltip="Ajustar Precios"
+															size="sm"
+															onClick={() => handleEditClick(p, defaultVariant)}
+														/>
+													</div>
+												)
+											)}
 										</td>
 									</tr>
 
-									{/* ACORDEÓN DESPLEGABLE (VARIANTES) - MODULARIZADO */}
-									{variantsCount > 0 && (
+									{/* ACORDEÓN DESPLEGABLE (SOLO PARA MULTI-VARIANTES) */}
+									{!isSingleProduct && variantsCount > 0 && (
 										<AnimatedTableRow isExpanded={isExpanded} colSpan={5}>
 											<table className="w-full text-xs text-left">
-												{/* CABECERA VARIANTES */}
 												<thead className="bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/20 border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50">
 													<tr>
 														<th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/70">
@@ -366,19 +445,16 @@ export default function CostsPage() {
 															<tr
 																key={v.variant_uuid}
 																className={`${baseVariantRowClasses} ${variantRowStatusStyle}`}>
-																{/* SKU VARIANTE */}
 																<td className="px-4 py-3 font-mono font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/90">
 																	{v.sku}
 																</td>
 
-																{/* COSTO INTERNO */}
 																<td className="px-4 py-3 font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
 																	{v.cost_price
 																		? formatCurrency(v.cost_price)
 																		: "-"}
 																</td>
 
-																{/* PRECIO BASE / RECARGA */}
 																<td
 																	className={`px-4 py-3 font-bold ${activeDiscount ? "text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40 line-through text-[10px]" : "text-swapp-verde-oscuro dark:text-swapp-verde-menta"}`}>
 																	<div className="flex flex-col gap-0.5">
@@ -395,7 +471,6 @@ export default function CostsPage() {
 																	</div>
 																</td>
 
-																{/* PRECIO OFERTA */}
 																<td className="px-4 py-3">
 																	{activeDiscount ? (
 																		<div className="flex flex-col items-start gap-1">
@@ -416,7 +491,6 @@ export default function CostsPage() {
 																	)}
 																</td>
 
-																{/* MARGEN NETO */}
 																<td className="px-4 py-3">
 																	{marg !== null ? (
 																		<span
@@ -433,7 +507,6 @@ export default function CostsPage() {
 																	)}
 																</td>
 
-																{/* ACCIONES VARIANTES */}
 																<td className="px-4 py-3 text-right">
 																	<div className="flex items-center justify-end gap-1.5">
 																		<TableActionIcon

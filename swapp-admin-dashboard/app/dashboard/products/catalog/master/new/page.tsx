@@ -10,6 +10,7 @@ import {
 	AlertCircle,
 	X,
 	Loader2,
+	Wand2,
 } from "lucide-react";
 import { toast } from "sonner";
 import PageHeader from "@/components/layout/PageHeader";
@@ -19,6 +20,7 @@ import { SwappCheckbox } from "@/components/ui/SwappCheckbox";
 import { SwappToggle } from "@/components/ui/SwappToggle";
 import { SwappDropzone } from "@/components/ui/SwappDropzone";
 import { SwappSearchableSelect } from "@/components/ui/SwappSearchableSelect";
+import { SwappTooltip } from "@/components/ui/SwappTooltip";
 import Link from "next/link";
 import { Brand, Category, TaxClass } from "@/types/product";
 
@@ -44,6 +46,10 @@ export default function NewProductPage() {
 	const [formData, setFormData] = useState({
 		name: "",
 		slug: "",
+		model: "", // <-- NUEVO: Modelo de fábrica
+		has_variants: true, // <-- NUEVO: Toggle de variabilidad (por defecto true para el flujo clásico)
+		sku: "", // <-- NUEVO: Para la variante fantasma
+		stock_quantity: 0, // <-- NUEVO: Para la variante fantasma
 		reference_cost: 0,
 		reference_price: 0,
 		refill_price: 0,
@@ -142,9 +148,38 @@ export default function NewProductPage() {
 
 	const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const name = e.target.value;
-		setFormData({ ...formData, name, slug: generateSlug(name) });
+		setFormData({ 
+			...formData, 
+			name, 
+			slug: generateSlug(`${name} ${formData.model}`) 
+		});
 	};
 
+	// --- AUTO-GENERAR SKU PARA PRODUCTO SIMPLE ---
+	const handleGenerateGhostSKU = () => {
+		const formatSkuSegment = (text: string | null | undefined, fallback = "XXX") => {
+			if (!text || text.trim() === "") return fallback;
+			const cleanText = text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+			if (cleanText.length === 0) return fallback;
+			return cleanText.length >= 3 ? cleanText.substring(0, 3) : cleanText.padEnd(3, "X");
+		};
+
+		const prodCode = formatSkuSegment(formData.name, "PRO");
+		const brandName = brands.find((b) => b.brand_id.toString() === formData.brand_id)?.name;
+		const brandCode = formatSkuSegment(brandName, "SWA");
+		const modelCode = formatSkuSegment(formData.model, "GEN");
+		const attrCode = "UNI"; // Al ser fantasma, no tiene atributos
+		const countCode = "001"; // Al ser el primero/único, siempre es 001
+
+		setFormData((prev) => ({
+			...prev,
+			sku: `${prodCode}-${brandCode}-${modelCode}-${attrCode}-${countCode}`,
+		}));
+		toast.success("SKU Inteligente auto-generado", {
+			position: "top-center",
+		});
+	};
+	
 	const handleMainImageDrop = (acceptedFiles: File[]) => {
 		const file = acceptedFiles[0];
 		if (!file) return;
@@ -180,6 +215,13 @@ export default function NewProductPage() {
 			}
 		}
 
+		if (!formData.has_variants && !formData.sku.trim()) {
+			toast.error(
+				"Al ser un producto único, debés ingresar un SKU válido para su inventario.",
+			);
+			return;
+		}
+
 		const missingStructural = structuralAttributes.some(
 			(attr) => attr.is_required && !customAttributes[attr.name],
 		);
@@ -191,7 +233,7 @@ export default function NewProductPage() {
 		}
 
 		setIsSaving(true);
-		const toastId = toast.loading("Creando base del producto...");
+		const toastId = toast.loading("Registrando producto en el catálogo...");
 
 		try {
 			const dimensionsObj =
@@ -213,8 +255,12 @@ export default function NewProductPage() {
 				{},
 			);
 
+			// ARMAMOS EL PAYLOAD MAESTRO
 			const newProductResponse = await ProductService.create({
 				...formData,
+				model: formData.model.trim() !== "" ? formData.model : undefined,
+				sku: formData.has_variants ? undefined : formData.sku.toUpperCase(),
+				stock_quantity: formData.has_variants ? 0 : formData.stock_quantity,
 				reference_refill_price:
 					formData.is_returnable && formData.refill_price > 0
 						? formData.refill_price
@@ -257,9 +303,12 @@ export default function NewProductPage() {
 			}
 
 			toast.success(
-				"¡Carcasa creada exitosamente! Ahora podés añadir sus variantes.",
+				formData.has_variants 
+					? "¡Carcasa creada! Redirigiendo para añadir variantes..." 
+					: "¡Producto único creado y listo para la venta!",
 				{ id: toastId },
 			);
+			
 			setTimeout(() => router.push("/dashboard/products/catalog/master"), 1500);
 		} catch (error: any) {
 			toast.error(
@@ -276,7 +325,7 @@ export default function NewProductPage() {
 			<div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center justify-between">
 				<PageHeader
 					title="Incorporar Nuevo Producto"
-					description="Dar de alta la carcasa base de un nuevo artículo"
+					description="Dar de alta un nuevo artículo en el catálogo central"
 					icon={PackagePlus}
 				/>
 				<div className="flex items-center gap-4">
@@ -294,31 +343,44 @@ export default function NewProductPage() {
 				<form onSubmit={handleCreateProduct} className="space-y-8">
 					{/* IDENTIDAD Y PRECIOS */}
 					<div className="space-y-6">
-						{/* HEADER DE LA SECCIÓN CON EL NUEVO TOGGLE */}
+						{/* HEADER DE LA SECCIÓN CON LOS DOS TOGGLES ESTRUCTURALES */}
 						<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/30 pb-4 transition-colors">
 							<h3 className="text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
-								Identidad y Precios de Referencia
+								Estructura e Identidad
 							</h3>
-							<div className="flex items-center gap-3 bg-swapp-verde-pastel/10 dark:bg-swapp-verde-menta/10 px-4 py-2 rounded-xl border border-swapp-verde-pastel/20 dark:border-swapp-verde-menta/20 transition-colors shadow-sm">
-								<span className="text-sm font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta">
-									Es un envase retornable
-								</span>
-								<SwappToggle
-									checked={formData.is_returnable}
-									onChange={(val) =>
-										setFormData({
-											...formData,
-											is_returnable: val,
-											// Si lo apaga, blanqueamos el precio de recarga
-											refill_price: val ? formData.refill_price : 0,
-										})
-									}
-									id="toggle-returnable"
-								/>
+							<div className="flex flex-col sm:flex-row items-center gap-3">
+								<div className="flex items-center gap-3 bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/20 px-3 py-1.5 rounded-xl border border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/30 transition-colors shadow-sm">
+									<span className="text-sm font-bold text-swapp-azul-oscuro dark:text-swapp-tiza-verdoso">
+										Tiene múltiples variantes
+									</span>
+									<SwappToggle
+										checked={formData.has_variants}
+										onChange={(val) =>
+											setFormData({ ...formData, has_variants: val, sku: "" })
+										}
+										id="toggle-has-variants"
+									/>
+								</div>
+								<div className="flex items-center gap-3 bg-swapp-verde-pastel/10 dark:bg-swapp-verde-menta/10 px-3 py-1.5 rounded-xl border border-swapp-verde-pastel/20 dark:border-swapp-verde-menta/20 transition-colors shadow-sm">
+									<span className="text-sm font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta">
+										Es envase retornable
+									</span>
+									<SwappToggle
+										checked={formData.is_returnable}
+										onChange={(val) =>
+											setFormData({
+												...formData,
+												is_returnable: val,
+												refill_price: val ? formData.refill_price : 0,
+											})
+										}
+										id="toggle-returnable"
+									/>
+								</div>
 							</div>
 						</div>
 
-						{/* GRILLA DE INPUTS CON ANIMACIÓN PARA LA RECARGA */}
+						{/* GRILLA DE INPUTS PRINCIPALES */}
 						<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
 							<div className="sm:col-span-2">
 								<SwappInput
@@ -330,6 +392,21 @@ export default function NewProductPage() {
 								/>
 							</div>
 							<div className="sm:col-span-2">
+								<SwappInput
+									label="Modelo de Fábrica (Opcional)"
+									placeholder="Ej: SodaStream 500ml"
+									value={formData.model}
+									onChange={(e) => {
+										const model = e.target.value;
+										setFormData({ 
+											...formData, 
+											model,
+											slug: generateSlug(`${formData.name} ${model}`)
+										});
+									}}
+								/>
+							</div>
+							<div className="sm:col-span-4">
 								<SwappInput
 									label="URL Amigable (Slug)"
 									required
@@ -343,10 +420,64 @@ export default function NewProductPage() {
 								/>
 							</div>
 
-							{/* COSTO: Siempre ocupa 2 columnas en Desktop */}
-							<div className="sm:col-span-2">
+							{/* --- SECCIÓN DINÁMICA: VARIANTE FANTASMA --- */}
+							{!formData.has_variants && (
+								<>
+									<div className="sm:col-span-3 space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-300 border-t border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/30 pt-4 mt-2">
+										<label className="block text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
+											SKU / Código Único Físico{" "}
+											<span className="text-red-500">*</span>
+										</label>
+										<div className="flex gap-2">
+											<input
+												type="text"
+												required={!formData.has_variants}
+												className="w-full rounded-md border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo px-3 py-2 text-sm font-mono text-swapp-azul-oscuro dark:text-swapp-blanco outline-none focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta uppercase"
+												placeholder="Ej: SWA-BOT-UNI-X9Y"
+												value={formData.sku}
+												onChange={(e) =>
+													setFormData({
+														...formData,
+														sku: e.target.value.toUpperCase(),
+													})
+												}
+											/>
+											<SwappTooltip text="Auto-generar código inteligente">
+												<button
+													type="button"
+													onClick={handleGenerateGhostSKU}
+													className="flex shrink-0 items-center justify-center rounded-md border border-swapp-verde-pastel/20 bg-swapp-verde-pastel/10 px-3 text-swapp-verde-oscuro hover:bg-swapp-verde-oscuro hover:text-swapp-blanco transition-all">
+													<Wand2 className="h-5 w-5" />
+												</button>
+											</SwappTooltip>
+										</div>
+									</div>
+									<div className="sm:col-span-1 animate-in fade-in slide-in-from-top-2 duration-300 border-t border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/30 pt-4 mt-2">
+										<SwappInput
+											label="Stock Inicial"
+											type="number"
+											min="0"
+											value={
+												formData.stock_quantity === 0
+													? ""
+													: formData.stock_quantity
+											}
+											onChange={(e) =>
+												setFormData({
+													...formData,
+													stock_quantity: parseInt(e.target.value) || 0,
+												})
+											}
+										/>
+									</div>
+								</>
+							)}
+
+							{/* --- SECCIÓN DINÁMICA: PRECIOS --- */}
+							<div
+								className={`transition-all duration-300 ${!formData.has_variants ? "border-t border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/30 pt-4 mt-2 sm:col-span-2" : "sm:col-span-2"}`}>
 								<SwappInput
-									label="Costo de Referencia ($)"
+									label={formData.has_variants ? "Costo de Referencia ($)" : "Costo Interno ($)"}
 									type="text"
 									formatThousands
 									step="0.01"
@@ -361,35 +492,35 @@ export default function NewProductPage() {
 										})
 									}
 								/>
-
-								<div
-									className={`transition-all duration-300 ${formData.is_returnable ? "sm:col-span-1" : "sm:col-span-2"}`}>
-									<SwappInput
-										label="Precio Base de Referencia ($)"
-										type="text"
-										formatThousands
-										step="0.01"
-										min="0"
-										value={
-											formData.reference_price === 0
-												? ""
-												: formData.reference_price
-										}
-										onChange={(e) =>
-											setFormData({
-												...formData,
-												reference_price: parseFloat(e.target.value) || 0,
-											})
-										}
-									/>
-								</div>
 							</div>
 
-							{/* RECARGA: Aparece mágicamente */}
+							<div
+								className={`transition-all duration-300 ${!formData.has_variants ? "border-t border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/30 pt-4 mt-2" : ""} ${formData.is_returnable ? "sm:col-span-1" : "sm:col-span-2"}`}>
+								<SwappInput
+									label={formData.has_variants ? "Precio Base Ref. ($)" : "Precio Final ($)"}
+									type="text"
+									formatThousands
+									step="0.01"
+									min="0"
+									value={
+										formData.reference_price === 0
+											? ""
+											: formData.reference_price
+									}
+									onChange={(e) =>
+										setFormData({
+											...formData,
+											reference_price: parseFloat(e.target.value) || 0,
+										})
+									}
+								/>
+							</div>
+
+							{/* RECARGA */}
 							{formData.is_returnable && (
-								<div className="sm:col-span-1 animate-in fade-in slide-in-from-left-4 duration-300">
+								<div className={`animate-in fade-in slide-in-from-left-4 duration-300 sm:col-span-1 ${!formData.has_variants ? "border-t border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/30 pt-4 mt-2" : ""}`}>
 									<SwappInput
-										label="Precio de Referencia Recarga ($)"
+										label={formData.has_variants ? "Recarga Ref. ($)" : "Recarga ($)"}
 										type="text"
 										formatThousands
 										step="0.01"
@@ -878,7 +1009,6 @@ export default function NewProductPage() {
 
 							<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 pt-6 border-t border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/30 transition-colors">
 								<div className="space-y-4">
-									{/* EL CHECKBOX DE is_returnable FUE ELIMINADO DE ACÁ Y MOVIDO ARRIBA */}
 									<SwappCheckbox
 										label="Publicar inmediatamente en la tienda"
 										id="is_published"
@@ -918,7 +1048,7 @@ export default function NewProductPage() {
 							disabled={isSaving}
 							className="flex items-center gap-2 rounded-xl bg-swapp-verde-pastel dark:bg-swapp-verde-menta px-6 py-2.5 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro transition-colors hover:bg-swapp-verde-oscuro dark:hover:bg-swapp-verde-pastel disabled:opacity-50 shadow-sm">
 							<Save className="h-4 w-4" />
-							{isSaving ? "Guardando..." : "Crear Carcasa"}
+							{isSaving ? "Guardando..." : (formData.has_variants ? "Crear Carcasa" : "Crear Producto")}
 						</button>
 					</div>
 				</form>

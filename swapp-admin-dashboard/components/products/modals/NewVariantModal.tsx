@@ -56,10 +56,13 @@ export default function NewVariantModal({
 
 			setLoadingPim(true);
 			setSku("");
+			// Tomamos los valores de referencia de la carcasa base
 			setPrice(
 				product.reference_price ? product.reference_price.toString() : "",
 			);
-			setRefillPrice("");
+			setRefillPrice(
+				(product as any).reference_refill_price ? (product as any).reference_refill_price.toString() : "",
+			);
 
 			try {
 				const [globalAttrs, linkedAttrs] = await Promise.all([
@@ -83,16 +86,24 @@ export default function NewVariantModal({
 				let initialValues: Record<string, string> = {};
 				let clonedSku = null;
 
+				// Si ya existen variantes, clonamos la estructura de la última y sus precios
 				if (product.variants && product.variants.length > 0) {
 					const lastVariant = product.variants[product.variants.length - 1];
 					if (lastVariant.variant_attributes) {
 						initialValues = { ...lastVariant.variant_attributes };
 						clonedSku = lastVariant.sku;
-						setPrice(lastVariant.price ? lastVariant.price.toString() : "");
+						
+						setPrice(
+							lastVariant.price 
+								? lastVariant.price.toString() 
+								: (product.reference_price ? product.reference_price.toString() : "")
+						);
+						
+						// Si la variante vieja tiene recarga la usamos, sino mantenemos la del padre
 						setRefillPrice(
 							lastVariant.refill_price
 								? lastVariant.refill_price.toString()
-								: "",
+								: ((product as any).reference_refill_price ? (product as any).reference_refill_price.toString() : "")
 						);
 					}
 				}
@@ -113,27 +124,29 @@ export default function NewVariantModal({
 
 	const handleGenerateSKU = () => {
 		if (!product) return;
-		const brandCode = (product.brand?.name || "SWA")
-			.replace(/[^a-zA-Z0-9]/g, "")
-			.substring(0, 3)
-			.toUpperCase();
-		const prodCode = product.name
-			.replace(/[^a-zA-Z0-9]/g, "")
-			.substring(0, 3)
-			.toUpperCase();
-		let attrCode = "BAS";
+
+		const formatSkuSegment = (text: string | null | undefined, fallback = "XXX") => {
+			if (!text || text.trim() === "") return fallback;
+			const cleanText = text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+			if (cleanText.length === 0) return fallback;
+			return cleanText.length >= 3 ? cleanText.substring(0, 3) : cleanText.padEnd(3, "X");
+		};
+
+		const prodCode = formatSkuSegment(product.name, "PRO");
+		const brandCode = formatSkuSegment(product.brand?.name, "SWA");
+		const modelCode = formatSkuSegment((product as any).model, "GEN");
+		
 		const firstAttrValue = Object.values(selectedValues).find(
 			(val) => val && val.trim() !== "",
 		);
-		if (firstAttrValue) {
-			attrCode = firstAttrValue
-				.replace(/[^a-zA-Z0-9]/g, "")
-				.substring(0, 3)
-				.toUpperCase();
-		}
-		const hash = Math.random().toString(36).substring(2, 5).toUpperCase();
-		setSku(`${brandCode}-${prodCode}-${attrCode}-${hash}`);
-		toast.success("SKU auto-generado de forma inteligente", {
+		const attrCode = formatSkuSegment(firstAttrValue, "UNI");
+
+		const currentCount = product.variants ? product.variants.length : 0;
+		const nextNumber = currentCount + 1;
+		const countCode = nextNumber.toString().padStart(3, "0");
+
+		setSku(`${prodCode}-${brandCode}-${modelCode}-${attrCode}-${countCode}`);
+		toast.success("SKU Inteligente auto-generado", {
 			position: "top-center",
 		});
 	};
@@ -189,7 +202,6 @@ export default function NewVariantModal({
 			});
 			toast.success("Variante física creada con éxito", { id: toastId });
 			onSuccess();
-			onClose();
 		} catch (error: any) {
 			toast.error(
 				error.response?.data?.detail || "Error al crear la variante.",

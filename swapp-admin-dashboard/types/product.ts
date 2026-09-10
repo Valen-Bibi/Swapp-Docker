@@ -44,7 +44,9 @@ export interface Product {
   product_id: number
   product_uuid: string;
   name: string;
+  model?: string | null;
   slug: string;
+  has_variants?: boolean;
   
   category_id?: number | null;
   brand_id?: number | null;
@@ -75,6 +77,7 @@ export interface Product {
 
   reference_cost?: number;
   reference_price?: number;
+  reference_refill_price?: number;
 
   variants?: ProductVariant[];
   media?: {
