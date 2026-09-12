@@ -219,7 +219,7 @@ export default function CategoriesPage() {
 			<div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<PageHeader
 					title="Árbol de Categorías"
-					description="Clasificación jerárquica del catálogo y nodos finales"
+					description="Clasificación jerárquica del catálogo"
 					icon={FolderTree}
 				/>
 				<div className="flex items-center gap-4">

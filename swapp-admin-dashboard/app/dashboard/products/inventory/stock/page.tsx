@@ -138,20 +138,30 @@ export default function StockPage() {
 		}
 	};
 
-	const filteredProducts = products.filter((product) => {
-		const matchesSearch =
-			product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			product.variants?.some((v) =>
-				v.sku.toLowerCase().includes(searchTerm.toLowerCase()),
+	// --- LÓGICA DE FILTRADO ACTUALIZADA ---
+	const filteredProducts = products
+		// 1. Descartamos los productos padre que estén inactivos
+		.filter((product) => product.is_active !== false)
+		// 2. Limpiamos las variantes inactivas de los productos que sí están activos
+		.map((product) => ({
+			...product,
+			variants: product.variants?.filter((v) => v.is_active !== false),
+		}))
+		// 3. Aplicamos los filtros de búsqueda y de stock bajo sobre los ítems activos
+		.filter((product) => {
+			const matchesSearch =
+				product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+				product.variants?.some((v) =>
+					v.sku.toLowerCase().includes(searchTerm.toLowerCase()),
+				);
+
+			const hasLowStockVariant = product.variants?.some(
+				(v) => v.stock_quantity <= (v.low_stock_threshold ?? 5),
 			);
+			const matchesLowStock = showLowStockOnly ? hasLowStockVariant : true;
 
-		const hasLowStockVariant = product.variants?.some(
-			(v) => v.stock_quantity <= (v.low_stock_threshold ?? 5),
-		);
-		const matchesLowStock = showLowStockOnly ? hasLowStockVariant : true;
-
-		return matchesSearch && matchesLowStock;
-	});
+			return matchesSearch && matchesLowStock;
+		});
 
 	const {
 		sortedData: processedProducts,
@@ -172,7 +182,7 @@ export default function StockPage() {
 			<div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<PageHeader
 					title="Control de Inventario"
-					description="Gestión atómica de ingresos y descartes físicos"
+					description="Gestión de ingresos y descartes físicos"
 					icon={Package}
 				/>
 
@@ -206,7 +216,6 @@ export default function StockPage() {
 						currentDirection={sortDirection}
 						onSort={handleSort}
 					/>
-					{/* Cambiamos la etiqueta para que tenga sentido con SKUs únicos */}
 					<GlassTh>Variantes / SKU</GlassTh>
 					<SortableHeader
 						label="Tipo"
@@ -222,7 +231,6 @@ export default function StockPage() {
 						currentDirection={sortDirection}
 						onSort={handleSort}
 					/>
-					{/* NUEVA COLUMNA DE ACCIONES */}
 					<GlassTh className="text-right">Acciones</GlassTh>
 				</GlassTableHead>
 
@@ -336,6 +344,7 @@ export default function StockPage() {
 													<input
 														type="number"
 														min="0"
+														autoFocus
 														className="w-20 rounded-md border border-swapp-verde-oscuro dark:border-swapp-verde-menta bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm px-2 py-1 text-xs text-swapp-azul-oscuro dark:text-swapp-blanco outline-none shadow-sm focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta transition-all"
 														value={draftThreshold}
 														onChange={(e) =>
@@ -343,6 +352,14 @@ export default function StockPage() {
 																e.target.value === "" ? "" : parseInt(e.target.value),
 															)
 														}
+														onKeyDown={(e) => {
+															if (e.key === "Escape") {
+																cancelEditingThreshold();
+															} else if (e.key === "Enter") {
+																e.preventDefault();
+																saveThreshold(product.product_uuid!, defaultVariant.variant_uuid!);
+															}
+														}}
 														placeholder="Umbral"
 													/>
 												) : (
@@ -497,15 +514,22 @@ export default function StockPage() {
 																		<input
 																			type="number"
 																			min="0"
+																			autoFocus
 																			className="w-20 rounded-md border border-swapp-verde-oscuro dark:border-swapp-verde-menta bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm px-2 py-1 text-xs text-swapp-azul-oscuro dark:text-swapp-blanco outline-none shadow-sm focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta transition-all"
 																			value={draftThreshold}
 																			onChange={(e) =>
 																				setDraftThreshold(
-																					e.target.value === ""
-																						? ""
-																						: parseInt(e.target.value),
+																					e.target.value === "" ? "" : parseInt(e.target.value),
 																				)
 																			}
+																			onKeyDown={(e) => {
+																				if (e.key === "Escape") {
+																					cancelEditingThreshold();
+																				} else if (e.key === "Enter") {
+																					e.preventDefault();
+																					saveThreshold(product.product_uuid!, v.variant_uuid!);
+																				}
+																			}}
 																		/>
 																	) : (
 																		<span className="text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 font-medium">

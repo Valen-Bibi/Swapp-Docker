@@ -428,7 +428,7 @@ export default function MasterCatalogPage() {
 						onSort={handleSort}
 					/>
 					<SortableHeader
-						label="Logística (IA)"
+						label="Logística"
 						columnKey="returnable"
 						currentSortKey={sortKey}
 						currentDirection={sortDirection}

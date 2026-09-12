@@ -88,10 +88,13 @@ export default function ClientModal({
 			onSuccess();
 			onClose();
 		} catch (error: any) {
-			toast.error(
-				error.response?.data?.detail || "Error al procesar el cliente",
-				{ id: toastId },
-			);
+			// Manejo seguro de errores de validación de FastAPI (Pydantic)
+			const errDetail = error.response?.data?.detail;
+			const errorMessage = Array.isArray(errDetail)
+				? errDetail.map((e: any) => e.msg).join(", ")
+				: (errDetail || "Error al procesar el cliente");
+
+			toast.error(errorMessage, { id: toastId });
 		}
 	};
 

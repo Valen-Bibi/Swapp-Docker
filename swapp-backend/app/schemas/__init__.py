@@ -27,7 +27,8 @@ from.orders import (
     OrderItemResponse,
     OrderCreate,
     OrderUpdate,
-    OrderResponse
+    OrderResponse,
+    OrderStatusUpdate
 )
 
 from .clients import (
@@ -36,4 +37,8 @@ from .clients import (
     ClientUpdate,
     ClientResponse,
     ClientSearchResponse,
+)
+
+from .dashboard import (
+    DashboardSummaryResponse
 )

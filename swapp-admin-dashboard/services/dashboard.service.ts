@@ -7,4 +7,9 @@ export const DashboardService = {
     const { data } = await api.get(`/api/dashboard/admin/summary?t=${timestamp}`);
     return data;
   },
+  
+  getActiveContainersBreakdown: async () => {
+		const { data } = await api.get("/api/dashboard/admin/active-containers");
+		return data;
+  },
 };

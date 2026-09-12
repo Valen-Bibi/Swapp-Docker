@@ -24,16 +24,24 @@ export default function ConfirmOrderModal({
 	order,
 	products = [],
 }: ConfirmOrderModalProps) {
-	// Estado para almacenar lo que realmente devuelve el cliente.
-	// La key será el índice del ítem en el array de order.items
 	const [returns, setReturns] = useState<Record<number, number>>({});
+
+	// --- CERRAR CON ESCAPE ---
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.key === "Escape" && isOpen) {
+				onClose();
+			}
+		};
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [isOpen, onClose]);
 
 	useEffect(() => {
 		if (isOpen && order && actionType === "complete") {
 			const initialReturns: Record<number, number> = {};
 			order.items.forEach((item, idx) => {
 				if (item.expected_return_qty > 0) {
-					// Pre-cargamos lo esperado para agilizar el trabajo del operador
 					initialReturns[idx] = item.expected_return_qty;
 				}
 			});
@@ -49,7 +57,7 @@ export default function ConfirmOrderModal({
 	const title = isCancel ? "Cancelar Pedido" : "Completar y Rendir Pedido";
 	const description = isCancel
 		? "¿Estás seguro de que deseas cancelar este pedido? Se liberará el stock reservado de los productos y volverá al inventario general."
-		: "Confirma la entrega del pedido y verifica los envases recolectados. Esta acción actualizará el stock del galpón y la cuenta del cliente.";
+		: "Confirma la entrega del pedido y verifica los envases recolectados. Esta acción actualizará el stock y la cuenta del cliente.";
 
 	const returnableItems =
 		order?.items
@@ -58,13 +66,10 @@ export default function ConfirmOrderModal({
 
 	const handleConfirm = () => {
 		if (isCancel) {
-			onConfirm(); // Si cancela, no enviamos retornos
+			onConfirm();
 		} else {
-			// Transformamos el Record<idx, qty> a algo que el backend entienda:
-			// [{ item_id, actual_qty }]
 			const payload: Record<number, number> = {};
 			returnableItems.forEach((item) => {
-				// Usamos el ID del producto o variante como referencia (acá usamos item_id si existe)
 				if (item.item_id) {
 					payload[item.item_id] = returns[item.idx] || 0;
 				}
@@ -74,46 +79,50 @@ export default function ConfirmOrderModal({
 	};
 
 	return (
-		<div className="fixed inset-0 z-[999] flex items-center justify-center bg-swapp-negro/50 dark:bg-swapp-negro/70 backdrop-blur-sm p-4 animate-in fade-in">
-			<div className="w-full max-w-md rounded-xl bg-swapp-blanco dark:bg-swapp-azul-oscuro p-6 shadow-2xl border-t-4 border-swapp-verde-oscuro dark:border-swapp-verde-menta relative flex flex-col max-h-[90vh]">
-				<button
-					onClick={onClose}
-					disabled={isLoading}
-					className="absolute top-4 right-4 text-swapp-azul-petroleo/50 hover:text-swapp-azul-oscuro dark:text-swapp-tiza-verdoso/50 dark:hover:text-swapp-blanco transition-colors">
-					<X className="h-5 w-5" />
-				</button>
-
-				<div className="flex flex-col items-center text-center gap-4 mt-2 overflow-y-auto">
-					<div
-						className={`p-4 rounded-full ${
+		<div className="fixed inset-0 z-[100] flex items-center justify-center bg-swapp-azul-petroleo/5 dark:bg-swapp-negro/30 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95">
+			<div className={`w-full max-w-md rounded-xl bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md shadow-2xl border-t-4 overflow-hidden flex flex-col max-h-[90vh] transition-colors ${
+				isCancel ? "border-t-red-500 dark:border-t-red-400" : "border-t-swapp-verde-oscuro dark:border-t-swapp-verde-menta"
+			}`}>
+				
+				{/* Header Estandarizado */}
+				<div className="p-6 border-b border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo flex items-start justify-between shrink-0 transition-colors">
+					<div className="flex items-center gap-3">
+						<div className={`p-2 rounded-lg border shadow-sm ${
 							isCancel
-								? "bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400"
-								: "bg-swapp-verde-pastel/20 text-swapp-verde-oscuro dark:bg-swapp-verde-menta/20 dark:text-swapp-verde-menta"
+								? "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400"
+								: "bg-swapp-verde-pastel/20 dark:bg-swapp-verde-menta/20 border-swapp-verde-oscuro/20 dark:border-swapp-verde-menta/20 text-swapp-verde-oscuro dark:text-swapp-verde-menta"
 						}`}>
-						{isCancel ? (
-							<AlertTriangle className="h-8 w-8" />
-						) : (
-							<CheckCircle2 className="h-8 w-8" />
-						)}
+							{isCancel ? <AlertTriangle className="h-6 w-6" /> : <CheckCircle2 className="h-6 w-6" />}
+						</div>
+						<div>
+							<h3 className="text-xl font-bold text-swapp-azul-oscuro dark:text-swapp-blanco tracking-tight">
+								{title}
+							</h3>
+						</div>
 					</div>
+					<button
+						type="button"
+						onClick={onClose}
+						disabled={isLoading}
+						className="p-1 rounded-md text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50 hover:bg-red-500/10 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400 transition-colors mt-0.5">
+						<X className="h-5 w-5" />
+					</button>
+				</div>
 
-					<div>
-						<h3 className="text-xl font-bold text-swapp-azul-oscuro dark:text-swapp-blanco mb-2">
-							{title}
-						</h3>
-						<p className="text-sm text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
-							{description}
-						</p>
-					</div>
+				{/* Body */}
+				<div className="p-6 overflow-y-auto custom-scrollbar">
+					<p className="text-sm font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 mb-4">
+						{description}
+					</p>
 
 					{/* SECCIÓN DE LOGÍSTICA INVERSA (Solo visible al completar) */}
 					{!isCancel && returnableItems.length > 0 && (
-						<div className="w-full mt-2 bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/20 p-4 rounded-xl border border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/30 text-left">
+						<div className="w-full mt-4 bg-swapp-blanco/40 dark:bg-swapp-azul-oscuro/20 p-4 rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 text-left shadow-sm backdrop-blur-sm transition-colors">
 							<h4 className="text-[11px] font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta uppercase tracking-wider mb-3 flex items-center gap-1.5">
 								<Recycle className="h-4 w-4" />
 								Auditoría de Retornos Físicos
 							</h4>
-							<div className="flex flex-col gap-2">
+							<div className="flex flex-col gap-3">
 								{returnableItems.map((item) => {
 									const prodName =
 										products?.find((p) => p.product_id === item.product_id)
@@ -122,7 +131,7 @@ export default function ConfirmOrderModal({
 									return (
 										<div
 											key={item.idx}
-											className="flex items-center justify-between bg-swapp-blanco dark:bg-swapp-azul-oscuro px-3 py-2.5 rounded-lg shadow-sm border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo">
+											className="flex items-center justify-between bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 px-3 py-2.5 rounded-lg shadow-sm border border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/30 transition-colors">
 											<div className="flex flex-col">
 												<span className="text-sm font-bold text-swapp-azul-oscuro dark:text-swapp-blanco">
 													{prodName}
@@ -138,7 +147,7 @@ export default function ConfirmOrderModal({
 												<input
 													type="number"
 													min="0"
-													className="w-16 text-center rounded-md border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-tiza-verdoso/30 dark:bg-swapp-negro/20 px-2 py-1 text-sm font-bold text-swapp-azul-oscuro dark:text-swapp-blanco outline-none focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta transition-all"
+													className="w-16 text-center rounded-md border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 bg-transparent px-2 py-1 text-sm font-bold text-swapp-azul-oscuro dark:text-swapp-blanco outline-none focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta transition-all"
 													value={returns[item.idx] ?? item.expected_return_qty}
 													onChange={(e) =>
 														setReturns({
@@ -156,26 +165,25 @@ export default function ConfirmOrderModal({
 					)}
 				</div>
 
-				<div className="flex w-full gap-3 mt-6">
+				{/* Footer Estandarizado */}
+				<div className="flex justify-end gap-3 pt-4 border-t border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo mt-2 p-6 shrink-0 transition-colors">
 					<button
+						type="button"
 						onClick={onClose}
 						disabled={isLoading}
-						className="flex-1 rounded-lg border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo px-4 py-2 text-sm font-semibold text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso hover:bg-swapp-tiza-verdoso dark:hover:bg-swapp-azul-petroleo transition-colors shadow-sm">
+						className="rounded-lg px-4 py-2 text-sm font-medium text-swapp-azul-petroleo hover:bg-red-500/10 hover:text-red-600 dark:text-swapp-tiza-verdoso dark:hover:bg-red-500/10 dark:hover:text-red-400 transition-colors">
 						Volver
 					</button>
 					<button
+						type="button"
 						onClick={handleConfirm}
 						disabled={isLoading}
-						className={`flex-1 rounded-lg px-4 py-2 text-sm font-bold text-swapp-blanco transition-colors shadow-sm ${
+						className={`flex items-center gap-2 rounded-lg px-6 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro transition-colors disabled:opacity-50 shadow-sm ${
 							isCancel
-								? "bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600"
-								: "bg-swapp-verde-oscuro hover:bg-swapp-azul-oceano dark:bg-swapp-verde-menta dark:text-swapp-azul-oscuro dark:hover:bg-swapp-verde-pastel"
+								? "bg-red-500 hover:bg-red-600 dark:bg-red-400 dark:text-swapp-negro dark:hover:bg-red-500"
+								: "bg-swapp-verde-pastel dark:bg-swapp-verde-menta hover:bg-swapp-verde-oscuro dark:hover:bg-swapp-verde-pastel"
 						}`}>
-						{isLoading
-							? "Procesando..."
-							: isCancel
-								? "Confirmar Baja"
-								: "Rendir Pedido"}
+						{isLoading ? "Procesando..." : isCancel ? "Confirmar Baja" : "Rendir Pedido"}
 					</button>
 				</div>
 			</div>

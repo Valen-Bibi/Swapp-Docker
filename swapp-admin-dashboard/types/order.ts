@@ -42,6 +42,7 @@ export interface Order {
 	delivery_address: string;
 	delivery_zone: string | null;
 	status: string;
+	payments?: any[];
 	total_amount: number;
 	scheduled_delivery_date: string | null;
 	logistics_notes: string | null;

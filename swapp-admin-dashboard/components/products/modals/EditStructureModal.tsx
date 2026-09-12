@@ -308,7 +308,7 @@ export default function EditStructureModal({
 			<div className="w-full max-w-4xl max-h-[90vh] flex flex-col rounded-xl bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md shadow-2xl border-t-4 border-t-swapp-verde-oscuro dark:border-t-swapp-verde-menta overflow-hidden transition-colors">
 				<div className="p-6 border-b border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo flex items-center justify-between shrink-0 transition-colors">
 					<h2 className="text-xl font-bold text-swapp-azul-oscuro dark:text-swapp-blanco">
-						Editar Estructura: {editingProduct.name}
+						Editar Estructura: {editingProduct.name} - {editingProduct.model}
 					</h2>
 					<button
 						type="button"

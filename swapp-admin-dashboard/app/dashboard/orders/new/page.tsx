@@ -33,16 +33,31 @@ export default function NewOrderPage() {
 
 	const onSubmit = async (data: CreateOrderValues) => {
 		const toastId = toast.loading("Registrando pedido transaccional...");
+		
 		try {
-			await OrderService.createAdminOrder(data);
+			// SANITIZACIÓN: Si la fecha o las notas están vacías, enviamos 'null'
+			// para que FastAPI y la base de datos no rechacen la petición (Error 422).
+			const payload = {
+				...data,
+				scheduled_delivery_date: data.scheduled_delivery_date || null,
+				logistics_notes: data.logistics_notes || null,
+			};
+
+			await OrderService.createAdminOrder(payload);
+			
 			toast.success("Pedido creado y stock reservado exitosamente", {
 				id: toastId,
 			});
 			router.push("/dashboard/orders");
 		} catch (error: any) {
-			toast.error(error.response?.data?.detail || "Error al crear el pedido", {
-				id: toastId,
-			});
+			// PARCHE ANTI-PYDANTIC
+			const errDetail = error.response?.data?.detail;
+			const errorMessage = Array.isArray(errDetail)
+				? errDetail.map((e: any) => e.msg).join(", ")
+				: (errDetail || "Error al registrar el pedido");
+
+			// ACÁ FALTABA EL ID: Esto asegura que el mensaje de error reemplace al de "Cargando..."
+			toast.error(errorMessage, { id: toastId });
 		}
 	};
 

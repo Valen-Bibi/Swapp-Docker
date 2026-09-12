@@ -1,8 +1,9 @@
 import uuid
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict
 from pydantic import BaseModel, ConfigDict
 from .clients import ClientResponse
+from .payments import PaymentResponse
 
 class OrderItemCreate(BaseModel):
     product_id: int
@@ -58,6 +59,10 @@ class OrderUpdate(BaseModel):
     logistics_notes: Optional[str] = None
     total_amount: Optional[float] = None
 
+class OrderStatusUpdate(BaseModel):
+    new_status: str
+    actual_returns: Optional[Dict[int, int]] = None
+
 class OrderClientInfo(BaseModel):
     first_name: str
     last_name: str
@@ -69,7 +74,7 @@ class OrderResponse(BaseModel):
     order_id: int
     order_uuid: uuid.UUID
     client_id: int
-    client: Optional[ClientResponse] = None
+    client: Optional[OrderClientInfo] = None
     delivery_address: str
     delivery_zone: Optional[str] = None
     status: str
@@ -80,5 +85,6 @@ class OrderResponse(BaseModel):
     updated_at: datetime
     
     items: List[OrderItemResponse] = []
+    payments: List[PaymentResponse] = []
 
     model_config = ConfigDict(from_attributes=True)

@@ -19,7 +19,7 @@ from PIL import Image
 
 from . import models, database, auth, schemas
 from .database import engine, get_db, Base
-from .routers import products, auth_routes, staff, orders, dashboard_routes, clients
+from .routers import products, auth_routes, staff, orders, dashboard_routes, clients, payments
 
 ml_models = {}
 
@@ -71,13 +71,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Conectamos los routers al sistema
 app.include_router(products.router)
 app.include_router(auth_routes.router)
 app.include_router(staff.router)
 app.include_router(orders.router)
 app.include_router(dashboard_routes.router)
 app.include_router(clients.router)
+app.include_router(payments.router)
 
 @app.post("/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):

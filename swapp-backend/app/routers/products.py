@@ -359,6 +359,7 @@ def update_product_admin(
     db.refresh(product)
     
     return {"message": "Producto actualizado correctamente", "product_uuid": str(product.product_uuid)}
+
 # --- ACTUALIZACIÓN DE VARIANTE (HIJO) ---
 @router.put("/{product_uuid}/variants/{variant_uuid}")
 def update_product_variant_admin(
