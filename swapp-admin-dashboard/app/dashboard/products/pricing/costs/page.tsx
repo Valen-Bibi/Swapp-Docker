@@ -10,6 +10,7 @@ import {
 	History,
 	Layers,
 	ChevronDown,
+	Recycle,
 	ChevronRight,
 	Image as ImageIcon,
 	Tag,
@@ -164,9 +165,11 @@ export default function CostsPage() {
 				<GlassTableHead>
 					<GlassTh className="w-16">Imagen</GlassTh>
 					<GlassTh>Producto General</GlassTh>
-					{/* Cambiamos la etiqueta para productos únicos */}
 					<GlassTh>Variantes / SKU</GlassTh>
-					<GlassTh>Costos y Precios</GlassTh>
+					<GlassTh>Costo Interno</GlassTh>
+					<GlassTh>Precio Base / Recarga</GlassTh>
+					<GlassTh>Precio Oferta</GlassTh>
+					<GlassTh>Margen Neto</GlassTh>
 					<GlassTh align="right">Acciones</GlassTh>
 				</GlassTableHead>
 
@@ -174,7 +177,7 @@ export default function CostsPage() {
 					{filteredProducts.length === 0 ? (
 						<tr>
 							<td
-								colSpan={5}
+								colSpan={8}
 								className="px-6 py-12 text-center text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50">
 								No se encontraron productos que coincidan con la búsqueda.
 							</td>
@@ -187,27 +190,37 @@ export default function CostsPage() {
 							)?.file_url;
 
 							const variantsCount = p.variants?.length || 0;
-							
+
 							// --- LÓGICA DE DETECCIÓN DE PRODUCTO ÚNICO ---
 							const isSingleProduct = p.has_variants === false;
-							const defaultVariant = isSingleProduct && variantsCount > 0 ? p.variants![0] : null;
-							const isExpanded = expandedRows.includes(p.product_uuid!) && !isSingleProduct;
+							const defaultVariant =
+								isSingleProduct && variantsCount > 0 ? p.variants![0] : null;
+							const isExpanded =
+								expandedRows.includes(p.product_uuid!) && !isSingleProduct;
 
 							// Cálculos para producto con múltiples variantes (Referencia)
-							const refCost = (p as any).reference_cost ?? p.variants?.[0]?.cost_price ?? 0;
-							const refPriceBase = (p as any).reference_price ?? p.variants?.[0]?.price ?? 0;
+							const refCost =
+								(p as any).reference_cost ?? p.variants?.[0]?.cost_price ?? 0;
+							const refPriceBase =
+								(p as any).reference_price ?? p.variants?.[0]?.price ?? 0;
 
 							let refPriceFinal = refPriceBase;
+							let refActiveDiscount = null;
+
 							if (p.variants?.[0] && p.active_discounts) {
-								const refDiscount = p.active_discounts.find((d: any) => {
-									const isGlobal = !d.variant_uuids || d.variant_uuids.length === 0;
-									return isGlobal || d.variant_uuids.includes(p.variants![0].variant_uuid);
+								refActiveDiscount = p.active_discounts.find((d: any) => {
+									const isGlobal =
+										!d.variant_uuids || d.variant_uuids.length === 0;
+									return (
+										isGlobal ||
+										d.variant_uuids.includes(p.variants![0].variant_uuid)
+									);
 								});
-								if (refDiscount) {
+								if (refActiveDiscount) {
 									refPriceFinal =
-										refDiscount.discount_type === "percentage"
-											? refPriceBase * (1 - refDiscount.value / 100)
-											: Math.max(0, refPriceBase - refDiscount.value);
+										refActiveDiscount.discount_type === "percentage"
+											? refPriceBase * (1 - refActiveDiscount.value / 100)
+											: Math.max(0, refPriceBase - refActiveDiscount.value);
 								}
 							}
 							const refMargin = calculateMargin(refCost, refPriceFinal);
@@ -219,18 +232,29 @@ export default function CostsPage() {
 
 							if (defaultVariant) {
 								singleActiveDiscount = p.active_discounts?.find((d: any) => {
-									const isGlobal = !d.variant_uuids || d.variant_uuids.length === 0;
-									return isGlobal || d.variant_uuids.includes(defaultVariant.variant_uuid);
+									const isGlobal =
+										!d.variant_uuids || d.variant_uuids.length === 0;
+									return (
+										isGlobal ||
+										d.variant_uuids.includes(defaultVariant.variant_uuid)
+									);
 								});
 
 								singleFinalPrice = defaultVariant.price;
 								if (singleActiveDiscount) {
 									singleFinalPrice =
 										singleActiveDiscount.discount_type === "percentage"
-											? defaultVariant.price * (1 - singleActiveDiscount.value / 100)
-											: Math.max(0, defaultVariant.price - singleActiveDiscount.value);
+											? defaultVariant.price *
+												(1 - singleActiveDiscount.value / 100)
+											: Math.max(
+													0,
+													defaultVariant.price - singleActiveDiscount.value,
+												);
 								}
-								singleMargin = calculateMargin(defaultVariant.cost_price, singleFinalPrice);
+								singleMargin = calculateMargin(
+									defaultVariant.cost_price,
+									singleFinalPrice,
+								);
 							}
 
 							const baseRowClasses =
@@ -294,53 +318,107 @@ export default function CostsPage() {
 											)}
 										</td>
 
-										{/* COSTO Y PRECIOS DINÁMICOS */}
-										<td className="px-6 py-4 text-xs">
+										{/* COSTO INTERNO */}
+										<td className="px-6 py-4 text-xs font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+											{!isSingleProduct
+												? refCost
+													? formatCurrency(refCost)
+													: "-"
+												: defaultVariant?.cost_price
+													? formatCurrency(defaultVariant.cost_price)
+													: "-"}
+										</td>
+
+										{/* PRECIO BASE / RECARGA */}
+										<td
+											className={`px-6 py-4 text-xs font-bold ${(!isSingleProduct ? refActiveDiscount : singleActiveDiscount) ? "text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40 line-through text-[10px]" : "text-swapp-verde-oscuro dark:text-swapp-verde-menta"}`}>
 											{!isSingleProduct ? (
-												// LÓGICA MULTI-VARIANTE (VALORES DE REFERENCIA)
-												<div className="flex items-center gap-3">
-													<span className="font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
-														Costo Ref: {refCost ? formatCurrency(refCost) : "-"}
-													</span>
-													{refMargin !== null && (
-														<StatusBadge variant={refMargin > 0 ? "success" : "danger"}>
-															({refMargin}%)
-														</StatusBadge>
-													)}
+												<span>{formatCurrency(refPriceBase)}</span>
+											) : defaultVariant ? (
+												<div className="flex flex-col gap-0.5">
+													<span>{formatCurrency(defaultVariant.price)}</span>
+													{p.is_returnable &&
+														defaultVariant.refill_price != null && (
+															<SwappTooltip text="Precio de Recarga (Logística Inversa)">
+																<span className="text-[10px] font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 no-underline">
+																	Recarga:{" "}
+																	{formatCurrency(defaultVariant.refill_price)}
+																</span>
+															</SwappTooltip>
+														)}
 												</div>
 											) : (
-												// LÓGICA PRODUCTO ÚNICO (VALORES EXACTOS)
-												defaultVariant ? (
-													<div className="flex items-center gap-4">
-														<div className="flex flex-col gap-1">
-															<span className="font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
-																Costo: {defaultVariant.cost_price ? formatCurrency(defaultVariant.cost_price) : "-"}
-															</span>
-															<div className="flex items-center gap-2">
-																<span className={`font-bold ${singleActiveDiscount ? "text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40 line-through text-[10px]" : "text-swapp-verde-oscuro dark:text-swapp-verde-menta"}`}>
-																	{formatCurrency(defaultVariant.price)}
-																</span>
-																{singleActiveDiscount && (
-																	<span className="font-bold text-emerald-600 dark:text-emerald-400">
-																		{formatCurrency(singleFinalPrice)}
-																	</span>
-																)}
-															</div>
-															{p.is_returnable && defaultVariant.refill_price != null && (
-																<span className="text-[10px] font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
-																	Recarga: {formatCurrency(defaultVariant.refill_price)}
-																</span>
-															)}
-														</div>
-														{singleMargin !== null && (
-															<StatusBadge variant={singleMargin > 0 ? "success" : "danger"}>
-																{singleMargin}%
-															</StatusBadge>
-														)}
+												<span>-</span>
+											)}
+										</td>
+
+										{/* PRECIO OFERTA */}
+										<td className="px-6 py-4 text-xs">
+											{!isSingleProduct ? (
+												refActiveDiscount ? (
+													<div className="flex flex-col items-start gap-1">
+														<span className="font-bold text-emerald-600 dark:text-emerald-400">
+															{formatCurrency(refPriceFinal)}
+														</span>
+														<StatusBadge
+															variant="success"
+															className="!text-[9px]">
+															<Tag className="h-2.5 w-2.5" />
+															{refActiveDiscount.name}
+														</StatusBadge>
 													</div>
 												) : (
-													<span className="text-swapp-azul-petroleo/30 dark:text-swapp-tiza-verdoso/30">-</span>
+													<span className="text-swapp-azul-petroleo/30 dark:text-swapp-tiza-verdoso/30 italic">
+														-
+													</span>
 												)
+											) : singleActiveDiscount ? (
+												<div className="flex flex-col items-start gap-1">
+													<span className="font-bold text-emerald-600 dark:text-emerald-400">
+														{formatCurrency(singleFinalPrice)}
+													</span>
+													<StatusBadge
+														variant="success"
+														className="!text-[9px]">
+														<Tag className="h-2.5 w-2.5" />
+														{singleActiveDiscount.name}
+													</StatusBadge>
+												</div>
+											) : (
+												<span className="text-swapp-azul-petroleo/30 dark:text-swapp-tiza-verdoso/30 italic">
+													-
+												</span>
+											)}
+										</td>
+
+										{/* MARGEN NETO INDEPENDIENTE */}
+										<td className="px-6 py-4 text-xs">
+											{!isSingleProduct ? (
+												refMargin !== null ? (
+													<StatusBadge
+														variant={refMargin > 0 ? "success" : "danger"}>
+														<TrendingUp
+															className={`h-3.5 w-3.5 ${refMargin < 0 ? "rotate-180" : ""}`}
+														/>{" "}
+														{refMargin}%
+													</StatusBadge>
+												) : (
+													<span className="text-swapp-azul-petroleo/30 dark:text-swapp-tiza-verdoso/30">
+														-
+													</span>
+												)
+											) : singleMargin !== null ? (
+												<StatusBadge
+													variant={singleMargin > 0 ? "success" : "danger"}>
+													<TrendingUp
+														className={`h-3.5 w-3.5 ${singleMargin < 0 ? "rotate-180" : ""}`}
+													/>{" "}
+													{singleMargin}%
+												</StatusBadge>
+											) : (
+												<span className="text-swapp-azul-petroleo/30 dark:text-swapp-tiza-verdoso/30">
+													-
+												</span>
 											)}
 										</td>
 
@@ -359,7 +437,9 @@ export default function CostsPage() {
 															icon={History}
 															tooltip="Ver Historial"
 															size="sm"
-															onClick={() => handleHistoryClick(p, defaultVariant)}
+															onClick={() =>
+																handleHistoryClick(p, defaultVariant)
+															}
 														/>
 														<TableActionIcon
 															icon={Edit}
@@ -375,7 +455,7 @@ export default function CostsPage() {
 
 									{/* ACORDEÓN DESPLEGABLE (SOLO PARA MULTI-VARIANTES) */}
 									{!isSingleProduct && variantsCount > 0 && (
-										<AnimatedTableRow isExpanded={isExpanded} colSpan={5}>
+										<AnimatedTableRow isExpanded={isExpanded} colSpan={8}>
 											<table className="w-full text-xs text-left">
 												<thead className="bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/20 border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50">
 													<tr>

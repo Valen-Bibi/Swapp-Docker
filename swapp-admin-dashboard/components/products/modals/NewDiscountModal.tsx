@@ -236,7 +236,7 @@ export default function NewDiscountModal({
 	// Opciones formateadas para SwappSelect
 	const productOptions = products.map((p) => ({
 		value: p.product_uuid,
-		label: p.name,
+		label: p.name + p.model,
 	}));
 
 	const discountTypeOptions = [

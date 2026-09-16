@@ -113,9 +113,10 @@ class ProductResponse(BaseModel):
     product_id: int
     product_uuid: uuid.UUID
     name: str
-    model: Optional[str] = None       # <-- NUEVO
-    has_variants: bool                # <-- NUEVO
+    model: Optional[str] = None
+    has_variants: bool
     is_returnable: bool
+    is_internal: bool
     reference_price: Optional[float] = None
     reference_cost: Optional[float] = None
     reference_refill_price: Optional[float] = None
@@ -126,12 +127,13 @@ class ProductCatalogResponse(BaseModel):
     product_id: int
     product_uuid: uuid.UUID
     name: str
-    model: Optional[str] = None       # <-- NUEVO
-    has_variants: bool                # <-- NUEVO
+    model: Optional[str] = None
+    has_variants: bool
     slug: str
     is_published: bool
     is_featured: bool
     sold_count: int
+    is_internal: Optional[bool] = False
     is_returnable: bool
     is_active: bool
     reference_price: Optional[float] = None
@@ -154,12 +156,8 @@ class ProductCatalogResponse(BaseModel):
 class ProductCreate(BaseModel):
     name: str
     slug: str
-    model: Optional[str] = None       # <-- NUEVO
-    has_variants: bool = False        # <-- NUEVO (Por defecto creará variante fantasma)
-    
-    # --- DATOS PARA VARIANTE FANTASMA (Requeridos en Front si has_variants=False) ---
-    sku: Optional[str] = None         # <-- NUEVO
-    stock_quantity: Optional[int] = 0 # <-- NUEVO
+    model: Optional[str] = None
+    has_variants: bool = False
 
     category_id: int
     brand_id: int
@@ -172,6 +170,7 @@ class ProductCreate(BaseModel):
     short_description: Optional[str] = None
     description: Optional[str] = None
     is_returnable: bool = False
+    is_internal: Optional[bool] = False
     is_published: bool = False
     is_featured: bool = False
     custom_attributes: Optional[Dict[str, str]] = None
@@ -203,6 +202,7 @@ class ProductUpdate(BaseModel):
     category_id: Optional[int] = None
     brand_id: Optional[int] = None
     tax_class_id: Optional[int] = None
+    is_internal: Optional[bool] = None
     reference_price: Optional[float] = None
     reference_cost: Optional[float] = None
     reference_refill_price: Optional[float] = None

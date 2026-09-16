@@ -144,6 +144,7 @@ class Product(Base):
     meta_keywords = Column(Text)
     
     is_featured = Column(Boolean, default=False)
+    is_internal = Column(Boolean, default=False, nullable=False)
     is_published = Column(Boolean, default=False)
     published_at = Column(DateTime(timezone=True))
     visibility = Column(String(20), default='catalog')
