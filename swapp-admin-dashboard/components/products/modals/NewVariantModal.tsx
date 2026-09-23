@@ -56,13 +56,8 @@ export default function NewVariantModal({
 
 			setLoadingPim(true);
 			setSku("");
-			// Tomamos los valores de referencia de la carcasa base
-			setPrice(
-				product.reference_price ? product.reference_price.toString() : "",
-			);
-			setRefillPrice(
-				(product as any).reference_refill_price ? (product as any).reference_refill_price.toString() : "",
-			);
+			setPrice("");
+			setRefillPrice("");
 
 			try {
 				const [globalAttrs, linkedAttrs] = await Promise.all([
@@ -71,6 +66,26 @@ export default function NewVariantModal({
 				]);
 
 				const variantLinkedAttrs = linkedAttrs.filter((l: any) => l.is_variant);
+
+				// --- NUEVA LÓGICA: INYECCIÓN DE COLOR GLOBAL ---
+				const colorAttr = globalAttrs.find(
+					(g: any) => g.name.toLowerCase() === "color" && g.is_variant,
+				);
+				if (
+					colorAttr &&
+					!variantLinkedAttrs.some(
+						(l: any) => l.attribute_id === colorAttr.attribute_id,
+					)
+				) {
+					// Lo insertamos al principio de los atributos para que siempre se renderice
+					variantLinkedAttrs.unshift({
+						attribute_id: colorAttr.attribute_id,
+						name: colorAttr.name,
+						is_variant: true,
+						is_required: false, // Opcional, para no bloquear productos que no lleven color
+					});
+				}
+
 				const enrichedAttrs = variantLinkedAttrs.map((linked: any) => {
 					const globalAttr = globalAttrs.find(
 						(g: any) => g.attribute_id === linked.attribute_id,
@@ -86,24 +101,17 @@ export default function NewVariantModal({
 				let initialValues: Record<string, string> = {};
 				let clonedSku = null;
 
-				// Si ya existen variantes, clonamos la estructura de la última y sus precios
 				if (product.variants && product.variants.length > 0) {
 					const lastVariant = product.variants[product.variants.length - 1];
 					if (lastVariant.variant_attributes) {
 						initialValues = { ...lastVariant.variant_attributes };
 						clonedSku = lastVariant.sku;
-						
-						setPrice(
-							lastVariant.price 
-								? lastVariant.price.toString() 
-								: (product.reference_price ? product.reference_price.toString() : "")
-						);
-						
-						// Si la variante vieja tiene recarga la usamos, sino mantenemos la del padre
+
+						setPrice(lastVariant.price ? lastVariant.price.toString() : "");
 						setRefillPrice(
 							lastVariant.refill_price
 								? lastVariant.refill_price.toString()
-								: ((product as any).reference_refill_price ? (product as any).reference_refill_price.toString() : "")
+								: "",
 						);
 					}
 				}
@@ -125,17 +133,26 @@ export default function NewVariantModal({
 	const handleGenerateSKU = () => {
 		if (!product) return;
 
-		const formatSkuSegment = (text: string | null | undefined, fallback = "XXX") => {
+		const formatSkuSegment = (
+			text: string | null | undefined,
+			fallback = "XXX",
+		) => {
 			if (!text || text.trim() === "") return fallback;
-			const cleanText = text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+			const cleanText = text
+				.normalize("NFD")
+				.replace(/[\u0300-\u036f]/g, "")
+				.replace(/[^a-zA-Z0-9]/g, "")
+				.toUpperCase();
 			if (cleanText.length === 0) return fallback;
-			return cleanText.length >= 3 ? cleanText.substring(0, 3) : cleanText.padEnd(3, "X");
+			return cleanText.length >= 3
+				? cleanText.substring(0, 3)
+				: cleanText.padEnd(3, "X");
 		};
 
 		const prodCode = formatSkuSegment(product.name, "PRO");
 		const brandCode = formatSkuSegment(product.brand?.name, "SWA");
 		const modelCode = formatSkuSegment((product as any).model, "GEN");
-		
+
 		const firstAttrValue = Object.values(selectedValues).find(
 			(val) => val && val.trim() !== "",
 		);

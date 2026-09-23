@@ -1,6 +1,7 @@
 import uuid
 from typing import Optional, List, Dict, Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
+from enum import Enum
 
 class BrandCreate(BaseModel):
     name: str
@@ -117,9 +118,6 @@ class ProductResponse(BaseModel):
     has_variants: bool
     is_returnable: bool
     is_internal: bool
-    reference_price: Optional[float] = None
-    reference_cost: Optional[float] = None
-    reference_refill_price: Optional[float] = None
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -134,11 +132,9 @@ class ProductCatalogResponse(BaseModel):
     is_featured: bool
     sold_count: int
     is_internal: Optional[bool] = False
+    linked_internal_product_id: Optional[int] = None
     is_returnable: bool
     is_active: bool
-    reference_price: Optional[float] = None
-    reference_cost: Optional[float] = None
-    reference_refill_price: Optional[float] = None
 
     description: Optional[str] = None
     short_description: Optional[str] = None
@@ -162,10 +158,6 @@ class ProductCreate(BaseModel):
     category_id: int
     brand_id: int
     tax_class_id: int
-
-    reference_price: Optional[float] = 0.0
-    reference_cost: Optional[float] = 0.0
-    reference_refill_price: Optional[float] = None
     
     short_description: Optional[str] = None
     description: Optional[str] = None
@@ -195,17 +187,12 @@ class ProductUpdate(BaseModel):
     slug: Optional[str] = None
     model: Optional[str] = None
     has_variants: Optional[bool] = None
-
-    sku: Optional[str] = None
-    stock_quantity: Optional[int] = None
     
     category_id: Optional[int] = None
     brand_id: Optional[int] = None
     tax_class_id: Optional[int] = None
     is_internal: Optional[bool] = None
-    reference_price: Optional[float] = None
-    reference_cost: Optional[float] = None
-    reference_refill_price: Optional[float] = None
+    linked_internal_product_id: Optional[int] = None
     
     short_description: Optional[str] = None
     description: Optional[str] = None
@@ -278,3 +265,27 @@ class CategoryReorderItem(BaseModel):
 
 class CategoryReorderRequest(BaseModel):
     categories: List[CategoryReorderItem]
+
+class RelationshipType(str, Enum):
+    container_return = "container_return"
+    bundle_component = "bundle_component"
+    complementary = "complementary"
+    substitute = "substitute"
+    cross_sell = "cross_sell"
+    up_sell = "up_sell"
+    co_branding = "co_branding"
+
+class ProductRelationshipItem(BaseModel):
+    target_product_uuid: uuid.UUID
+    relationship_type: RelationshipType
+
+class ProductRelationshipsBulkUpdate(BaseModel):
+    relationships: List[ProductRelationshipItem]
+
+class ProductRelationshipResponse(BaseModel):
+    relationship_id: int
+    relationship_uuid: uuid.UUID
+    target_product_uuid: uuid.UUID
+    target_product_name: str
+    relationship_type: str
+    priority: int

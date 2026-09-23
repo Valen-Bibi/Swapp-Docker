@@ -124,9 +124,6 @@ class Product(Base):
     tags = Column(ARRAY(Text))
     
     currency = Column(String(3), default='ARS')
-    reference_price = Column(Numeric(10, 2), nullable=True)
-    reference_refill_price = Column(Numeric(10, 2), nullable=True)
-    reference_cost = Column(Numeric(10, 2), nullable=True)
     track_inventory = Column(Boolean, default=True)
     allow_backorder = Column(Boolean, default=False)
     max_order_quantity = Column(Integer)
@@ -169,7 +166,6 @@ class Product(Base):
     is_returnable = Column(Boolean, default=False, nullable=False)
     tax_class_id = Column(BigInteger, ForeignKey("swapp.tax_classes.tax_class_id"), nullable=True)
     
-    # --- RELACIONES ---
     category = relationship("ProductCategory", back_populates="products")
     brand = relationship("Brand", back_populates="products")
     tax_class = relationship("TaxClass", back_populates="products")
@@ -251,6 +247,7 @@ class ProductAttribute(Base):
     is_variant = Column(Boolean, default=False, nullable=False) 
     
     is_active = Column(Boolean, default=True, nullable=False)
+    is_global = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

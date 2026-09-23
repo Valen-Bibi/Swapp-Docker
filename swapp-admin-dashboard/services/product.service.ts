@@ -88,6 +88,11 @@ export const ProductService = {
     return data;
   },
 
+  updateAttribute: async (attributeId: number, payload: { name: string; is_variant?: boolean }) => {
+    const { data } = await api.put(`/api/products/admin/attributes/${attributeId}`, payload);
+    return data;
+  },
+
   addAttributeValue: async (attributeId: number, payload: { value: string; display_order: number }) => {
     const { data } = await api.post(`/api/products/admin/attributes/${attributeId}/values`, payload);
     return data;
@@ -150,6 +155,16 @@ export const ProductService = {
 
   unlinkAttributeFromCategory: async (categoryId: number, attributeId: number) => {
     const { data } = await api.delete(`/api/products/admin/categories/${categoryId}/attributes/${attributeId}`);
+    return data;
+  },
+
+  getProductRelationships: async (productUuid: string) => {
+    const { data } = await api.get(`/api/products/admin/${productUuid}/relationships`);
+    return data;
+  },
+
+  updateProductRelationships: async (productUuid: string, payload: { relationships: { target_product_uuid: string; relationship_type: string }[] }) => {
+    const { data } = await api.put(`/api/products/admin/${productUuid}/relationships`, payload);
     return data;
   },
 };

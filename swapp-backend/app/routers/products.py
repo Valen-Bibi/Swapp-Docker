@@ -80,7 +80,7 @@ def create_product_discount(
     # 2. Guardamos el descuento en la BD
     new_discount = models.ProductDiscount(
         product_id=product.product_id,
-        variant_ids=target_variant_ids, # Acabamos de mapear esto
+        variant_ids=target_variant_ids,
         name=discount_data.name,
         discount_type=discount_data.discount_type,
         value=discount_data.value,
@@ -213,7 +213,7 @@ def get_active_discounts(db: Session = Depends(get_db), admin_user = Depends(get
             "product_id": d.product_id,
             "product_uuid": d.product.product_uuid,
             "product_name": d.product.name,
-            "variant_uuids": variant_uuids, # <-- Exponemos el nuevo array
+            "variant_uuids": variant_uuids,
             "name": d.name,
             "discount_type": d.discount_type,
             "value": float(d.value),
@@ -229,12 +229,12 @@ def get_all_products_admin(
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
-    # Agregamos joinedload(variants) para que traiga la información física
     products = db.query(models.Product)\
                  .options(
                      joinedload(models.Product.discounts), 
                      joinedload(models.Product.media),
-                     joinedload(models.Product.variants)
+                     joinedload(models.Product.variants),
+                     joinedload(models.Product.related_to)
                  )\
                  .order_by(models.Product.name)\
                  .all()
@@ -243,16 +243,19 @@ def get_all_products_admin(
     for p in products:
         prod_schema = schemas.ProductCatalogResponse.model_validate(p)
         prod_schema.media = [m for m in p.media if m.is_active]
+        
+        container_rel = next((rel for rel in p.related_to if rel.relationship_type == 'container_return'), None)
+        if container_rel:
+            prod_schema.linked_internal_product_id = container_rel.target_product_id
+            
         result.append(prod_schema)
         
     return result
 
 @router.get("/categories", response_model=List[schemas.CategoryResponse])
 def get_categories(include_inactive: bool = False, db: Session = Depends(get_db)):
-    """Obtiene el árbol de categorías, con opción de incluir las archivadas"""
     query = db.query(models.ProductCategory)
     
-    # Si no nos piden las inactivas, filtramos solo las activas
     if not include_inactive:
         query = query.filter(models.ProductCategory.is_active == True)
         
@@ -261,14 +264,12 @@ def get_categories(include_inactive: bool = False, db: Session = Depends(get_db)
 
 @router.get("/brands", response_model=List[schemas.BrandResponse])
 def get_brands(db: Session = Depends(get_db)):
-    """Obtiene todas las marcas activas del catálogo"""
     brands = db.query(models.Brand)\
                .filter(models.Brand.is_active == True)\
                .order_by(models.Brand.display_order)\
                .all()
     return brands
 
-# --- ACTUALIZACIÓN DE PRODUCTOS (PLANTILLA) ---
 @router.put("/{product_uuid}")
 def update_product_admin(
     product_uuid: UUID,
@@ -283,15 +284,14 @@ def update_product_admin(
     
     update_data = product_update.model_dump(exclude_unset=True)
 
+    # 1. BLINDAJE: El campo is_returnable ahora es 100% automático por las relaciones.
+    update_data.pop('is_returnable', None)
+    update_data.pop('linked_internal_product_id', None)
+
     if 'category_id' in update_data and update_data['category_id'] is not None:
         category = db.query(models.ProductCategory).filter(models.ProductCategory.category_id == update_data['category_id']).first()
-        if not category:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="La categoría seleccionada no existe.")
-        if category.parent_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, 
-                detail="Operación rechazada: Los productos solo pueden asociarse a subcategorías finales."
-            )
+        if not category or category.parent_id is None:
+            raise HTTPException(status_code=400, detail="Operación rechazada: Los productos solo pueden asociarse a subcategorías finales.")
 
     if 'slug' in update_data and update_data['slug'] is not None:
         existing_slug = db.query(models.Product).filter(
@@ -299,18 +299,67 @@ def update_product_admin(
             models.Product.product_uuid != product_uuid
         ).first()
         if existing_slug:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="La URL amigable (slug) ya está en uso.")
+            raise HTTPException(status_code=400, detail="La URL amigable (slug) ya está en uso.")
+
+    # --- Lógica de Downgrade ---
+    was_multiple = product.has_variants
+    is_multiple = update_data.get('has_variants', product.has_variants)
+    
+    if was_multiple and not is_multiple:
+        new_sku = update_data.pop('sku', None)
+        new_stock = update_data.pop('stock_quantity', 0)
+        
+        if not new_sku:
+            raise HTTPException(status_code=400, detail="Debe proporcionar un nuevo SKU único.")
+            
+        if db.query(models.ProductVariant).filter(models.ProductVariant.sku == new_sku).first():
+            raise HTTPException(status_code=400, detail="El SKU ingresado ya está en uso.")
+
+        first_variant = db.query(models.ProductVariant).filter(
+            models.ProductVariant.product_id == product.product_id,
+            models.ProductVariant.is_active == True
+        ).first()
+
+        ref_price = first_variant.price if first_variant else 0.0
+        ref_cost = first_variant.cost_price if first_variant else 0.0
+        ref_refill = first_variant.refill_price if first_variant and product.is_returnable else None
+
+        db.query(models.ProductVariant).filter(
+            models.ProductVariant.product_id == product.product_id
+        ).update({"is_active": False})
+        
+        ghost_variant = models.ProductVariant(
+            product_id=product.product_id,
+            sku=new_sku.upper(),
+            price=ref_price,
+            cost_price=ref_cost,
+            refill_price=ref_refill,
+            stock_quantity=new_stock,
+            variant_attributes=None,
+            is_active=True
+        )
+        db.add(ghost_variant)
+        db.flush()
+        
+        db.add(models.ProductPriceHistory(product_id=product.product_id, variant_id=ghost_variant.variant_id, old_value=0, new_value=ghost_variant.price, record_type="base_price"))
+        db.add(models.ProductPriceHistory(product_id=product.product_id, variant_id=ghost_variant.variant_id, old_value=0, new_value=ghost_variant.cost_price, record_type="cost_price"))
+    else:
+        update_data.pop('sku', None)
+        update_data.pop('stock_quantity', None)
 
     for key, value in update_data.items():
         setattr(product, key, value)
 
     product.updated_by = admin_user.staff_id
+    
+    # La Lógica de Economía circular ya no vive aquí. Se gestiona desde el endpoint /relationships.
+
     db.commit()
     db.refresh(product)
     
-    return {"message": "Carcasa maestra actualizada correctamente", "product_uuid": str(product.product_uuid)}
+    return {"message": "Producto actualizado", "product_uuid": str(product.product_uuid)}
 
-# --- ACTUALIZACIÓN DE VARIANTE (HIJO) ---
+
 @router.put("/{product_uuid}/variants/{variant_uuid}")
 def update_product_variant_admin(
     product_uuid: UUID,
@@ -417,7 +466,6 @@ def create_product_movement(
     variant.stock_quantity = stock_after
 
     if movement.movement_type == 'purchase' and movement.unit_cost is not None and movement.unit_cost > 0:
-        # Guardamos historial de costos
         hist_cost = models.ProductPriceHistory(
             product_id=product.product_id,
             variant_id=variant.variant_id,
@@ -431,7 +479,6 @@ def create_product_movement(
     db.commit() 
     return {"message": "Movimiento registrado y stock actualizado con éxito"}
 
-# --- CREACIÓN DE MARCAS / CATEGORÍAS ---
 @router.post("/brands", status_code=status.HTTP_201_CREATED)
 def create_brand(
     brand_in: schemas.BrandCreate,
@@ -481,7 +528,6 @@ def update_brand(
     db.commit()
     return {"message": "Marca actualizada correctamente"}
 
-
 @router.post("/categories", status_code=status.HTTP_201_CREATED)
 def create_category(
     cat_in: schemas.CategoryCreate,
@@ -501,7 +547,9 @@ def create_category(
     )
     db.add(new_category)
     db.commit()
-    return {"message": "Categoría creada exitosamente"}
+    db.refresh(new_category)
+    
+    return {"message": "Categoría creada exitosamente", "category_id": new_category.category_id}
 
 @router.post("/categories/reorder")
 def reorder_categories(
@@ -509,7 +557,6 @@ def reorder_categories(
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
-    """Actualiza el display_order de múltiples categorías en una sola transacción"""
     try:
         for item in payload.categories:
             db.query(models.ProductCategory)\
@@ -548,7 +595,6 @@ def update_category(
     db.commit()
     return {"message": "Categoría actualizada correctamente"}
 
-# --- GESTOR MULTIMEDIA REFACTORIZADO ---
 @router.post("/{product_uuid}/main-image")
 async def upload_main_image(
     product_uuid: UUID,
@@ -704,16 +750,13 @@ def create_product_admin(
             slug=product_in.slug,
             short_description=product_in.short_description,
             description=product_in.description,
-            is_returnable=product_in.is_returnable,
+            is_returnable=False,
             is_published=product_in.is_published,
             is_featured=product_in.is_featured,
-            is_internal=product_in.is_internal, # <-- Ahora impacta en la BD
+            is_internal=product_in.is_internal,
             brand_id=product_in.brand_id,
             category_id=product_in.category_id,
             tax_class_id=product_in.tax_class_id,
-            reference_price=product_in.reference_price,
-            reference_cost=product_in.reference_cost,
-            reference_refill_price=product_in.reference_refill_price,
             meta_title=product_in.meta_title,
             meta_description=product_in.meta_description,
             meta_keywords=product_in.meta_keywords,
@@ -725,7 +768,7 @@ def create_product_admin(
             file_size=product_in.file_size,
             file_extension=product_in.file_extension,
             custom_attributes=product_in.custom_attributes,
-            has_variants=True, # <-- Obligamos a que todos tengan variantes a futuro
+            has_variants=product_in.has_variants,
             created_by=admin_user.staff_id, 
             updated_by=admin_user.staff_id,
             sold_count=0 
@@ -769,15 +812,9 @@ def create_product_variant_admin(
                 detail="Operación rechazada: El SKU ya está en uso."
             )
 
-    reference_price = product.reference_price or 0
-    reference_cost = product.reference_cost or 0
-
-    if product.variants and len(product.variants) > 0:
-        reference_price = product.variants[0].price
-        reference_cost = product.variants[0].cost_price
-
-    final_price = variant_in.price if variant_in.price and variant_in.price > 0 else reference_price
-    final_cost = variant_in.cost_price if variant_in.cost_price and variant_in.cost_price > 0 else reference_cost
+    # El frontend ahora es la única fuente de verdad para los precios
+    final_price = variant_in.price if variant_in.price is not None else 0
+    final_cost = variant_in.cost_price if variant_in.cost_price is not None else 0
 
     new_variant = models.ProductVariant(
         product_id=product.product_id,
@@ -807,9 +844,12 @@ def create_product_variant_admin(
         record_type="cost_price"
     ))
 
-    product.updated_by = admin_user.staff_id
-    if not product.has_variants:
+    active_variants_count = sum(1 for v in product.variants if v.is_active)
+    
+    if active_variants_count >= 1 and not product.has_variants:
         product.has_variants = True
+
+    product.updated_by = admin_user.staff_id
         
     db.commit()
     return {"message": "Variante creada y vinculada", "variant_uuid": str(new_variant.variant_uuid)}
@@ -827,7 +867,6 @@ def create_attribute(
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
-
     existing_attr = db.query(models.ProductAttribute).filter(
         func.lower(models.ProductAttribute.name) == payload.name.lower()
     ).first()
@@ -855,7 +894,7 @@ def create_attribute(
                 ).first()
 
                 if existing_val:
-                    existing_val.is_active = True # Lo reactivamos
+                    existing_val.is_active = True 
                 else:
                     new_val = models.ProductAttributeValue(
                         attribute_id=existing_attr.attribute_id,
@@ -876,7 +915,6 @@ def create_attribute(
     db.commit()
     db.refresh(new_attr)
 
-    # Agregamos los valores iniciales si los enviaron
     for val_str in payload.values:
         new_val = models.ProductAttributeValue(
             attribute_id=new_attr.attribute_id,
@@ -895,7 +933,6 @@ def add_attribute_value(
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
-    """Agrega un nuevo valor normalizado a un atributo existente"""
     attr = db.query(models.ProductAttribute).filter(models.ProductAttribute.attribute_id == attribute_id).first()
     if not attr:
         raise HTTPException(status_code=404, detail="Atributo no encontrado.")
@@ -929,7 +966,6 @@ def update_attribute(
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
-    """Permite corregir errores de tipeo en el nombre de la entidad (Atributo)"""
     attr = db.query(models.ProductAttribute).filter(models.ProductAttribute.attribute_id == attribute_id).first()
     if not attr:
         raise HTTPException(status_code=404, detail="Atributo no encontrado.")
@@ -965,29 +1001,38 @@ def delete_attribute_value(
     return {"message": "Valor eliminado del diccionario"}
 
 @router.get("/categories/{category_id}/attributes")
-def get_category_attributes(
-    category_id: int, 
-    db: Session = Depends(get_db), 
-    admin_user = Depends(get_current_admin_user)
-):
-    category = db.query(models.ProductCategory).filter(models.ProductCategory.category_id == category_id).first()
-    if not category:
-        raise HTTPException(status_code=404, detail="Categoría no encontrada.")
+def get_category_attributes(category_id: int, db: Session = Depends(get_db)):
+    linked = db.query(models.SubcategoryAttribute, models.ProductAttribute)\
+               .join(models.ProductAttribute, models.SubcategoryAttribute.attribute_id == models.ProductAttribute.attribute_id)\
+               .filter(models.SubcategoryAttribute.category_id == category_id)\
+               .all()
 
-    # Traemos los enlaces pivot con la información del atributo
-    links = db.query(models.SubcategoryAttribute)\
-              .options(joinedload(models.SubcategoryAttribute.attribute))\
-              .filter(models.SubcategoryAttribute.category_id == category_id)\
-              .all()
+    global_attrs = db.query(models.ProductAttribute)\
+                     .filter(models.ProductAttribute.is_global == True,
+                             models.ProductAttribute.is_active == True)\
+                     .all()
+
+    linked_attr_ids = {sub.attribute_id for sub, attr in linked}
+
+    result = []
+    for sub, attr in linked:
+        result.append({
+            "attribute_id": sub.attribute_id,
+            "name": attr.name,
+            "is_variant": attr.is_variant,
+            "is_required": sub.is_required,
+        })
     
-    return [
-        {
-            "attribute_id": link.attribute_id,
-            "name": link.attribute.name,
-            "is_variant": link.attribute.is_variant,
-            "is_required": link.is_required
-        } for link in links
-    ]
+    for g_attr in global_attrs:
+        if g_attr.attribute_id not in linked_attr_ids:
+            result.insert(0, {
+                "attribute_id": g_attr.attribute_id,
+                "name": g_attr.name,
+                "is_variant": g_attr.is_variant,
+                "is_required": True,
+            })
+            
+    return result
 
 @router.get("/categories/{category_id}/products/count")
 def count_category_products(
@@ -995,7 +1040,6 @@ def count_category_products(
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
-
     subcategories = db.query(models.ProductCategory.category_id).filter(models.ProductCategory.parent_id == category_id).all()
 
     target_ids = [category_id] + [sub[0] for sub in subcategories]
@@ -1014,7 +1058,6 @@ def archive_category_with_resolution(
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
-    """Archiva la categoría y aplica la resolución elegida para sus productos (incluyendo hijos)"""
     category = db.query(models.ProductCategory).filter(models.ProductCategory.category_id == category_id).first()
     if not category:
         raise HTTPException(status_code=404, detail="Categoría no encontrada.")
@@ -1060,30 +1103,24 @@ def link_attribute_to_category(
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
-    """Vincula un atributo a una subcategoría (Crea el candado)"""
-    # 1. Verificamos que la categoría exista y sea una SUBCATEGORÍA (tenga padre)
     category = db.query(models.ProductCategory).filter(models.ProductCategory.category_id == category_id).first()
     if not category:
         raise HTTPException(status_code=404, detail="Categoría no encontrada.")
     if category.parent_id is None:
         raise HTTPException(status_code=400, detail="Los atributos solo pueden asignarse a subcategorías (nodos finales).")
 
-    # 2. Verificamos que el atributo exista
     attribute = db.query(models.ProductAttribute).filter(models.ProductAttribute.attribute_id == link_data.attribute_id).first()
     if not attribute:
         raise HTTPException(status_code=404, detail="Atributo no encontrado.")
 
-    # 3. Verificamos que no esté ya vinculado
     existing_link = db.query(models.SubcategoryAttribute).filter(
         models.SubcategoryAttribute.category_id == category_id,
         models.SubcategoryAttribute.attribute_id == link_data.attribute_id
     ).first()
     
     if existing_link:
-        # Si ya existe, solo actualizamos el is_required
         existing_link.is_required = link_data.is_required
     else:
-        # Si no existe, creamos el vínculo en la tabla Pivot
         new_link = models.SubcategoryAttribute(
             category_id=category_id,
             attribute_id=link_data.attribute_id,
@@ -1102,7 +1139,6 @@ def unlink_attribute_from_category(
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
-    """Rompe el vínculo entre un atributo y una subcategoría"""
     link = db.query(models.SubcategoryAttribute).filter(
         models.SubcategoryAttribute.category_id == category_id,
         models.SubcategoryAttribute.attribute_id == attribute_id
@@ -1114,3 +1150,89 @@ def unlink_attribute_from_category(
     db.delete(link)
     db.commit()
     return {"message": "Atributo desvinculado exitosamente."}
+
+@router.get("/{product_uuid}/relationships", response_model=List[schemas.ProductRelationshipResponse])
+def get_product_relationships(
+    product_uuid: UUID,
+    db: Session = Depends(get_db),
+    admin_user = Depends(get_current_admin_user)
+):
+    """Devuelve todas las relaciones activas donde este producto es el origen (source)."""
+    source_product = db.query(models.Product).filter(models.Product.product_uuid == product_uuid).first()
+    if not source_product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+        
+    relations = db.query(models.ProductRelationship)\
+        .options(joinedload(models.ProductRelationship.target_product))\
+        .filter(models.ProductRelationship.source_product_id == source_product.product_id)\
+        .order_by(models.ProductRelationship.priority)\
+        .all()
+    
+    result = []
+    for r in relations:
+        if r.target_product:
+            result.append({
+                "relationship_id": r.relationship_id,
+                "relationship_uuid": r.relationship_uuid,
+                "target_product_uuid": r.target_product.product_uuid,
+                "target_product_name": r.target_product.name,
+                "relationship_type": r.relationship_type,
+                "priority": r.priority
+            })
+        
+    return result
+
+@router.put("/{product_uuid}/relationships")
+def update_product_relationships(
+    product_uuid: UUID,
+    payload: schemas.ProductRelationshipsBulkUpdate,
+    db: Session = Depends(get_db),
+    admin_user = Depends(get_current_admin_user)
+):
+    """Sincroniza masivamente las relaciones y automatiza el estado de envase retornable."""
+    source_product = db.query(models.Product).filter(models.Product.product_uuid == product_uuid).first()
+    if not source_product:
+        raise HTTPException(status_code=404, detail="Producto origen no encontrado.")
+
+    # 1. TABULA RASA: Borramos todas las relaciones donde este producto era el origen
+    db.query(models.ProductRelationship).filter(
+        models.ProductRelationship.source_product_id == source_product.product_id
+    ).delete()
+
+    has_container = False
+
+    if payload.relationships:
+        # Extraemos UUIDs de los productos destino para buscarlos de una sola vez
+        target_uuids = [r.target_product_uuid for r in payload.relationships]
+        target_products = db.query(models.Product.product_id, models.Product.product_uuid).filter(
+            models.Product.product_uuid.in_(target_uuids)
+        ).all()
+        
+        # Mapeo rápido de UUID -> ID Numérico
+        uuid_to_id = {prod.product_uuid: prod.product_id for prod in target_products}
+
+        # 2. Insertamos las nuevas relaciones asignando 'priority' según el orden del array
+        for idx, rel in enumerate(payload.relationships):
+            target_id = uuid_to_id.get(rel.target_product_uuid)
+            if not target_id:
+                continue 
+
+            if rel.relationship_type == 'container_return':
+                has_container = True
+
+            new_relation = models.ProductRelationship(
+                source_product_id=source_product.product_id,
+                target_product_id=target_id,
+                relationship_type=rel.relationship_type,
+                priority=idx, 
+                created_by=admin_user.staff_id,
+                updated_by=admin_user.staff_id
+            )
+            db.add(new_relation)
+    
+    # 3. EL CEREBRO REACTIVO: Si metieron un envase, el producto es retornable.
+    source_product.is_returnable = has_container
+    source_product.updated_by = admin_user.staff_id
+
+    db.commit()
+    return {"message": "Relaciones de producto sincronizadas con éxito."}

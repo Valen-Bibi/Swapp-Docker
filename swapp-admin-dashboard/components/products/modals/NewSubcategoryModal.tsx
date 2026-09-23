@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, FolderTree, Save } from "lucide-react";
+import { X, FolderTree, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { SwappInput } from "@/components/ui/SwappInput";
 import { SwappToggle } from "@/components/ui/SwappToggle";
@@ -25,6 +25,45 @@ export default function NewSubcategoryModal({
 	const [isActive, setIsActive] = useState(true);
 	const [isSaving, setIsSaving] = useState(false);
 
+	// Estados para el Candado de Atributos
+	const [variantAttributes, setVariantAttributes] = useState<any[]>([]);
+	const [selectedAttributeId, setSelectedAttributeId] = useState<string>("");
+	const [isLoadingAttributes, setIsLoadingAttributes] = useState(false);
+
+	// Fetch de atributos al abrir el modal
+	useEffect(() => {
+		if (isOpen) {
+			const fetchAttributes = async () => {
+				setIsLoadingAttributes(true);
+				try {
+					const data = await ProductService.getAttributes();
+					// Filtramos SOLO los atributos que son "Variantes Físicas"
+					const variants = data.filter((attr: any) => attr.is_variant);
+					setVariantAttributes(variants);
+
+					// Buscamos "Color" (o similar) para dejarlo por defecto, si no, agarramos el 1ro.
+					const defaultAttr =
+						variants.find((a: any) => a.name.toLowerCase().includes("color")) ||
+						variants[0];
+					if (defaultAttr) {
+						setSelectedAttributeId(defaultAttr.attribute_id.toString());
+					}
+				} catch (error) {
+					toast.error("Error al cargar los atributos disponibles.");
+				} finally {
+					setIsLoadingAttributes(false);
+				}
+			};
+			fetchAttributes();
+		} else {
+			// Limpiar estados al cerrar
+			setName("");
+			setSlug("");
+			setIsActive(true);
+			setSelectedAttributeId("");
+		}
+	}, [isOpen]);
+
 	// --- CERRAR CON ESCAPE ---
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
@@ -41,7 +80,6 @@ export default function NewSubcategoryModal({
 	const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const newName = e.target.value;
 		setName(newName);
-		// Autogenerar slug limpio
 		setSlug(
 			newName
 				.toLowerCase()
@@ -57,12 +95,18 @@ export default function NewSubcategoryModal({
 		if (!name.trim() || !slug.trim()) {
 			return toast.error("Nombre y Slug son obligatorios.");
 		}
+		if (!selectedAttributeId) {
+			return toast.error(
+				"Es obligatorio asignar un atributo variante (Ej: Color).",
+			);
+		}
 
 		setIsSaving(true);
-		const toastId = toast.loading("Creando subcategoría...");
+		const toastId = toast.loading("Creando y blindando subcategoría...");
 
 		try {
-			await ProductService.createCategory({
+			// 1. Creamos la categoría maestra
+			const categoryResponse = await ProductService.createCategory({
 				name: name.trim(),
 				slug: slug.trim(),
 				parent_id: parentCategory.id,
@@ -70,21 +114,26 @@ export default function NewSubcategoryModal({
 				display_order: 0,
 			});
 
-			toast.success("Subcategoría creada exitosamente", { id: toastId });
+			// 2. Si se creó bien y tenemos el ID, le atamos el atributo variante
+			if (categoryResponse.category_id) {
+				await ProductService.linkAttributeToCategory(
+					categoryResponse.category_id,
+					{
+						attribute_id: parseInt(selectedAttributeId),
+						is_required: true, // ¡CANDADO ACTIVO!
+					},
+				);
+			}
 
-			// Limpieza
-			setName("");
-			setSlug("");
-			setIsActive(true);
-
+			toast.success("Subcategoría creada y vinculada exitosamente", {
+				id: toastId,
+			});
 			onSuccess();
 			onClose();
 		} catch (error: any) {
 			toast.error(
 				error.response?.data?.detail || "Error al crear la subcategoría",
-				{
-					id: toastId,
-				},
+				{ id: toastId },
 			);
 		} finally {
 			setIsSaving(false);
@@ -93,7 +142,6 @@ export default function NewSubcategoryModal({
 
 	return (
 		<div className="fixed inset-0 z-[100] flex items-center justify-center bg-swapp-azul-petroleo/5 dark:bg-swapp-negro/30 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95">
-			{/* CONTENEDOR DEL MODAL CON EL BALANCE DE OPACIDAD PERFECTO */}
 			<div className="w-full max-w-md rounded-xl bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md shadow-2xl border-t-4 border-t-swapp-verde-oscuro dark:border-t-swapp-verde-menta p-6 transition-colors">
 				<div className="mb-6 flex items-center justify-between">
 					<div>
@@ -135,6 +183,45 @@ export default function NewSubcategoryModal({
 						placeholder="ej-botellas-termicas"
 					/>
 
+					{/* EL SELECT DEL CANDADO */}
+					<div className="space-y-1.5 pt-2 border-t border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/30 transition-colors">
+						<label className="block text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+							Variante Obligatoria (Candado){" "}
+							<span className="text-red-500">*</span>
+						</label>
+						{isLoadingAttributes ? (
+							<div className="flex items-center gap-2 text-sm text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 py-2">
+								<Loader2 className="h-4 w-4 animate-spin text-swapp-verde-oscuro dark:text-swapp-verde-menta" />
+								Cargando variantes...
+							</div>
+						) : (
+							<select
+								className="w-full rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm px-4 py-2.5 text-sm text-swapp-azul-oscuro dark:text-swapp-blanco outline-none transition-all focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta shadow-sm cursor-pointer"
+								required
+								value={selectedAttributeId}
+								onChange={(e) => setSelectedAttributeId(e.target.value)}>
+								<option
+									value=""
+									disabled
+									className="bg-swapp-blanco dark:bg-swapp-azul-oscuro">
+									Seleccione un atributo variante...
+								</option>
+								{variantAttributes.map((attr) => (
+									<option
+										key={attr.attribute_id}
+										value={attr.attribute_id}
+										className="bg-swapp-blanco dark:bg-swapp-azul-oscuro">
+										{attr.name}
+									</option>
+								))}
+							</select>
+						)}
+						<p className="text-[11px] text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 leading-tight pt-1">
+							Todo producto en esta subcategoría exigirá tener al menos esta
+							variante física.
+						</p>
+					</div>
+
 					<div className="flex items-center justify-between rounded-lg border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo p-3 bg-transparent transition-colors">
 						<span className="text-sm font-medium text-swapp-azul-oscuro dark:text-swapp-blanco">
 							Subcategoría Activa
@@ -155,10 +242,10 @@ export default function NewSubcategoryModal({
 						</button>
 						<button
 							type="submit"
-							disabled={isSaving}
-							className="flex items-center gap-2 rounded-lg bg-swapp-verde-pastel dark:bg-swapp-verde-menta px-6 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro transition-colors hover:bg-swapp-verde-oscuro dark:hover:bg-swapp-verde-pastel disabled:opacity-50">
+							disabled={isSaving || variantAttributes.length === 0}
+							className="flex items-center gap-2 rounded-lg bg-swapp-verde-pastel dark:bg-swapp-verde-menta px-6 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro transition-colors hover:bg-swapp-verde-oscuro dark:hover:bg-swapp-verde-pastel disabled:opacity-50 shadow-sm">
 							<Save className="h-4 w-4" />
-							{isSaving ? "Guardando..." : "Crear"}
+							{isSaving ? "Guardando..." : "Crear y Blindar"}
 						</button>
 					</div>
 				</form>
