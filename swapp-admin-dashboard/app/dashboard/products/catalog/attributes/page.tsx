@@ -11,7 +11,7 @@ import { AttributeValue, Attribute } from "@/types/product";
 import NewAttributeModal from "@/components/products/modals/NewAttributeModal";
 import NewAttributeValueModal from "@/components/products/modals/NewAttributeValueModal";
 
-// --- NUEVOS COMPONENTES ESTANDARIZADOS ---
+// --- COMPONENTES ESTANDARIZADOS ---
 import GlassTableWrapper from "@/components/tables/GlassTableWrapper";
 import GlassTableHead, { GlassTh } from "@/components/tables/GlassTableHead";
 import TableActionIcon from "@/components/tables/TableActionIcon";
@@ -146,13 +146,15 @@ export default function AttributesPage() {
 										</div>
 									</td>
 
-									{/* COMPORTAMIENTO (CON STATUS BADGE) */}
+									{/* COMPORTAMIENTO (CON STATUS BADGE ESTANDARIZADO) */}
 									<td className="px-6 py-4">
 										{attr.is_variant ? (
 											<SwappTooltip text="Distintas opciones físicas de compra.">
-												{/* Agregamos el w-fit para que el tooltip no ocupe toda la celda */}
 												<div className="w-fit">
-													<StatusBadge variant="primary" icon={Settings2}>
+													<StatusBadge
+														variant="primary"
+														icon={Settings2}
+														className="uppercase !text-[10px] !border-none">
 														Variante (Física)
 													</StatusBadge>
 												</div>
@@ -160,7 +162,10 @@ export default function AttributesPage() {
 										) : (
 											<SwappTooltip text="Ficha técnica.">
 												<div className="w-fit">
-													<StatusBadge variant="neutral" icon={Box}>
+													<StatusBadge
+														variant="neutral"
+														icon={Box}
+														className="uppercase !text-[10px] !border-none">
 														Estructural (Base)
 													</StatusBadge>
 												</div>
@@ -168,13 +173,13 @@ export default function AttributesPage() {
 										)}
 									</td>
 
-									{/* VALORES NORMALIZADOS (CHIPS) */}
+									{/* VALORES NORMALIZADOS (CHIPS CON GLASSMORPHISM) */}
 									<td className="px-6 py-4">
 										<div className="flex flex-wrap gap-2 items-center">
 											{attr.values.map((v) => (
 												<div
 													key={v.value_id}
-													className="group flex items-center gap-1.5 rounded-md border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/40 bg-swapp-blanco/60 dark:bg-swapp-azul-oscuro/60 pl-2 pr-1.5 py-1 text-xs font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso shadow-sm transition-all hover:border-red-500/30 hover:bg-red-500/5 dark:hover:border-red-500/30 dark:hover:bg-red-500/10">
+													className="group flex items-center gap-1.5 rounded-md border border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/40 bg-swapp-blanco/60 dark:bg-swapp-azul-oscuro/60 backdrop-blur-sm pl-2 pr-1.5 py-1 text-xs font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso shadow-sm transition-all hover:border-red-500/30 hover:bg-red-500/10 dark:hover:border-red-500/30 dark:hover:bg-red-500/20">
 													<span>{v.value}</span>
 													<SwappTooltip text="Eliminar Valor">
 														<button
@@ -194,7 +199,7 @@ export default function AttributesPage() {
 															attributeName: attr.name,
 														})
 													}
-													className="flex items-center justify-center h-7 w-7 rounded-md border border-dashed border-swapp-azul-petroleo/30 dark:border-swapp-tiza-verdoso/30 bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/20 text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 hover:border-swapp-verde-oscuro hover:text-swapp-verde-oscuro hover:bg-swapp-verde-oscuro/10 dark:hover:border-swapp-verde-menta dark:hover:text-swapp-verde-menta dark:hover:bg-swapp-verde-menta/10 transition-colors shadow-sm">
+													className="flex items-center justify-center h-7 w-7 rounded-md border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 bg-swapp-blanco/40 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 hover:border-swapp-verde-oscuro hover:text-swapp-verde-oscuro hover:bg-swapp-verde-oscuro/10 dark:hover:border-swapp-verde-menta dark:hover:text-swapp-verde-menta dark:hover:bg-swapp-verde-menta/10 transition-colors shadow-sm">
 													<Plus className="h-4 w-4" />
 												</button>
 											</SwappTooltip>

@@ -9,14 +9,17 @@ export const OrderService = {
 
 	getOrders: async (statusFilter?: string, zoneFilter?: string) => {
 		const params = new URLSearchParams();
-		if (statusFilter) params.append("status_filter", statusFilter);
-		if (zoneFilter) params.append("zone_filter", zoneFilter);
+		if (statusFilter && statusFilter !== "all") {
+			params.append("status_filter", statusFilter);
+		}
+		if (zoneFilter) {
+			params.append("zone_filter", zoneFilter);
+		}
 
 		const { data } = await api.get(`/api/orders/admin?${params.toString()}`);
 		return data;
 	},
 
-	// NUEVO: Ahora soporta enviar el diccionario de envases recolectados
 	updateOrderStatus: async (
 		orderUuid: string,
 		newStatus: string,
@@ -26,6 +29,7 @@ export const OrderService = {
 			new_status: newStatus,
 			actual_returns: actualReturns || {},
 		};
+
 		const { data } = await api.patch(
 			`/api/orders/admin/${orderUuid}/status`,
 			payload
@@ -33,8 +37,4 @@ export const OrderService = {
 		return data;
 	},
 
-	updateOrder: async (orderUuid: string, payload: any) => {
-		const { data } = await api.patch(`/api/orders/admin/${orderUuid}`, payload);
-		return data;
-	},
 };

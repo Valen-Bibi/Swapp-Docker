@@ -17,7 +17,7 @@ import NewBrandModal from "@/components/products/modals/NewBrandModal";
 import { SwappTooltip } from "@/components/ui/SwappTooltip";
 import { Brand } from "@/types/product";
 
-// --- NUEVOS COMPONENTES ESTANDARIZADOS ---
+// --- COMPONENTES ESTANDARIZADOS ---
 import GlassTableWrapper from "@/components/tables/GlassTableWrapper";
 import GlassTableHead, { GlassTh } from "@/components/tables/GlassTableHead";
 import TableActionIcon from "@/components/tables/TableActionIcon";
@@ -103,7 +103,7 @@ export default function BrandsPage() {
 					icon={Bookmark}
 				/>
 				<div className="flex items-center gap-4">
-					{/* NUEVO TOGGLE MODULARIZADO */}
+					{/* TOGGLE MODULARIZADO */}
 					<GlassFilterToggle
 						id="toggle-inactive-brands"
 						icon={Archive}
@@ -199,7 +199,7 @@ export default function BrandsPage() {
 											{b.featured && (
 												<StatusBadge
 													variant="info"
-													className="uppercase tracking-wider !px-1.5 !py-0.5 !text-[10px]">
+													className="uppercase !text-[10px] !border-none">
 													Destacada
 												</StatusBadge>
 											)}
@@ -211,9 +211,13 @@ export default function BrandsPage() {
 
 									{/* ESTADO CON STATUS BADGE */}
 									<td className="px-6 py-4">
-										<StatusBadge variant={b.is_active ? "primary" : "danger"}>
-											{b.is_active ? "Activa" : "Inactiva"}
-										</StatusBadge>
+										<div className="flex items-center justify-start">
+											<StatusBadge
+												variant={b.is_active ? "primary" : "danger"}
+												className="uppercase !text-[10px] !border-none">
+												{b.is_active ? "Activa" : "Inactiva"}
+											</StatusBadge>
+										</div>
 									</td>
 
 									{/* ACCIONES CON TABLE ACTION ICON */}

@@ -26,7 +26,7 @@ import { SwappTooltip } from "@/components/ui/SwappTooltip";
 import { ProductService } from "@/services/product.service";
 import { Category } from "@/types/product";
 
-// --- NUEVOS COMPONENTES ESTANDARIZADOS ---
+// --- COMPONENTES ESTANDARIZADOS ---
 import GlassTableWrapper from "@/components/tables/GlassTableWrapper";
 import GlassTableHead, { GlassTh } from "@/components/tables/GlassTableHead";
 import TableActionIcon from "@/components/tables/TableActionIcon";
@@ -223,7 +223,6 @@ export default function CategoriesPage() {
 					icon={FolderTree}
 				/>
 				<div className="flex items-center gap-4">
-					{/* TOGGLE ESTANDARIZADO */}
 					<GlassFilterToggle
 						id="toggle-inactive-cats"
 						icon={Archive}
@@ -300,9 +299,10 @@ export default function CategoriesPage() {
 							const baseRowClasses =
 								"border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50 last:border-0 transition-colors duration-200";
 
+							// Aplicamos el azul petróleo al 5% para las filas child en modo claro
 							const rowStatusStyle =
 								c.is_active && !isParentArchived
-									? `hover:bg-swapp-blanco/80 dark:hover:bg-swapp-azul-petroleo/30 ${isChild ? "bg-swapp-azul-petroleo/2 dark:bg-swapp-azul-petroleo/10" : ""}`
+									? `hover:bg-swapp-blanco/80 dark:hover:bg-swapp-azul-petroleo/30 ${isChild ? "bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/10" : ""}`
 									: "opacity-60 bg-swapp-azul-petroleo/10 dark:bg-swapp-azul-oscuro/80 hover:bg-swapp-azul-petroleo/20 dark:hover:bg-swapp-azul-oscuro/90";
 
 							return (
@@ -335,34 +335,47 @@ export default function CategoriesPage() {
 									</td>
 
 									<td className="px-6 py-4">
-										{/* JERARQUÍA CON STATUS BADGE */}
-										<StatusBadge variant={isChild ? "primary" : "neutral"}>
-											{isChild ? "Subcategoría" : "Principal"}
-										</StatusBadge>
+										{/* JERARQUÍA CON ETIQUETA ESTANDARIZADA */}
+										<div className="flex items-center justify-start">
+											<StatusBadge
+												variant={isChild ? "primary" : "neutral"}
+												className="uppercase !text-[10px] !border-none">
+												{isChild ? "Subcategoría" : "Principal"}
+											</StatusBadge>
+										</div>
 									</td>
 
 									<td className="px-6 py-4">
-										{/* ESTADO CON STATUS BADGE */}
-										{!c.is_active ? (
-											<StatusBadge variant="danger">Oculta</StatusBadge>
-										) : isParentArchived ? (
-											<SwappTooltip
-												text={`El padre "${parentCategory?.name}" está oculto.`}>
-												<div className="w-fit">
-													<StatusBadge
-														variant="neutral"
-														className="cursor-help">
-														Bloqueada
-													</StatusBadge>
-												</div>
-											</SwappTooltip>
-										) : (
-											<StatusBadge variant="primary">Activa</StatusBadge>
-										)}
+										{/* ESTADO CON ETIQUETA ESTANDARIZADA */}
+										<div className="flex items-center justify-start">
+											{!c.is_active ? (
+												<StatusBadge
+													variant="danger"
+													className="uppercase !text-[10px] !border-none">
+													Oculta
+												</StatusBadge>
+											) : isParentArchived ? (
+												<SwappTooltip
+													text={`El padre "${parentCategory?.name}" está oculto.`}>
+													<div className="w-fit">
+														<StatusBadge
+															variant="neutral"
+															className="uppercase !text-[10px] !border-none cursor-help">
+															Bloqueada
+														</StatusBadge>
+													</div>
+												</SwappTooltip>
+											) : (
+												<StatusBadge
+													variant="primary"
+													className="uppercase !text-[10px] !border-none">
+													Activa
+												</StatusBadge>
+											)}
+										</div>
 									</td>
 
 									<td className="px-6 py-4 text-right">
-										{/* ACCIONES CON TABLE ACTION ICON */}
 										<div className="flex items-center justify-end gap-1">
 											{isParentArchived ? (
 												<TableActionIcon

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Landmark, TrendingUp, Save, Recycle } from "lucide-react";
+import { X, Landmark, TrendingUp, Save } from "lucide-react";
 import { toast } from "sonner";
 import { ProductService } from "@/services/product.service";
 import { SwappInput } from "@/components/ui/SwappInput";
@@ -24,7 +24,6 @@ export default function EditPricingModal({
 }: EditPricingModalProps) {
 	const [basePrice, setBasePrice] = useState<number>(0);
 	const [costPrice, setCostPrice] = useState<number | "">("");
-	const [refillPrice, setRefillPrice] = useState<number | "">("");
 	const [isSaving, setIsSaving] = useState(false);
 
 	// --- CERRAR CON ESCAPE ---
@@ -38,58 +37,32 @@ export default function EditPricingModal({
 		return () => window.removeEventListener("keydown", handleKeyDown);
 	}, [isOpen, onClose]);
 
+	// Sincronizar estado solo con la variante
 	useEffect(() => {
-		if (isOpen && product) {
-			if (variant) {
-				setBasePrice(variant.price || 0);
-				setCostPrice(variant.cost_price || "");
-				setRefillPrice(variant.refill_price || "");
-			} else {
-				const p = product as any;
-				const refPrice = p.reference_price ?? p.base_price ?? 0;
-				const refCost = p.reference_cost ?? p.cost_price ?? "";
-
-				setBasePrice(refPrice);
-				setCostPrice(refCost);
-				setRefillPrice("");
-			}
+		if (isOpen && product && variant) {
+			setBasePrice(variant.price || 0);
+			setCostPrice(variant.cost_price || "");
 		}
 	}, [isOpen, product, variant]);
 
-	if (!isOpen || !product) return null;
+	// Ahora es estrictamente necesario que exista una variante para editar precios
+	if (!isOpen || !product || !variant) return null;
 
 	const handleSaveChanges = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setIsSaving(true);
 
-		const toastMsg = variant
-			? `Guardando precios para ${variant.sku}...`
-			: "Guardando valores de referencia...";
-		const toastId = toast.loading(toastMsg);
+		const toastId = toast.loading(`Guardando precios para ${variant.sku}...`);
 
 		try {
-			if (variant) {
-				await ProductService.updateVariant(
-					product.product_uuid,
-					variant.variant_uuid!,
-					{
-						price: basePrice,
-						cost_price: costPrice === "" ? 0 : costPrice,
-						refill_price: product.is_returnable
-							? refillPrice === ""
-								? null
-								: refillPrice
-							: undefined,
-					},
-				);
-			} else {
-				await ProductService.update(product.product_uuid, {
-					base_price: basePrice,
+			await ProductService.updateVariant(
+				product.product_uuid,
+				variant.variant_uuid!,
+				{
+					price: basePrice,
 					cost_price: costPrice === "" ? 0 : costPrice,
-					reference_price: basePrice,
-					reference_cost: costPrice === "" ? 0 : costPrice,
-				});
-			}
+				},
+			);
 
 			toast.success("Valores actualizados", { id: toastId });
 			onSuccess();
@@ -116,20 +89,14 @@ export default function EditPricingModal({
 					<div>
 						<h2 className="text-xl font-bold text-swapp-azul-oscuro dark:text-swapp-blanco flex items-center gap-2">
 							<Landmark className="h-5 w-5 text-swapp-verde-oscuro dark:text-swapp-verde-menta" />
-							{variant ? "Ajustar Rentabilidad" : "Valores de Referencia"}
+							Ajustar Rentabilidad
 						</h2>
 						<p className="text-sm text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 mt-1.5 font-medium transition-colors">
 							{product.name}
 						</p>
-						{variant ? (
-							<p className="text-[11px] font-mono font-bold tracking-wider text-swapp-verde-oscuro dark:text-swapp-verde-menta mt-2 bg-swapp-verde-oscuro/10 dark:bg-swapp-verde-menta/10 inline-block px-2 py-0.5 rounded border border-swapp-verde-oscuro/20 dark:border-swapp-verde-menta/20">
-								SKU: {variant.sku}
-							</p>
-						) : (
-							<p className="text-xs font-medium text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50 mt-2">
-								Se aplicarán por defecto a nuevas variantes.
-							</p>
-						)}
+						<p className="text-[11px] font-mono font-bold tracking-wider text-swapp-verde-oscuro dark:text-swapp-verde-menta mt-2 bg-swapp-verde-oscuro/10 dark:bg-swapp-verde-menta/10 inline-block px-2 py-0.5 rounded border border-swapp-verde-oscuro/20 dark:border-swapp-verde-menta/20">
+							SKU: {variant.sku}
+						</p>
 					</div>
 					<button
 						type="button"
@@ -140,7 +107,6 @@ export default function EditPricingModal({
 				</div>
 
 				<div className="p-6 overflow-y-auto custom-scrollbar flex-1">
-					{/* HEREDAMOS TRANSPARENCIA A LOS INPUTS */}
 					<form
 						onSubmit={handleSaveChanges}
 						className="space-y-6 [&_input]:!bg-transparent">
@@ -188,33 +154,6 @@ export default function EditPricingModal({
 							</div>
 						</div>
 
-						{/* MOSTRAR SOLO SI ES VARIANTE DE UN PRODUCTO RETORNABLE */}
-						{product.is_returnable && variant && (
-							<div className="space-y-4 pt-4 border-t border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50">
-								<h3 className="text-sm font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 flex items-center gap-2">
-									<Recycle className="h-4 w-4 text-swapp-verde-oscuro dark:text-swapp-verde-menta" />
-									Logística Inversa
-								</h3>
-
-								<div className="w-1/2 pr-2">
-									<SwappInput
-										label="Precio de Recarga ($)"
-										helpText="- Opcional"
-										type="number"
-										step="0.01"
-										placeholder="Ej: 15000"
-										value={refillPrice}
-										onChange={(e) =>
-											setRefillPrice(
-												e.target.value === "" ? "" : parseFloat(e.target.value),
-											)
-										}
-									/>
-								</div>
-							</div>
-						)}
-
-						{/* FOOTER CON NUEVOS COLORES DE BOTÓN */}
 						<div className="mt-6 flex justify-end gap-3 pt-4 border-t border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo transition-colors">
 							<button
 								type="button"

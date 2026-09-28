@@ -351,8 +351,8 @@ export default function NewProductWizard() {
 				is_published: formData.is_published,
 				is_featured: formData.is_featured,
 				is_internal: formData.is_internal,
-				is_returnable: false, // <-- NACE SIEMPRE EN FALSE. EL MODAL DE RELACIONES LO ACTIVA LUEGO.
-				has_variants: false, // <-- NACE SIEMPRE EN FALSE. EL BACKEND LO ACTIVA SI HAY MÁS DE UN SKU.
+				is_returnable: false,
+				has_variants: false,
 				custom_attributes:
 					Object.keys(cleanCustomAttributes).length > 0
 						? cleanCustomAttributes
@@ -427,8 +427,9 @@ export default function NewProductWizard() {
 				</Link>
 			</div>
 
+			{/* --- BARRA DE PROGRESO DE SECCIONES ESTANDARIZADA --- */}
 			<div className="mb-8 relative">
-				<div className="absolute top-1/2 left-0 w-full h-0.5 bg-swapp-azul-petroleo/10 dark:bg-swapp-azul-petroleo/30 -translate-y-1/2 z-0 hidden sm:block"></div>
+				<div className="absolute top-1/2 left-0 w-full h-[2px] bg-swapp-azul-petroleo/10 dark:bg-swapp-azul-petroleo/30 -translate-y-1/2 z-0 hidden sm:block"></div>
 				<div className="relative z-10 flex flex-col sm:flex-row justify-between gap-4">
 					{visibleSteps.map((step) => {
 						const isCompleted = currentStep > step.id;
@@ -438,17 +439,42 @@ export default function NewProductWizard() {
 						return (
 							<div
 								key={step.id}
-								className="flex items-center gap-3 bg-swapp-blanco dark:bg-swapp-negro-azulado px-2 py-1 rounded-full">
+								className={`flex items-center gap-3 px-3 py-2 rounded-full border transition-all duration-300 ${
+									isCurrent
+										? "bg-swapp-verde-oscuro/10 dark:bg-swapp-verde-menta/10 border-swapp-verde-oscuro/30 dark:border-swapp-verde-menta/30 shadow-md scale-[1.02] backdrop-blur-sm"
+										: isCompleted
+											? "bg-swapp-tiza-verdoso/60 dark:bg-swapp-azul-petroleo/20 border-swapp-tiza-verdoso/80 dark:border-swapp-azul-petroleo/40 backdrop-blur-sm"
+											: "bg-swapp-tiza-verdoso/30 dark:bg-swapp-azul-petroleo/10 border-transparent opacity-70"
+								}`}>
 								<div
-									className={`flex items-center justify-center h-10 w-10 rounded-full border-2 transition-colors ${isCompleted ? "bg-swapp-verde-oscuro border-swapp-verde-oscuro text-swapp-blanco dark:bg-swapp-verde-menta dark:border-swapp-verde-menta dark:text-swapp-azul-oscuro" : isCurrent ? "border-swapp-verde-oscuro text-swapp-verde-oscuro dark:border-swapp-verde-menta dark:text-swapp-verde-menta bg-swapp-verde-oscuro/10 dark:bg-swapp-verde-menta/10" : "border-swapp-azul-petroleo/20 text-swapp-azul-petroleo/40 dark:border-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/40"}`}>
+									className={`flex items-center justify-center h-10 w-10 shrink-0 rounded-full transition-colors ${
+										isCurrent
+											? "bg-swapp-verde-oscuro text-swapp-blanco dark:bg-swapp-verde-menta dark:text-swapp-azul-oscuro shadow-sm"
+											: isCompleted
+												? "bg-swapp-verde-pastel text-swapp-blanco dark:bg-swapp-verde-pastel dark:text-swapp-blanco"
+												: "bg-swapp-azul-petroleo/10 dark:bg-swapp-azul-petroleo/30 text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/40"
+									}`}>
 									<Icon className="h-5 w-5" />
 								</div>
-								<div className="hidden sm:block">
+								<div className="hidden sm:block pr-2">
 									<p
-										className={`text-sm font-bold ${isCurrent || isCompleted ? "text-swapp-azul-oscuro dark:text-swapp-blanco" : "text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50"}`}>
+										className={`text-sm font-bold ${
+											isCurrent
+												? "text-swapp-verde-oscuro dark:text-swapp-verde-menta"
+												: isCompleted
+													? "text-swapp-azul-oscuro dark:text-swapp-blanco"
+													: "text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/40"
+										}`}>
 										{step.title}
 									</p>
-									<p className="text-[10px] text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 uppercase tracking-wider">
+									<p
+										className={`text-[10px] uppercase tracking-wider font-semibold ${
+											isCurrent
+												? "text-swapp-verde-oscuro/70 dark:text-swapp-verde-menta/70"
+												: isCompleted
+													? "text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60"
+													: "text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/30"
+										}`}>
 										{step.desc}
 									</p>
 								</div>
@@ -458,6 +484,7 @@ export default function NewProductWizard() {
 				</div>
 			</div>
 
+			{/* --- CONTENEDOR PRINCIPAL DEL FORMULARIO --- */}
 			<div className="rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md p-6 sm:p-8 shadow-xl">
 				{/* --- PASO 1: IDENTIDAD --- */}
 				<div
@@ -521,7 +548,7 @@ export default function NewProductWizard() {
 								Marca <span className="text-red-500">*</span>
 							</label>
 							<select
-								className="w-full rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 px-4 py-2.5 text-sm outline-none shadow-sm cursor-pointer"
+								className="w-full rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 px-4 py-2.5 text-sm outline-none shadow-sm cursor-pointer text-swapp-azul-oscuro dark:text-swapp-blanco"
 								required
 								value={formData.brand_id}
 								onChange={(e) =>
@@ -531,7 +558,10 @@ export default function NewProductWizard() {
 									Seleccione...
 								</option>
 								{brands.map((b) => (
-									<option key={b.brand_id} value={b.brand_id}>
+									<option
+										key={b.brand_id}
+										value={b.brand_id}
+										className="bg-swapp-blanco dark:bg-swapp-azul-oscuro">
 										{b.name}
 									</option>
 								))}
@@ -542,7 +572,7 @@ export default function NewProductWizard() {
 								Categoría <span className="text-red-500">*</span>
 							</label>
 							<select
-								className="w-full rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 px-4 py-2.5 text-sm outline-none shadow-sm cursor-pointer"
+								className="w-full rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 px-4 py-2.5 text-sm outline-none shadow-sm cursor-pointer text-swapp-azul-oscuro dark:text-swapp-blanco"
 								required
 								value={formData.category_id}
 								onChange={(e) =>
@@ -555,7 +585,7 @@ export default function NewProductWizard() {
 									<optgroup
 										key={parent.category_id}
 										label={parent.name}
-										className="font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta">
+										className="font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta bg-swapp-blanco dark:bg-swapp-azul-oscuro">
 										{subCategories
 											.filter((sub) => sub.parent_id === parent.category_id)
 											.map((sub) => (
@@ -629,11 +659,11 @@ export default function NewProductWizard() {
 					</div>
 
 					<div className="space-y-4 mb-10">
-						<h4 className="text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 border-b border-swapp-azul-petroleo/10 pb-2">
+						<h4 className="text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-azul-oceano/60 border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50 pb-2">
 							1. Atributos Comunes (Estructurales)
 						</h4>
 						{structuralAttributes.length === 0 && !isLoadingPim ? (
-							<p className="text-sm text-swapp-azul-petroleo/60 italic">
+							<p className="text-sm text-swapp-azul-petroleo/60 italic dark:text-swapp-azul-oceano/60 italic">
 								Esta categoría no tiene atributos estructurales obligatorios.
 							</p>
 						) : (
@@ -668,7 +698,7 @@ export default function NewProductWizard() {
 
 					{variantAttributes.length > 0 && (
 						<div className="space-y-4 mb-10 animate-in fade-in slide-in-from-top-4">
-							<h4 className="text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 border-b border-swapp-azul-petroleo/10 pb-2">
+							<h4 className="text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-azul-oceano/60 border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50 pb-2">
 								2. Atributos Físicos (Variante Inicial)
 							</h4>
 							<div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/20 p-5 rounded-xl border border-swapp-azul-petroleo/10">
@@ -701,7 +731,7 @@ export default function NewProductWizard() {
 					)}
 
 					<div className="space-y-4">
-						<h4 className="text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 border-b border-swapp-azul-petroleo/10 pb-2">
+						<h4 className="text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-azul-oceano/60 border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50 pb-2">
 							{variantAttributes.length > 0 ? "3." : "2."} Identificación y
 							Stock (SKU Inicial)
 						</h4>
@@ -714,7 +744,7 @@ export default function NewProductWizard() {
 									<input
 										type="text"
 										required
-										className="w-full rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 px-3 py-2 text-sm font-mono outline-none shadow-sm uppercase"
+										className="w-full rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 px-3 py-2 text-sm font-mono outline-none shadow-sm uppercase text-swapp-azul-oscuro dark:text-swapp-blanco"
 										placeholder="Ej: SWA-BOT-UNI-X9Y"
 										value={initialSku}
 										onChange={(e) =>
@@ -736,7 +766,7 @@ export default function NewProductWizard() {
 								<input
 									type="number"
 									min="0"
-									className="w-full rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 px-3 py-2 text-sm outline-none shadow-sm"
+									className="w-full rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 px-3 py-2 text-sm outline-none shadow-sm text-swapp-azul-oscuro dark:text-swapp-blanco"
 									value={initialStock === 0 ? "" : initialStock}
 									onChange={(e) =>
 										setInitialStock(parseInt(e.target.value) || 0)
@@ -770,7 +800,7 @@ export default function NewProductWizard() {
 									Condición de IVA <span className="text-red-500">*</span>
 								</label>
 								<select
-									className="w-full rounded-xl border border-swapp-azul-petroleo/20 bg-swapp-blanco/50 px-4 py-2.5 text-sm outline-none"
+									className="w-full rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 px-4 py-2.5 text-sm outline-none shadow-sm cursor-pointer text-swapp-azul-oscuro dark:text-swapp-blanco"
 									required
 									value={formData.tax_class_id}
 									onChange={(e) =>
@@ -780,7 +810,10 @@ export default function NewProductWizard() {
 										Seleccione...
 									</option>
 									{taxClasses.map((t) => (
-										<option key={t.tax_class_id} value={t.tax_class_id}>
+										<option
+											key={t.tax_class_id}
+											value={t.tax_class_id}
+											className="bg-swapp-blanco dark:bg-swapp-azul-oscuro">
 											{t.name} ({t.rate}%)
 										</option>
 									))}
@@ -849,19 +882,35 @@ export default function NewProductWizard() {
 								}
 							/>
 							<div className="space-y-1.5">
-								<label className="block text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70">
+								<label className="block text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
 									Unidad Peso
 								</label>
 								<select
-									className="w-full rounded-xl border border-swapp-azul-petroleo/20 bg-swapp-blanco/50 px-4 py-2.5 text-sm"
+									className="w-full rounded-xl border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 px-4 py-2.5 text-sm outline-none shadow-sm cursor-pointer text-swapp-azul-oscuro dark:text-swapp-blanco"
 									value={formData.weight_unit}
 									onChange={(e) =>
 										setFormData({ ...formData, weight_unit: e.target.value })
 									}>
-									<option value="kg">kg</option>
-									<option value="g">g</option>
-									<option value="lb">lb</option>
-									<option value="oz">oz</option>
+									<option
+										value="kg"
+										className="bg-swapp-blanco dark:bg-swapp-azul-oscuro">
+										kg
+									</option>
+									<option
+										value="g"
+										className="bg-swapp-blanco dark:bg-swapp-azul-oscuro">
+										g
+									</option>
+									<option
+										value="lb"
+										className="bg-swapp-blanco dark:bg-swapp-azul-oscuro">
+										lb
+									</option>
+									<option
+										value="oz"
+										className="bg-swapp-blanco dark:bg-swapp-azul-oscuro">
+										oz
+									</option>
 								</select>
 							</div>
 							<div className="flex gap-2 col-span-1 sm:col-span-4 lg:col-span-1">
@@ -942,7 +991,7 @@ export default function NewProductWizard() {
 
 						<div className="space-y-8">
 							{formData.is_published && (
-								<div className="flex items-center gap-2 rounded-xl bg-swapp-verde-oscuro/10 p-3 text-sm font-medium text-swapp-verde-oscuro border border-swapp-verde-oscuro/20 shadow-sm animate-in fade-in">
+								<div className="flex items-center gap-2 rounded-xl bg-swapp-verde-oscuro/10 p-3 text-sm font-medium text-swapp-verde-oscuro dark:text-swapp-verde-menta border border-swapp-verde-oscuro/20 shadow-sm animate-in fade-in">
 									<AlertCircle className="h-4 w-4 shrink-0" />
 									<p>
 										Al encender la publicación, la imagen principal, galería y
@@ -989,7 +1038,7 @@ export default function NewProductWizard() {
 											<img
 												src={mainImagePreview}
 												alt="Principal"
-												className="h-24 w-24 object-cover rounded-xl shadow-md p-1 bg-swapp-blanco"
+												className="h-24 w-24 object-cover rounded-xl shadow-md p-1 bg-swapp-blanco border border-swapp-azul-petroleo/20"
 											/>
 											<button
 												type="button"
@@ -1017,7 +1066,7 @@ export default function NewProductWizard() {
 													<img
 														src={url}
 														alt={`Gallery ${idx}`}
-														className="h-16 w-16 object-cover rounded-lg shadow-sm p-0.5 bg-swapp-blanco"
+														className="h-16 w-16 object-cover rounded-lg shadow-sm p-0.5 bg-swapp-blanco border border-swapp-azul-petroleo/20"
 													/>
 													<button
 														type="button"
@@ -1033,7 +1082,7 @@ export default function NewProductWizard() {
 							</div>
 
 							<div className="pt-4 border-t border-swapp-azul-petroleo/10">
-								<h4 className="text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 mb-4">
+								<h4 className="text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 mb-4 dark:text-swapp-azul-oceano/60 mb-4">
 									Posicionamiento SEO
 								</h4>
 								<div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -1062,7 +1111,7 @@ export default function NewProductWizard() {
 				)}
 
 				{/* CONTROLES DE NAVEGACIÓN INFERIORES */}
-				<div className="mt-8 flex items-center justify-between border-t border-swapp-azul-petroleo/10 pt-6">
+				<div className="mt-8 flex items-center justify-between border-t border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50 pt-6">
 					<button
 						type="button"
 						onClick={prevStep}

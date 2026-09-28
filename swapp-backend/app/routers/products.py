@@ -1171,31 +1171,32 @@ def update_product_relationships(
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
-    """Sincroniza masivamente las relaciones del producto."""
+    """Sincroniza masivamente las relaciones y el ID del envase interno."""
     source_product = db.query(models.Product).filter(models.Product.product_uuid == product_uuid).first()
     if not source_product:
         raise HTTPException(status_code=404, detail="Producto origen no encontrado.")
 
-    # 1. TABULA RASA: Borramos todas las relaciones donde este producto era el origen
     db.query(models.ProductRelationship).filter(
         models.ProductRelationship.source_product_id == source_product.product_id
     ).delete()
 
+    linked_internal_id = None
+
     if payload.relationships:
-        # Extraemos UUIDs de los productos destino para buscarlos de una sola vez
         target_uuids = [r.target_product_uuid for r in payload.relationships]
         target_products = db.query(models.Product.product_id, models.Product.product_uuid).filter(
             models.Product.product_uuid.in_(target_uuids)
         ).all()
         
-        # Mapeo rápido de UUID -> ID Numérico
         uuid_to_id = {prod.product_uuid: prod.product_id for prod in target_products}
 
-        # 2. Insertamos las nuevas relaciones asignando 'priority'
         for idx, rel in enumerate(payload.relationships):
             target_id = uuid_to_id.get(rel.target_product_uuid)
             if not target_id:
                 continue 
+
+            if rel.relationship_type == 'container_return':
+                linked_internal_id = target_id
 
             new_relation = models.ProductRelationship(
                 source_product_id=source_product.product_id,
@@ -1207,7 +1208,7 @@ def update_product_relationships(
             )
             db.add(new_relation)
     
-    # 3. Solo actualizamos la firma de auditoría (el modelo calculará is_returnable automáticamente)
+    source_product.linked_internal_product_id = linked_internal_id
     source_product.updated_by = admin_user.staff_id
 
     db.commit()

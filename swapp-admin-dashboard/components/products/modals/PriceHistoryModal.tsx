@@ -8,7 +8,6 @@ import {
 	TrendingUp,
 	TrendingDown,
 	CalendarClock,
-	Recycle,
 } from "lucide-react";
 import { ProductService } from "@/services/product.service";
 import { toast } from "sonner";
@@ -19,11 +18,7 @@ interface PriceHistoryRecord {
 	old_value: number;
 	new_value: number;
 	changed_at: string;
-	record_type:
-		| "base_price"
-		| "cost_price"
-		| "special_offer_price"
-		| "refill_price";
+	record_type: "base_price" | "cost_price" | "special_offer_price";
 }
 
 interface PriceHistoryModalProps {
@@ -104,12 +99,6 @@ export default function PriceHistoryModal({
 						OFERTA
 					</span>
 				);
-			case "refill_price":
-				return (
-					<span className="text-[10px] font-bold px-2.5 py-1 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 flex items-center gap-1.5">
-						<Recycle className="h-3 w-3" /> RECARGA
-					</span>
-				);
 			case "base_price":
 			default:
 				return (
@@ -188,10 +177,8 @@ export default function PriceHistoryModal({
 											)}
 										</div>
 
-										{/* WRAPPER FLEX PARA PERMITIR CRECIMIENTO HACIA AFUERA */}
 										<div
 											className={`flex w-full ${isLeft ? "md:w-1/2 md:justify-end md:pr-10" : "md:w-1/2 md:ml-auto md:justify-start pl-[4.5rem] md:pl-10"}`}>
-											{/* TARJETA DE HISTORIAL ELÁSTICA (w-max) */}
 											<div className="w-full md:w-max md:min-w-[320px] p-4 sm:p-5 rounded-2xl border border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo bg-swapp-blanco/60 dark:bg-swapp-azul-oscuro/60 backdrop-blur-md shadow-sm transition-all hover:shadow-md hover:border-swapp-verde-oscuro/30 dark:hover:border-swapp-verde-menta/30">
 												<div className="flex items-center justify-between mb-4 gap-4 flex-wrap border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50 pb-3">
 													<div className="flex items-center gap-3">
@@ -207,7 +194,6 @@ export default function PriceHistoryModal({
 													</span>
 												</div>
 
-												{/* COMPARADOR DE PRECIOS CON TEXT-LEFT Y SIN TRUNCATE */}
 												<div className="flex items-center justify-between bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/30 p-3 sm:p-4 rounded-xl border border-swapp-azul-petroleo/5 dark:border-swapp-azul-petroleo/50 gap-4 sm:gap-6">
 													<div className="flex flex-col shrink-0 text-left">
 														<span className="text-[10px] font-bold text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50 uppercase tracking-wider mb-1">
@@ -240,7 +226,6 @@ export default function PriceHistoryModal({
 					)}
 				</div>
 
-				{/* FOOTER ESTANDARIZADO */}
 				<div className="p-6 border-t border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo flex justify-end shrink-0 transition-colors">
 					<button
 						type="button"

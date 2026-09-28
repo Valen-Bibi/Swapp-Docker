@@ -214,26 +214,41 @@ def update_order_status(
 
     # 2. CIERRE DE ENVASES Y LEDGER (Solo al completarse)
     elif new_status == 'completed' and old_status == 'pending':
-        actual_returns = payload.actual_returns or {}
+        # BLINDAJE: Forzamos que las llaves sean enteros
+        actual_returns = {int(k): v for k, v in (payload.actual_returns or {}).items()}
 
         for item in order.items:
             returned_qty = actual_returns.get(item.item_id, 0)
             item.actual_return_qty = returned_qty
 
-            # Solo procesamos la logística inversa si hay un Producto Interno enlazado
-            if item.internal_product_id and item.internal_variant_id:
+            # Obtenemos el producto original de la base de datos
+            main_product = db.query(models.Product).filter(models.Product.product_id == item.product_id).first()
+
+            # Solo procesamos logística inversa si requiere retorno Y tiene un envase interno asociado
+            if item.requires_return and main_product and main_product.linked_internal_product_id:
                 
+                internal_prod_id = main_product.linked_internal_product_id
+
+                # Buscamos la variante física del envase vacío
+                internal_variant = db.query(models.ProductVariant).filter(
+                    models.ProductVariant.product_id == internal_prod_id
+                ).with_for_update().first()
+
+                if not internal_variant:
+                    continue
+
                 # A. ABSORCIÓN: Chequeamos el saldo de envases VACÍOS del cliente
+                from sqlalchemy import func
                 current_balance = db.query(func.sum(models.ClientContainerLedger.quantity_change)).filter(
                     models.ClientContainerLedger.client_id == order.client_id,
-                    models.ClientContainerLedger.product_id == item.internal_product_id
+                    models.ClientContainerLedger.product_id == internal_prod_id
                 ).scalar() or 0
 
                 if returned_qty > current_balance:
                     absorbed_qty = returned_qty - current_balance
                     absorption_ledger = models.ClientContainerLedger(
                         client_id=order.client_id,
-                        product_id=item.internal_product_id, # Apunta al Vacío
+                        product_id=internal_prod_id, # Apunta al Vacío
                         order_id=order.order_id,
                         transaction_type='absorption', 
                         quantity_change=absorbed_qty,  
@@ -245,7 +260,7 @@ def update_order_status(
                 # B. ENTREGA: Al darle un lleno, el cliente ahora nos debe un VACÍO (+ quantity_change)
                 ledger_delivery = models.ClientContainerLedger(
                     client_id=order.client_id,
-                    product_id=item.internal_product_id, # Apunta al Vacío
+                    product_id=internal_prod_id, # Apunta al Vacío
                     order_id=order.order_id,
                     transaction_type='delivery',
                     quantity_change=item.quantity, 
@@ -259,7 +274,7 @@ def update_order_status(
                     # Cancelamos su deuda (- quantity_change)
                     ledger_return = models.ClientContainerLedger(
                         client_id=order.client_id,
-                        product_id=item.internal_product_id, # Apunta al Vacío
+                        product_id=internal_prod_id, # Apunta al Vacío
                         order_id=order.order_id,
                         transaction_type='return',
                         quantity_change=-returned_qty, 
@@ -269,31 +284,26 @@ def update_order_status(
                     db.add(ledger_return)
 
                     # INGRESO AL GALPÓN: Sumamos stock físico a la variante del Producto Interno (El Vacío)
-                    internal_variant = db.query(models.ProductVariant).filter(
-                        models.ProductVariant.variant_id == item.internal_variant_id
-                    ).with_for_update().first()
+                    stock_before = internal_variant.stock_quantity
+                    stock_after = stock_before + returned_qty
+                    internal_variant.stock_quantity = stock_after
 
-                    if internal_variant:
-                        stock_before = internal_variant.stock_quantity
-                        stock_after = stock_before + returned_qty
-                        internal_variant.stock_quantity = stock_after
-
-                        empty_container_movement = models.InventoryMovement(
-                            product_id=item.internal_product_id,
-                            variant_id=item.internal_variant_id,
-                            movement_type='return',
-                            quantity=returned_qty,
-                            stock_before=stock_before,
-                            stock_after=stock_after,
-                            reference_id=order.order_id,
-                            reference_type='empty_container_return',
-                            reason=f"Ingreso de envases vacíos (Pedido {order.order_uuid})",
-                            created_by=admin_user.staff_id
-                        )
-                        db.add(empty_container_movement)
+                    empty_container_movement = models.InventoryMovement(
+                        product_id=internal_prod_id,
+                        variant_id=internal_variant.variant_id,
+                        movement_type='return',
+                        quantity=returned_qty,
+                        stock_before=stock_before,
+                        stock_after=stock_after,
+                        reference_id=order.order_id,
+                        reference_type='empty_container_return',
+                        reason=f"Ingreso de envases vacíos (Pedido {order.order_uuid})",
+                        created_by=admin_user.staff_id
+                    )
+                    db.add(empty_container_movement)
 
     db.commit()
-    return {"message": f"Estado actualizado a {new_status}. El inventario y los envases se ajustaron automáticamente."}
+    return {"message": f"Estado actualizado a {new_status}. El inventario y la cuenta corriente se ajustaron correctamente."}
 
 @router.patch("/{order_uuid}", response_model=schemas.OrderResponse)
 def update_order_details(

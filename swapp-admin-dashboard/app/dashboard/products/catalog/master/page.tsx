@@ -505,7 +505,7 @@ export default function MasterCatalogPage() {
 													{pModel ? ` - ${pModel}` : ""}
 												</span>
 											</div>
-											
+
 											{/* MARCA */}
 											{p.brand?.name && (
 												<div className="text-xs text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 flex items-center gap-1 mt-1 font-medium">
@@ -622,18 +622,28 @@ export default function MasterCatalogPage() {
 
 										{/* LOGÍSTICA CON STATUS BADGE */}
 										<td className="px-6 py-4">
-											<div className="flex justify-center">
+											<div className="flex items-center justify-start">
 												<StatusBadge
-													variant={isInternal ? "neutral" : (p.is_returnable ? "info" : "neutral")}
+													variant={
+														isInternal
+															? "warning"
+															: p.is_returnable
+																? "info"
+																: "neutral"
+													}
 													className="!text-[10px] uppercase !border-none">
-													{isInternal ? "Interno" : (p.is_returnable ? "Retornable" : "Estándar")}
+													{isInternal
+														? "Uso Interno"
+														: p.is_returnable
+															? "Retornable"
+															: "Estándar"}
 												</StatusBadge>
 											</div>
 										</td>
 
 										{/* ESTADO Y SALUD CON STATUS BADGE */}
 										<td className="px-6 py-4">
-											<div className="flex flex-col gap-2.5 items-center">
+											<div className="flex flex-col gap-2.5 items-start">
 												<StatusBadge
 													variant={p.is_published ? "primary" : "neutral"}
 													className="!text-[10px] uppercase !border-none">
@@ -642,7 +652,7 @@ export default function MasterCatalogPage() {
 
 												{!isInternal && (
 													<SwappTooltip text="Nivel de completitud de la Ficha Técnica">
-														<div className="flex items-center justify-center gap-2 w-24">
+														<div className="flex items-center justify-start gap-2 w-24">
 															<div className="h-1.5 w-full bg-swapp-azul-petroleo/10 dark:bg-swapp-azul-petroleo/40 border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo rounded-full overflow-hidden">
 																<div
 																	className="h-full rounded-full bg-swapp-verde-oscuro dark:bg-swapp-verde-menta transition-all duration-500"
@@ -674,7 +684,7 @@ export default function MasterCatalogPage() {
 																setIsNewVariantModalOpen(true);
 															}}
 														/>
-														
+
 														{/* EL BOTÓN DE RELACIONES SE OCULTA EN PRODUCTOS INTERNOS */}
 														{!isInternal && (
 															<TableActionIcon
@@ -686,7 +696,7 @@ export default function MasterCatalogPage() {
 																}}
 															/>
 														)}
-														
+
 														<TableActionIcon
 															icon={Edit}
 															tooltip="Editar Estructura General"
@@ -945,16 +955,6 @@ export default function MasterCatalogPage() {
 																					"es-AR",
 																				)}
 																			</span>
-																			{p.is_returnable && v.refill_price && (
-																				<SwappTooltip text="Precio al entregar envase">
-																					<span className="text-[10px] font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
-																						Recarga: $
-																						{Number(
-																							v.refill_price,
-																						).toLocaleString("es-AR")}
-																					</span>
-																				</SwappTooltip>
-																			)}
 																		</div>
 																	</td>
 

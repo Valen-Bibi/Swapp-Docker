@@ -10,19 +10,20 @@ import {
 	History,
 	Layers,
 	ChevronDown,
-	Recycle,
 	ChevronRight,
 	Image as ImageIcon,
 	Tag,
+	Copy,
 } from "lucide-react";
+import { toast } from "sonner";
 import TableSkeleton from "@/components/tables/TableSkeleton";
 import PageHeader from "@/components/layout/PageHeader";
 import SearchBar from "@/components/ui/SearchBar";
 import EditPricingModal from "@/components/products/modals/EditPricingModal";
-import { SwappTooltip } from "@/components/ui/SwappTooltip";
 import PriceHistoryModal from "@/components/products/modals/PriceHistoryModal";
 import { Product, ProductVariant } from "@/types/product";
 import { formatCurrency } from "@/lib/utils";
+import { SwappTooltip } from "@/components/ui/SwappTooltip";
 
 // --- NUEVOS COMPONENTES ESTANDARIZADOS ---
 import GlassTableWrapper from "@/components/tables/GlassTableWrapper";
@@ -108,6 +109,11 @@ export default function CostsPage() {
 		);
 	};
 
+	const handleCopySku = (sku: string) => {
+		navigator.clipboard.writeText(sku);
+		toast.success(`SKU ${sku} copiado`, { position: "top-center" });
+	};
+
 	const handleEditClick = (
 		product: ProductWithOffer,
 		variant: ProductVariant | null,
@@ -163,12 +169,10 @@ export default function CostsPage() {
 			{/* CONTENEDOR DE TABLA MODULARIZADO */}
 			<GlassTableWrapper>
 				<GlassTableHead>
-					<GlassTh className="w-16">Imagen</GlassTh>
+					<GlassTh className="w-24">Imagen</GlassTh>
 					<GlassTh>Producto General</GlassTh>
 					<GlassTh>Variantes / SKU</GlassTh>
-					<GlassTh>Costo Interno</GlassTh>
-					<GlassTh>Precio Base / Recarga</GlassTh>
-					<GlassTh>Precio Oferta</GlassTh>
+					<GlassTh>Costos y Precios</GlassTh>
 					<GlassTh>Margen Neto</GlassTh>
 					<GlassTh align="right">Acciones</GlassTh>
 				</GlassTableHead>
@@ -177,7 +181,7 @@ export default function CostsPage() {
 					{filteredProducts.length === 0 ? (
 						<tr>
 							<td
-								colSpan={8}
+								colSpan={6}
 								className="px-6 py-12 text-center text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50">
 								No se encontraron productos que coincidan con la búsqueda.
 							</td>
@@ -190,6 +194,7 @@ export default function CostsPage() {
 							)?.file_url;
 
 							const variantsCount = p.variants?.length || 0;
+							const isInternal = p.is_internal;
 
 							// --- LÓGICA DE DETECCIÓN DE PRODUCTO ÚNICO ---
 							const isSingleProduct = p.has_variants === false;
@@ -198,17 +203,13 @@ export default function CostsPage() {
 							const isExpanded =
 								expandedRows.includes(p.product_uuid!) && !isSingleProduct;
 
-							// Cálculos para producto con múltiples variantes (Referencia)
-							const refCost =
-								(p as any).reference_cost ?? p.variants?.[0]?.cost_price ?? 0;
-							const refPriceBase =
-								(p as any).reference_price ?? p.variants?.[0]?.price ?? 0;
+							// Cálculos para producto con múltiples variantes (Referencia tomada de la primera variante)
+							const refCost = p.variants?.[0]?.cost_price ?? 0;
+							const refPriceBase = p.variants?.[0]?.price ?? 0;
 
 							let refPriceFinal = refPriceBase;
-							let refActiveDiscount = null;
-
 							if (p.variants?.[0] && p.active_discounts) {
-								refActiveDiscount = p.active_discounts.find((d: any) => {
+								const refDiscount = p.active_discounts.find((d: any) => {
 									const isGlobal =
 										!d.variant_uuids || d.variant_uuids.length === 0;
 									return (
@@ -216,11 +217,11 @@ export default function CostsPage() {
 										d.variant_uuids.includes(p.variants![0].variant_uuid)
 									);
 								});
-								if (refActiveDiscount) {
+								if (refDiscount) {
 									refPriceFinal =
-										refActiveDiscount.discount_type === "percentage"
-											? refPriceBase * (1 - refActiveDiscount.value / 100)
-											: Math.max(0, refPriceBase - refActiveDiscount.value);
+										refDiscount.discount_type === "percentage"
+											? refPriceBase * (1 - refDiscount.value / 100)
+											: Math.max(0, refPriceBase - refDiscount.value);
 								}
 							}
 							const refMargin = calculateMargin(refCost, refPriceFinal);
@@ -260,33 +261,62 @@ export default function CostsPage() {
 							const baseRowClasses =
 								"border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50 last:border-0 transition-colors duration-200";
 
-							const rowStatusStyle =
-								p.is_active !== false
-									? `hover:bg-swapp-blanco/80 dark:hover:bg-swapp-azul-petroleo/30 ${isExpanded ? "bg-swapp-blanco/80 dark:bg-swapp-azul-petroleo/30" : ""}`
-									: "opacity-60 bg-swapp-azul-petroleo/10 dark:bg-swapp-azul-oscuro/80 hover:bg-swapp-azul-petroleo/20 dark:hover:bg-swapp-azul-oscuro/90";
+							let parentRowStatusStyle = "";
+							if (p.is_active === false) {
+								parentRowStatusStyle =
+									"opacity-60 bg-swapp-azul-petroleo/10 dark:bg-swapp-azul-oscuro/80 hover:bg-swapp-azul-petroleo/20 dark:hover:bg-swapp-azul-oscuro/90";
+							} else if (isInternal) {
+								parentRowStatusStyle = `bg-swapp-azul-petroleo/10 dark:bg-swapp-azul-petroleo/40 hover:bg-swapp-azul-petroleo/20 dark:hover:bg-swapp-azul-petroleo/60 ${isExpanded ? "bg-swapp-azul-petroleo/20 dark:bg-swapp-azul-petroleo/60" : ""}`;
+							} else {
+								parentRowStatusStyle = `hover:bg-swapp-blanco/80 dark:hover:bg-swapp-azul-petroleo/30 ${isExpanded ? "bg-swapp-blanco/80 dark:bg-swapp-azul-petroleo/30" : ""}`;
+							}
 
 							return (
 								<React.Fragment key={p.product_uuid}>
 									{/* Fila Principal (Padre) */}
-									<tr className={`${baseRowClasses} ${rowStatusStyle}`}>
-										{/* IMAGEN DE PRODUCTO */}
+									<tr className={`${baseRowClasses} ${parentRowStatusStyle}`}>
+										{/* IMAGEN DE PRODUCTO ALINEADA CON CATÁLOGO MAESTRO */}
 										<td className="px-6 py-4">
 											{mainImageUrl ? (
 												<img
 													src={mainImageUrl}
 													alt={`Imagen de ${p.name}`}
-													className="h-10 w-10 rounded-md object-cover bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo shadow-sm p-0.5"
+													className={`h-12 w-12 rounded-md object-cover bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm border shadow-sm p-0.5 transition-all ${
+														isInternal
+															? "border-swapp-azul-petroleo/30 dark:border-swapp-tiza-verdoso/20 grayscale-[0.8] opacity-70"
+															: "border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo"
+													}`}
 												/>
 											) : (
-												<div className="h-10 w-10 rounded-md bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/40 border border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo flex items-center justify-center text-swapp-azul-petroleo/30 dark:text-swapp-tiza-verdoso/30 transition-colors shadow-sm">
-													<ImageIcon className="h-5 w-5" />
+												<div
+													className={`h-12 w-12 rounded-md bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/40 border border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo flex items-center justify-center text-swapp-azul-petroleo/30 dark:text-swapp-tiza-verdoso/30 transition-colors shadow-sm ${
+														isInternal ? "opacity-60" : ""
+													}`}>
+													<ImageIcon className="h-6 w-6" />
 												</div>
 											)}
 										</td>
 
-										{/* NOMBRE PRODUCTO */}
-										<td className="px-6 py-4 font-bold text-swapp-azul-oscuro dark:text-swapp-blanco">
-											{p.name}
+										{/* NOMBRE, MARCA Y MODELO */}
+										<td className="px-6 py-4">
+											<div className="flex items-center gap-2 flex-wrap">
+												<div
+													className={`font-bold text-swapp-azul-oscuro dark:text-swapp-blanco flex items-center gap-2 flex-wrap ${p.is_active === false ? "line-through text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60" : ""}`}>
+													<span>
+														{p.name}
+														{(p as any).model ? ` - ${(p as any).model}` : ""}
+													</span>
+												</div>
+											</div>
+
+											{/* MARCA */}
+											{p.brand?.name && (
+												<div className="text-xs text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 flex items-center gap-1 mt-1 font-medium">
+													<span className="text-swapp-verde-oscuro dark:text-swapp-verde-menta">
+														{p.brand.name}
+													</span>
+												</div>
+											)}
 										</td>
 
 										{/* DESPLEGABLE O SKU ÚNICO */}
@@ -312,80 +342,59 @@ export default function CostsPage() {
 													</span>
 												)
 											) : (
-												<span className="bg-swapp-blanco/60 dark:bg-swapp-azul-oscuro/60 border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/40 px-2.5 py-1.5 rounded-md text-[11px] font-bold shadow-sm inline-block">
-													{defaultVariant?.sku || "-"}
-												</span>
-											)}
-										</td>
-
-										{/* COSTO INTERNO */}
-										<td className="px-6 py-4 text-xs font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
-											{!isSingleProduct
-												? refCost
-													? formatCurrency(refCost)
-													: "-"
-												: defaultVariant?.cost_price
-													? formatCurrency(defaultVariant.cost_price)
-													: "-"}
-										</td>
-
-										{/* PRECIO BASE / RECARGA */}
-										<td
-											className={`px-6 py-4 text-xs font-bold ${(!isSingleProduct ? refActiveDiscount : singleActiveDiscount) ? "text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40 line-through text-[10px]" : "text-swapp-verde-oscuro dark:text-swapp-verde-menta"}`}>
-											{!isSingleProduct ? (
-												<span>{formatCurrency(refPriceBase)}</span>
-											) : defaultVariant ? (
-												<div className="flex flex-col gap-0.5">
-													<span>{formatCurrency(defaultVariant.price)}</span>
-													{p.is_returnable &&
-														defaultVariant.refill_price != null && (
-															<SwappTooltip text="Precio de Recarga (Logística Inversa)">
-																<span className="text-[10px] font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 no-underline">
-																	Recarga:{" "}
-																	{formatCurrency(defaultVariant.refill_price)}
-																</span>
+												<div className="flex items-center gap-1.5 group/sku">
+													<span className="font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/90">
+														{defaultVariant?.sku || "-"}
+													</span>
+													{defaultVariant?.sku && (
+														<div className="flex opacity-0 group-hover/sku:opacity-100 transition-opacity">
+															<SwappTooltip text="Copiar SKU">
+																<button
+																	onClick={() =>
+																		handleCopySku(defaultVariant.sku)
+																	}
+																	className="p-1 rounded-md text-swapp-azul-petroleo/50 hover:text-swapp-verde-oscuro dark:text-swapp-tiza-verdoso/50 dark:hover:text-swapp-verde-menta transition-colors">
+																	<Copy className="h-3.5 w-3.5" />
+																</button>
 															</SwappTooltip>
-														)}
+														</div>
+													)}
 												</div>
-											) : (
-												<span>-</span>
 											)}
 										</td>
 
-										{/* PRECIO OFERTA */}
+										{/* COSTO Y PRECIOS DINÁMICOS */}
 										<td className="px-6 py-4 text-xs">
 											{!isSingleProduct ? (
-												refActiveDiscount ? (
-													<div className="flex flex-col items-start gap-1">
-														<span className="font-bold text-emerald-600 dark:text-emerald-400">
-															{formatCurrency(refPriceFinal)}
+												<div className="flex items-center gap-3">
+													<span className="font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+														Costo Ref: {refCost ? formatCurrency(refCost) : "-"}
+													</span>
+												</div>
+											) : defaultVariant ? (
+												<div className="flex items-center gap-4">
+													<div className="flex flex-col gap-1">
+														<span className="font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+															Costo:{" "}
+															{defaultVariant.cost_price
+																? formatCurrency(defaultVariant.cost_price)
+																: "-"}
 														</span>
-														<StatusBadge
-															variant="success"
-															className="!text-[9px]">
-															<Tag className="h-2.5 w-2.5" />
-															{refActiveDiscount.name}
-														</StatusBadge>
+														<div className="flex items-center gap-2">
+															<span
+																className={`font-bold ${singleActiveDiscount ? "text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40 line-through text-[10px]" : "text-swapp-verde-oscuro dark:text-swapp-verde-menta"}`}>
+																{formatCurrency(defaultVariant.price)}
+															</span>
+															{singleActiveDiscount && (
+																<span className="font-bold text-emerald-600 dark:text-emerald-400">
+																	{formatCurrency(singleFinalPrice)}
+																</span>
+															)}
+														</div>
 													</div>
-												) : (
-													<span className="text-swapp-azul-petroleo/30 dark:text-swapp-tiza-verdoso/30 italic">
-														-
-													</span>
-												)
-											) : singleActiveDiscount ? (
-												<div className="flex flex-col items-start gap-1">
-													<span className="font-bold text-emerald-600 dark:text-emerald-400">
-														{formatCurrency(singleFinalPrice)}
-													</span>
-													<StatusBadge
-														variant="success"
-														className="!text-[9px]">
-														<Tag className="h-2.5 w-2.5" />
-														{singleActiveDiscount.name}
-													</StatusBadge>
 												</div>
 											) : (
-												<span className="text-swapp-azul-petroleo/30 dark:text-swapp-tiza-verdoso/30 italic">
+												<span className="text-swapp-azul-petroleo/30 dark:text-swapp-tiza-verdoso/30">
 													-
 												</span>
 											)}
@@ -396,11 +405,9 @@ export default function CostsPage() {
 											{!isSingleProduct ? (
 												refMargin !== null ? (
 													<StatusBadge
-														variant={refMargin > 0 ? "success" : "danger"}>
-														<TrendingUp
-															className={`h-3.5 w-3.5 ${refMargin < 0 ? "rotate-180" : ""}`}
-														/>{" "}
-														{refMargin}%
+														variant={refMargin > 0 ? "success" : "danger"}
+														className="!border-none">
+														({refMargin}%)
 													</StatusBadge>
 												) : (
 													<span className="text-swapp-azul-petroleo/30 dark:text-swapp-tiza-verdoso/30">
@@ -409,10 +416,8 @@ export default function CostsPage() {
 												)
 											) : singleMargin !== null ? (
 												<StatusBadge
-													variant={singleMargin > 0 ? "success" : "danger"}>
-													<TrendingUp
-														className={`h-3.5 w-3.5 ${singleMargin < 0 ? "rotate-180" : ""}`}
-													/>{" "}
+													variant={singleMargin > 0 ? "success" : "danger"}
+													className="!border-none">
 													{singleMargin}%
 												</StatusBadge>
 											) : (
@@ -424,12 +429,11 @@ export default function CostsPage() {
 
 										{/* ACCIONES */}
 										<td className="px-6 py-4 text-right">
+											{/* NOTA: Para productos multi-variante, ya no mostramos la edición desde el padre porque la tabla es atómica */}
 											{!isSingleProduct ? (
-												<TableActionIcon
-													icon={Edit}
-													tooltip="Ajustar Valores de Referencia"
-													onClick={() => handleEditClick(p, null)}
-												/>
+												<span className="text-[10px] uppercase font-bold text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40">
+													Desplegar ↓
+												</span>
 											) : (
 												defaultVariant && (
 													<div className="flex items-center justify-end gap-1.5">
@@ -455,10 +459,14 @@ export default function CostsPage() {
 
 									{/* ACORDEÓN DESPLEGABLE (SOLO PARA MULTI-VARIANTES) */}
 									{!isSingleProduct && variantsCount > 0 && (
-										<AnimatedTableRow isExpanded={isExpanded} colSpan={8}>
+										<AnimatedTableRow isExpanded={isExpanded} colSpan={6}>
 											<table className="w-full text-xs text-left">
 												<thead className="bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/20 border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50">
 													<tr>
+														{/* NUEVA COLUMNA: VARIANTE */}
+														<th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/70">
+															Variante
+														</th>
 														<th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/70">
 															SKU Específico
 														</th>
@@ -466,7 +474,7 @@ export default function CostsPage() {
 															Costo Interno
 														</th>
 														<th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/70">
-															Precio Base / Recarga
+															Precio Base
 														</th>
 														<th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/70">
 															Precio Oferta
@@ -525,8 +533,38 @@ export default function CostsPage() {
 															<tr
 																key={v.variant_uuid}
 																className={`${baseVariantRowClasses} ${variantRowStatusStyle}`}>
-																<td className="px-4 py-3 font-mono font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/90">
-																	{v.sku}
+																{/* CELDA DINÁMICA DE LA VARIANTE */}
+																<td className="px-4 py-3 align-middle">
+																	{v.variant_attributes &&
+																	Object.values(v.variant_attributes).length >
+																		0 ? (
+																		<span className="font-bold text-swapp-azul-oscuro dark:text-swapp-blanco">
+																			{Object.values(v.variant_attributes).join(
+																				" - ",
+																			)}
+																		</span>
+																	) : (
+																		<span className="text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40 italic">
+																			Única
+																		</span>
+																	)}
+																</td>
+
+																<td className="px-4 py-3 font-mono align-middle">
+																	<div className="flex items-center gap-2 group/sku">
+																		<span className="font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/90">
+																			{v.sku}
+																		</span>
+																		{v.sku && (
+																			<SwappTooltip text="Copiar al portapapeles">
+																				<button
+																					onClick={() => handleCopySku(v.sku)}
+																					className="opacity-0 group-hover/sku:opacity-100 p-1.5 rounded-md text-swapp-azul-petroleo/50 hover:text-swapp-verde-oscuro dark:text-swapp-tiza-verdoso/50 dark:hover:text-swapp-verde-menta hover:bg-swapp-blanco dark:hover:bg-swapp-azul-petroleo transition-all">
+																					<Copy className="h-3.5 w-3.5" />
+																				</button>
+																			</SwappTooltip>
+																		)}
+																	</div>
 																</td>
 
 																<td className="px-4 py-3 font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
@@ -539,15 +577,6 @@ export default function CostsPage() {
 																	className={`px-4 py-3 font-bold ${activeDiscount ? "text-swapp-azul-petroleo/40 dark:text-swapp-tiza-verdoso/40 line-through text-[10px]" : "text-swapp-verde-oscuro dark:text-swapp-verde-menta"}`}>
 																	<div className="flex flex-col gap-0.5">
 																		<span>{formatCurrency(v.price)}</span>
-																		{p.is_returnable &&
-																			v.refill_price != null && (
-																				<SwappTooltip text="Precio de Recarga (Logística Inversa)">
-																					<span className="text-[10px] font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 no-underline">
-																						Recarga:{" "}
-																						{formatCurrency(v.refill_price)}
-																					</span>
-																				</SwappTooltip>
-																			)}
 																	</div>
 																</td>
 
@@ -559,7 +588,7 @@ export default function CostsPage() {
 																			</span>
 																			<StatusBadge
 																				variant="success"
-																				className="!text-[9px]">
+																				className="!text-[9px] !border-none">
 																				<Tag className="h-2.5 w-2.5" />
 																				{activeDiscount.name}
 																			</StatusBadge>

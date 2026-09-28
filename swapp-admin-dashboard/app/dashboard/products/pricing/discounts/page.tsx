@@ -2,7 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { Tag, Plus, Edit, Power, Layers, History } from "lucide-react";
+import {
+	Tag,
+	Plus,
+	Edit,
+	Power,
+	Layers,
+	History,
+	AlertCircle,
+} from "lucide-react";
 import TableSkeleton from "@/components/tables/TableSkeleton";
 import PageHeader from "@/components/layout/PageHeader";
 import SearchBar from "@/components/ui/SearchBar";
@@ -15,7 +23,7 @@ import NewDiscountModal, {
 	ProductDiscount,
 } from "@/components/products/modals/NewDiscountModal";
 
-// --- NUEVOS COMPONENTES ESTANDARIZADOS ---
+// --- COMPONENTES ESTANDARIZADOS ---
 import GlassTableWrapper from "@/components/tables/GlassTableWrapper";
 import GlassTableHead, { GlassTh } from "@/components/tables/GlassTableHead";
 import TableActionIcon from "@/components/tables/TableActionIcon";
@@ -260,12 +268,12 @@ export default function OffersPage() {
 													<StatusBadge
 														variant="success"
 														icon={Layers}
-														className="!text-[10px] uppercase">
+														className="!text-[10px] uppercase !border-none">
 														Catálogo Completo
 													</StatusBadge>
 												</div>
 											) : (
-												<div className="flex flex-wrap gap-1">
+												<div className="flex flex-wrap gap-1.5 mt-0.5">
 													{d.variant_uuids?.map((uuid) => {
 														const product = products.find(
 															(p) => p.product_uuid === d.product_uuid,
@@ -278,7 +286,7 @@ export default function OffersPage() {
 														return (
 															<span
 																key={uuid}
-																className="inline-flex items-center rounded-md border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/40 bg-swapp-blanco/60 dark:bg-swapp-azul-oscuro/60 px-2 py-0.5 text-[10px] font-mono font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso shadow-sm">
+																className="inline-flex items-center rounded-md border border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/40 bg-swapp-blanco/60 dark:bg-swapp-azul-oscuro/60 backdrop-blur-sm px-2 py-0.5 text-[10px] font-mono font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso shadow-sm">
 																SKU: {sku}
 															</span>
 														);
@@ -293,10 +301,13 @@ export default function OffersPage() {
 										{d.name}
 									</td>
 
-									{/* DESCUENTO CON STATUS BADGE */}
+									{/* DESCUENTO CON STATUS BADGE ESTANDARIZADO */}
 									<td className="px-6 py-4">
 										<div className="w-fit">
-											<StatusBadge variant="primary" icon={Tag}>
+											<StatusBadge
+												variant="primary"
+												icon={Tag}
+												className="!text-[10px] uppercase !border-none">
 												{d.discount_type === "percentage"
 													? `${d.value}% OFF`
 													: formatCurrency(d.value)}
@@ -313,11 +324,17 @@ export default function OffersPage() {
 												</span>{" "}
 												{new Date(d.start_date).toLocaleDateString()}
 											</span>
-											<span className={isExpired ? "text-red-500" : ""}>
+											<span
+												className={`flex items-center gap-1.5 ${isExpired ? "text-red-500" : ""}`}>
 												<span className="font-bold text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
 													Fin:
 												</span>{" "}
 												{new Date(d.end_date).toLocaleDateString()}
+												{isExpired && (
+													<SwappTooltip text="Oferta vencida">
+														<AlertCircle className="h-3.5 w-3.5" />
+													</SwappTooltip>
+												)}
 											</span>
 										</div>
 									</td>

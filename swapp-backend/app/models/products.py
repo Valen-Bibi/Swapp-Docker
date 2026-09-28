@@ -141,7 +141,8 @@ class Product(Base):
     meta_keywords = Column(Text)
     
     is_featured = Column(Boolean, default=False)
-    is_internal = Column(Boolean, default=False, nullable=False) # <- Mantenemos el pilar del nuevo sistema
+    is_internal = Column(Boolean, default=False, nullable=False)
+    linked_internal_product_id = Column(BigInteger, ForeignKey("swapp.products.product_id"), nullable=True)
     is_published = Column(Boolean, default=False)
     published_at = Column(DateTime(timezone=True))
     visibility = Column(String(20), default='catalog')
