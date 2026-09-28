@@ -31,7 +31,6 @@ export default function NewVariantModal({
 }: NewVariantModalProps) {
 	const [sku, setSku] = useState("");
 	const [price, setPrice] = useState("");
-	const [refillPrice, setRefillPrice] = useState("");
 	const [isSaving, setIsSaving] = useState(false);
 	const [clonedFrom, setClonedFrom] = useState<string | null>(null);
 
@@ -57,7 +56,6 @@ export default function NewVariantModal({
 			setLoadingPim(true);
 			setSku("");
 			setPrice("");
-			setRefillPrice("");
 
 			try {
 				const [globalAttrs, linkedAttrs] = await Promise.all([
@@ -106,13 +104,7 @@ export default function NewVariantModal({
 					if (lastVariant.variant_attributes) {
 						initialValues = { ...lastVariant.variant_attributes };
 						clonedSku = lastVariant.sku;
-
 						setPrice(lastVariant.price ? lastVariant.price.toString() : "");
-						setRefillPrice(
-							lastVariant.refill_price
-								? lastVariant.refill_price.toString()
-								: "",
-						);
 					}
 				}
 
@@ -213,8 +205,6 @@ export default function NewVariantModal({
 			await ProductService.createVariant(product.product_uuid, {
 				sku: sku,
 				price: price ? Number(price) : undefined,
-				refill_price:
-					product.is_returnable && refillPrice ? Number(refillPrice) : null,
 				variant_attributes: finalVariantAttributes,
 			});
 			toast.success("Variante física creada con éxito", { id: toastId });
@@ -364,24 +354,6 @@ export default function NewVariantModal({
 											onChange={(e) => setPrice(e.target.value)}
 										/>
 									</div>
-
-									{product.is_returnable && (
-										<div className="space-y-1.5">
-											<label className="block text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso flex items-center gap-2">
-												Precio de Recambio ($)
-												<SwappTooltip text="Se aplicará cuando el cliente devuelva un envase vacío de este mismo SKU.">
-													<AlertCircle className="h-3 w-3 text-swapp-verde-oscuro dark:text-swapp-verde-menta" />
-												</SwappTooltip>
-											</label>
-											<input
-												type="number"
-												className="w-full rounded-md border border-swapp-verde-oscuro/40 dark:border-swapp-verde-menta/40 bg-swapp-verde-pastel/5 px-3 py-2 text-sm text-swapp-azul-oscuro dark:text-swapp-blanco outline-none focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta"
-												value={refillPrice}
-												onChange={(e) => setRefillPrice(e.target.value)}
-												placeholder="Ej: 15000"
-											/>
-										</div>
-									)}
 								</div>
 							</div>
 

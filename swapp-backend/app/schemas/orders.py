@@ -8,6 +8,7 @@ from .payments import PaymentResponse
 class OrderItemCreate(BaseModel):
     product_id: int
     variant_id: Optional[int] = None
+    internal_product_id: Optional[int] = None
     quantity: int
     
     unit_price: float
@@ -28,6 +29,8 @@ class OrderItemResponse(BaseModel):
     order_id: int
     product_id: int
     variant_id: Optional[int] = None
+    internal_product_id: Optional[int] = None
+    internal_variant_id: Optional[int] = None
     unit_price: float
     quantity: int
     subtotal: float

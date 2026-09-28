@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import func # <-- MOVIDO AL INICIO (Buenas prácticas)
+from sqlalchemy import func
 from typing import List
 from uuid import UUID
 
@@ -46,7 +46,16 @@ def create_order_admin(
         for item in order_data.items:
             product = db.query(models.Product).filter(models.Product.product_id == item.product_id).first()
             if not product:
-                raise HTTPException(status_code=400, detail=f"El producto con ID {item.product_id} no existe.")
+                raise HTTPException(status_code=400, detail=f"El producto principal con ID {item.product_id} no existe.")
+
+            # Resolución Automática de la Variante Interna
+            internal_var_id = None
+            if item.internal_product_id:
+                int_prod = db.query(models.Product).options(joinedload(models.Product.variants)).filter(
+                    models.Product.product_id == item.internal_product_id
+                ).first()
+                if int_prod and int_prod.variants:
+                    internal_var_id = int_prod.variants[0].variant_id # Regla 1: Única variante activa
 
             new_item = models.OrderItem(
                 order_id=new_order.order_id,
@@ -58,22 +67,15 @@ def create_order_admin(
                 requires_return=item.requires_return,
                 expected_return_qty=item.expected_return_qty,
                 actual_return_qty=0,
+                internal_product_id=item.internal_product_id, # Trazabilidad
+                internal_variant_id=internal_var_id,          # Trazabilidad
                 discount_id=item.discount_id,
                 campaign_name=item.campaign_name,
                 discount_amount=item.discount_amount
             )
             db.add(new_item)
 
-            # Reserva de Stock Físico Retornable
-            if product.is_returnable:
-                ret_stock = db.query(models.ReturnablePhysicalStock).filter(
-                    models.ReturnablePhysicalStock.product_id == item.product_id
-                ).with_for_update().first()
-                
-                if ret_stock:
-                    ret_stock.stock_full -= item.quantity
-                    ret_stock.reserved_stock += item.quantity
-
+            # --- RESERVA DURA (Opción A) ---
             if item.variant_id:
                 variant = db.query(models.ProductVariant).filter(
                     models.ProductVariant.variant_id == item.variant_id
@@ -84,7 +86,7 @@ def create_order_admin(
 
                 stock_before = variant.stock_quantity
                 stock_after = stock_before - item.quantity
-                variant.stock_quantity = stock_after
+                variant.stock_quantity = stock_after # Descuento inmediato
 
                 sale_movement = models.InventoryMovement(
                     product_id=item.product_id,
@@ -95,7 +97,7 @@ def create_order_admin(
                     stock_after=stock_after,
                     reference_id=new_order.order_id,
                     reference_type='order',
-                    reason=f"Venta reservada en pedido {new_order.order_uuid}",
+                    reason=f"Venta descontada en pedido {new_order.order_uuid}",
                     created_by=admin_user.staff_id
                 )
                 db.add(sale_movement)
@@ -167,19 +169,14 @@ def update_order_status(
     old_status = order.status
     new_status = payload.new_status
     
-    # SALVAGUARDA DE INVENTARIO: No se puede cancelar un pedido entregado.
     if old_status == 'completed' and new_status == 'cancelled':
-        raise HTTPException(
-            status_code=400, 
-            detail="No puedes cancelar un pedido que ya fue entregado. La mercadería ya salió del sistema."
-        )
+        raise HTTPException(status_code=400, detail="No puedes cancelar un pedido que ya fue entregado.")
 
     if old_status == new_status:
         return {"message": "El pedido ya tiene ese estado."}
 
     order.status = new_status
 
-    # 1. Registro en la Bitácora Logística
     history = models.OrderStatusHistory(
         order_id=order.order_id,
         old_status=old_status,
@@ -188,18 +185,9 @@ def update_order_status(
     )
     db.add(history)
 
-    # 2. Lógica de CANCELACIÓN (Solo si el pedido estaba pendiente)
+    # 1. CANCELACIÓN: Devolver la reserva dura al producto principal
     if new_status == 'cancelled' and old_status == 'pending':
         for item in order.items:
-            product = db.query(models.Product).filter(models.Product.product_id == item.product_id).first()
-            if product and product.is_returnable:
-                ret_stock = db.query(models.ReturnablePhysicalStock).filter(
-                    models.ReturnablePhysicalStock.product_id == item.product_id
-                ).with_for_update().first()
-                if ret_stock:
-                    ret_stock.reserved_stock -= item.quantity
-                    ret_stock.stock_full += item.quantity
-
             if item.variant_id:
                 variant = db.query(models.ProductVariant).filter(
                     models.ProductVariant.variant_id == item.variant_id
@@ -224,72 +212,88 @@ def update_order_status(
                     )
                     db.add(return_movement)
 
-    # 3. Lógica de CIERRE DE ENVASES (Solo de pendiente a completado)
+    # 2. CIERRE DE ENVASES Y LEDGER (Solo al completarse)
     elif new_status == 'completed' and old_status == 'pending':
         actual_returns = payload.actual_returns or {}
 
         for item in order.items:
-            product = db.query(models.Product).filter(models.Product.product_id == item.product_id).first()
-            if not product or not product.is_returnable:
-                continue
-
-            ret_stock = db.query(models.ReturnablePhysicalStock).filter(
-                models.ReturnablePhysicalStock.product_id == product.product_id
-            ).with_for_update().first()
-
-            if ret_stock:
-                ret_stock.reserved_stock -= item.quantity 
-
             returned_qty = actual_returns.get(item.item_id, 0)
             item.actual_return_qty = returned_qty
 
-            current_balance = db.query(func.sum(models.ClientContainerLedger.quantity_change)).filter(
-                models.ClientContainerLedger.client_id == order.client_id,
-                models.ClientContainerLedger.product_id == item.product_id
-            ).scalar() or 0
-
-            if returned_qty > current_balance:
-                absorbed_qty = returned_qty - current_balance
-                absorption_ledger = models.ClientContainerLedger(
-                    client_id=order.client_id,
-                    product_id=item.product_id,
-                    order_id=order.order_id,
-                    transaction_type='absorption', 
-                    quantity_change=absorbed_qty,  
-                    staff_id=admin_user.staff_id,
-                    notes=f"Absorción automática de envases externos ({absorbed_qty} un.)"
-                )
-                db.add(absorption_ledger)
-
-            ledger_delivery = models.ClientContainerLedger(
-                client_id=order.client_id,
-                product_id=item.product_id,
-                order_id=order.order_id,
-                transaction_type='delivery',
-                quantity_change=item.quantity, 
-                staff_id=admin_user.staff_id,
-                notes="Entrega de envases llenos"
-            )
-            db.add(ledger_delivery)
-
-            if item.requires_return and returned_qty > 0:
-                if ret_stock:
-                    ret_stock.stock_empty += returned_qty 
+            # Solo procesamos la logística inversa si hay un Producto Interno enlazado
+            if item.internal_product_id and item.internal_variant_id:
                 
-                ledger_return = models.ClientContainerLedger(
+                # A. ABSORCIÓN: Chequeamos el saldo de envases VACÍOS del cliente
+                current_balance = db.query(func.sum(models.ClientContainerLedger.quantity_change)).filter(
+                    models.ClientContainerLedger.client_id == order.client_id,
+                    models.ClientContainerLedger.product_id == item.internal_product_id
+                ).scalar() or 0
+
+                if returned_qty > current_balance:
+                    absorbed_qty = returned_qty - current_balance
+                    absorption_ledger = models.ClientContainerLedger(
+                        client_id=order.client_id,
+                        product_id=item.internal_product_id, # Apunta al Vacío
+                        order_id=order.order_id,
+                        transaction_type='absorption', 
+                        quantity_change=absorbed_qty,  
+                        staff_id=admin_user.staff_id,
+                        notes=f"Absorción automática de envases externos ({absorbed_qty} un.)"
+                    )
+                    db.add(absorption_ledger)
+
+                # B. ENTREGA: Al darle un lleno, el cliente ahora nos debe un VACÍO (+ quantity_change)
+                ledger_delivery = models.ClientContainerLedger(
                     client_id=order.client_id,
-                    product_id=item.product_id,
+                    product_id=item.internal_product_id, # Apunta al Vacío
                     order_id=order.order_id,
-                    transaction_type='return',
-                    quantity_change=-returned_qty, 
+                    transaction_type='delivery',
+                    quantity_change=item.quantity, 
                     staff_id=admin_user.staff_id,
-                    notes="Devolución de envases vacíos"
+                    notes="Deuda generada por entrega de envases llenos"
                 )
-                db.add(ledger_return)
+                db.add(ledger_delivery)
+
+                # C. RETORNO Y GALPÓN: Si devuelve vacíos...
+                if returned_qty > 0:
+                    # Cancelamos su deuda (- quantity_change)
+                    ledger_return = models.ClientContainerLedger(
+                        client_id=order.client_id,
+                        product_id=item.internal_product_id, # Apunta al Vacío
+                        order_id=order.order_id,
+                        transaction_type='return',
+                        quantity_change=-returned_qty, 
+                        staff_id=admin_user.staff_id,
+                        notes="Descargo por devolución de envases vacíos"
+                    )
+                    db.add(ledger_return)
+
+                    # INGRESO AL GALPÓN: Sumamos stock físico a la variante del Producto Interno (El Vacío)
+                    internal_variant = db.query(models.ProductVariant).filter(
+                        models.ProductVariant.variant_id == item.internal_variant_id
+                    ).with_for_update().first()
+
+                    if internal_variant:
+                        stock_before = internal_variant.stock_quantity
+                        stock_after = stock_before + returned_qty
+                        internal_variant.stock_quantity = stock_after
+
+                        empty_container_movement = models.InventoryMovement(
+                            product_id=item.internal_product_id,
+                            variant_id=item.internal_variant_id,
+                            movement_type='return',
+                            quantity=returned_qty,
+                            stock_before=stock_before,
+                            stock_after=stock_after,
+                            reference_id=order.order_id,
+                            reference_type='empty_container_return',
+                            reason=f"Ingreso de envases vacíos (Pedido {order.order_uuid})",
+                            created_by=admin_user.staff_id
+                        )
+                        db.add(empty_container_movement)
 
     db.commit()
     return {"message": f"Estado actualizado a {new_status}. El inventario y los envases se ajustaron automáticamente."}
-
 
 @router.patch("/{order_uuid}", response_model=schemas.OrderResponse)
 def update_order_details(

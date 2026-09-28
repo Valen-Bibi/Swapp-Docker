@@ -45,6 +45,8 @@ class OrderItem(Base):
     
     product_id = Column(BigInteger, ForeignKey("swapp.products.product_id"), nullable=False)
     variant_id = Column(BigInteger, ForeignKey("swapp.product_variants.variant_id"), nullable=True)
+    internal_product_id = Column(BigInteger, ForeignKey("swapp.products.product_id"), nullable=True)
+    internal_variant_id = Column(BigInteger, ForeignKey("swapp.product_variants.variant_id"), nullable=True)
     discount_id = Column(BigInteger, ForeignKey("swapp.product_discounts.discount_id", ondelete="SET NULL"), nullable=True)
     campaign_name = Column(String(255), nullable=True)
     discount_amount = Column(Numeric(10, 2), default=0.0)
@@ -58,8 +60,8 @@ class OrderItem(Base):
     actual_return_qty = Column(Integer, default=0, nullable=False)
 
     order = relationship("Order", back_populates="items")
-    product = relationship("Product")
-    variant = relationship("ProductVariant")
+    product = relationship("Product", foreign_keys=[product_id], back_populates="order_items")
+    variant = relationship("ProductVariant", foreign_keys=[variant_id], back_populates="order_items")
 
 class OrderStatusHistory(Base):
     __tablename__ = "order_status_history"

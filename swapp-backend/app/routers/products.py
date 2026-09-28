@@ -322,7 +322,6 @@ def update_product_admin(
 
         ref_price = first_variant.price if first_variant else 0.0
         ref_cost = first_variant.cost_price if first_variant else 0.0
-        ref_refill = first_variant.refill_price if first_variant and product.is_returnable else None
 
         db.query(models.ProductVariant).filter(
             models.ProductVariant.product_id == product.product_id
@@ -333,7 +332,6 @@ def update_product_admin(
             sku=new_sku.upper(),
             price=ref_price,
             cost_price=ref_cost,
-            refill_price=ref_refill,
             stock_quantity=new_stock,
             variant_attributes=None,
             is_active=True
@@ -352,8 +350,6 @@ def update_product_admin(
 
     product.updated_by = admin_user.staff_id
     
-    # La Lógica de Economía circular ya no vive aquí. Se gestiona desde el endpoint /relationships.
-
     db.commit()
     db.refresh(product)
     
@@ -407,16 +403,6 @@ def update_product_variant_admin(
             record_type="cost_price"
         )
         db.add(hist_cost)
-
-    if 'refill_price' in update_data and update_data['refill_price'] != variant.refill_price:
-        hist_refill = models.ProductPriceHistory(
-            product_id=product.product_id,
-            variant_id=variant.variant_id,
-            old_value=variant.refill_price or 0,
-            new_value=update_data['refill_price'] or 0,
-            record_type="refill_price"
-        )
-        db.add(hist_refill)
 
     for key, value in update_data.items():
         setattr(variant, key, value)
@@ -750,7 +736,6 @@ def create_product_admin(
             slug=product_in.slug,
             short_description=product_in.short_description,
             description=product_in.description,
-            is_returnable=False,
             is_published=product_in.is_published,
             is_featured=product_in.is_featured,
             is_internal=product_in.is_internal,
@@ -812,7 +797,6 @@ def create_product_variant_admin(
                 detail="Operación rechazada: El SKU ya está en uso."
             )
 
-    # El frontend ahora es la única fuente de verdad para los precios
     final_price = variant_in.price if variant_in.price is not None else 0
     final_cost = variant_in.cost_price if variant_in.cost_price is not None else 0
 
@@ -821,7 +805,6 @@ def create_product_variant_admin(
         sku=variant_in.sku,
         price=final_price,
         cost_price=final_cost,
-        refill_price=variant_in.refill_price,
         stock_quantity=variant_in.stock_quantity or 0,
         variant_attributes=variant_in.variant_attributes,
         is_active=True
@@ -1157,7 +1140,6 @@ def get_product_relationships(
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
-    """Devuelve todas las relaciones activas donde este producto es el origen (source)."""
     source_product = db.query(models.Product).filter(models.Product.product_uuid == product_uuid).first()
     if not source_product:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
@@ -1189,7 +1171,7 @@ def update_product_relationships(
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
-    """Sincroniza masivamente las relaciones y automatiza el estado de envase retornable."""
+    """Sincroniza masivamente las relaciones del producto."""
     source_product = db.query(models.Product).filter(models.Product.product_uuid == product_uuid).first()
     if not source_product:
         raise HTTPException(status_code=404, detail="Producto origen no encontrado.")
@@ -1198,8 +1180,6 @@ def update_product_relationships(
     db.query(models.ProductRelationship).filter(
         models.ProductRelationship.source_product_id == source_product.product_id
     ).delete()
-
-    has_container = False
 
     if payload.relationships:
         # Extraemos UUIDs de los productos destino para buscarlos de una sola vez
@@ -1211,14 +1191,11 @@ def update_product_relationships(
         # Mapeo rápido de UUID -> ID Numérico
         uuid_to_id = {prod.product_uuid: prod.product_id for prod in target_products}
 
-        # 2. Insertamos las nuevas relaciones asignando 'priority' según el orden del array
+        # 2. Insertamos las nuevas relaciones asignando 'priority'
         for idx, rel in enumerate(payload.relationships):
             target_id = uuid_to_id.get(rel.target_product_uuid)
             if not target_id:
                 continue 
-
-            if rel.relationship_type == 'container_return':
-                has_container = True
 
             new_relation = models.ProductRelationship(
                 source_product_id=source_product.product_id,
@@ -1230,8 +1207,7 @@ def update_product_relationships(
             )
             db.add(new_relation)
     
-    # 3. EL CEREBRO REACTIVO: Si metieron un envase, el producto es retornable.
-    source_product.is_returnable = has_container
+    # 3. Solo actualizamos la firma de auditoría (el modelo calculará is_returnable automáticamente)
     source_product.updated_by = admin_user.staff_id
 
     db.commit()

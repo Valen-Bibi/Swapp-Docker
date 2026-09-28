@@ -380,7 +380,6 @@ export default function NewProductWizard() {
 				stock_quantity: initialStock,
 				price: formData.price,
 				cost_price: formData.cost_price,
-				refill_price: null, // <-- SE CONFIGURARÁ DESPUÉS DE CREAR LA RELACIÓN
 				variant_attributes:
 					Object.keys(cleanVariantAttributes).length > 0
 						? cleanVariantAttributes

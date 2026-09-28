@@ -33,6 +33,13 @@ const OrderItemRow = ({
 	const selectedProduct = products.find((p) => p.product_id === productId);
 	const selectedVariant = selectedProduct?.variants?.find((v) => v.variant_id === variantId);
 
+	// --- BÚSQUEDA DEL PRODUCTO INTERNO (ENVASE) ---
+	const internalProduct = selectedProduct?.linked_internal_product_id 
+		? products.find((p) => p.product_id === selectedProduct.linked_internal_product_id)
+		: null;
+	// Regla de Negocio: Los productos internos tienen 1 sola variante activa
+	const internalVariant = internalProduct?.variants?.[0]; 
+
 	// --- MOTOR MATEMÁTICO REACTIVO ---
 	let finalPriceNew = 0;
 	let finalPriceRefill = 0;
@@ -49,7 +56,8 @@ const OrderItemRow = ({
 		newsCount = qty - refillsCount;
 
 		const priceNew = Number(selectedVariant.price) || 0;
-		const priceRefill = Number(selectedVariant.refill_price) || priceNew;
+		// El precio de recarga AHORA viene del producto interno (envase vacío). Si no hay, usa el nuevo como fallback.
+		const priceRefill = internalVariant ? Number(internalVariant.price) : priceNew;
 
 		let dAmountNew = 0;
 		let dAmountRefill = 0;
@@ -121,18 +129,26 @@ const OrderItemRow = ({
 								setValue(`items.${index}.campaign_name`, null);
 								setValue(`items.${index}.discount_amount`, 0);
 
-								if (product?.is_returnable) {
+								// LOGICA INVERSA RENOVADA
+								if (product?.is_returnable && product?.linked_internal_product_id) {
+									const intProd = products.find(p => p.product_id === product.linked_internal_product_id);
+									const intVarId = intProd?.variants?.[0]?.variant_id || null;
+
 									setValue(`items.${index}.requires_return`, true);
 									setValue(`items.${index}.expected_return_qty`, currentQty);
+									setValue(`items.${index}.internal_product_id`, product.linked_internal_product_id);
+									setValue(`items.${index}.internal_variant_id`, intVarId);
 								} else {
 									setValue(`items.${index}.requires_return`, false);
 									setValue(`items.${index}.expected_return_qty`, 0);
+									setValue(`items.${index}.internal_product_id`, null);
+									setValue(`items.${index}.internal_variant_id`, null);
 								}
 							}}>
 							<option value="" disabled>Seleccione un producto...</option>
-							{products.map((p) => (
+							{/* FILTRO: Ocultamos los productos internos del catálogo de ventas */}
+							{products.filter(p => !p.is_internal).map((p) => (
 								<option key={p.product_uuid} value={p.product_id || ""}>
-									{/* AQUÍ ESTÁ EL CAMBIO: Concatenamos el modelo si existe */}
 									{p.name} {p.model ? `(${p.model})` : ""} {p.is_returnable ? "♻️" : ""}
 								</option>
 							))}
@@ -155,8 +171,10 @@ const OrderItemRow = ({
 							<option value="" disabled>Variante...</option>
 							{selectedProduct?.variants?.map((v) => {
 								const pNew = Number(v.price) || 0;
-								const pRefill = Number(v.refill_price) || 0;
-								const hasRefill = pRefill > 0 && pRefill !== pNew;
+								// Leemos el precio dinámicamente del producto interno
+								const pRefill = internalVariant ? Number(internalVariant.price) : 0;
+								const hasRefill = pRefill > 0 && pRefill !== pNew && selectedProduct.is_returnable;
+								
 								return (
 									<option key={v.variant_uuid || v.variant_id} value={v.variant_id || ""}>
 										{v.sku} - {hasRefill ? `Nuevo: ${formatCurrency(pNew)} | Recarga: ${formatCurrency(pRefill)}` : formatCurrency(pNew)}
@@ -292,6 +310,7 @@ export default function OrderItemsList() {
 				
 				if (isMounted) {
 					if (Array.isArray(productsData)) {
+						// Cargamos TODOS los productos a memoria (activos) para tener las referencias completas
 						const activeProducts = productsData.filter((p: Product) => p.is_active);
 						setProducts(activeProducts);
 					} else {
@@ -341,6 +360,8 @@ export default function OrderItemsList() {
 							discount_id: null,
 							campaign_name: null,
 							discount_amount: 0,
+							internal_product_id: null, // Default de trazabilidad
+							internal_variant_id: null  // Default de trazabilidad
 						})
 					}
 					className="inline-flex items-center gap-2 rounded-lg bg-swapp-verde-oscuro dark:bg-swapp-verde-menta px-3 py-1.5 text-xs font-medium text-swapp-blanco dark:text-swapp-azul-oscuro hover:bg-swapp-verde-pastel dark:hover:bg-swapp-tiza-verdoso transition-colors disabled:opacity-50">

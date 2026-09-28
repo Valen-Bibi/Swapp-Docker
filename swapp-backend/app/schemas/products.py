@@ -80,7 +80,6 @@ class ProductVariantCreate(BaseModel):
     sku: str
     price: float
     cost_price: float
-    refill_price: Optional[float] = None
     stock_quantity: int = 0
     variant_attributes: Optional[Dict[str, Any]] = Field(default_factory=dict)
     low_stock_threshold: Optional[int] = None
@@ -89,7 +88,6 @@ class ProductVariantUpdate(BaseModel):
     sku: Optional[str] = None
     price: Optional[float] = None
     cost_price: Optional[float] = None
-    refill_price: Optional[float] = None
     stock_quantity: Optional[int] = None
     variant_attributes: Optional[Dict[str, Any]] = None
     low_stock_threshold: Optional[int] = None
@@ -102,7 +100,6 @@ class ProductVariantResponse(BaseModel):
     sku: str
     price: float
     cost_price: float
-    refill_price: Optional[float] = None 
     stock_quantity: int
     low_stock_threshold: int
     variant_attributes: Optional[Dict[str, Any]] = None
@@ -114,9 +111,9 @@ class ProductResponse(BaseModel):
     product_id: int
     product_uuid: uuid.UUID
     name: str
+    is_returnable: bool
     model: Optional[str] = None
     has_variants: bool
-    is_returnable: bool
     is_internal: bool
     
     model_config = ConfigDict(from_attributes=True)
@@ -129,11 +126,11 @@ class ProductCatalogResponse(BaseModel):
     has_variants: bool
     slug: str
     is_published: bool
+    is_returnable: bool
     is_featured: bool
     sold_count: int
     is_internal: Optional[bool] = False
     linked_internal_product_id: Optional[int] = None
-    is_returnable: bool
     is_active: bool
 
     description: Optional[str] = None
@@ -161,7 +158,6 @@ class ProductCreate(BaseModel):
     
     short_description: Optional[str] = None
     description: Optional[str] = None
-    is_returnable: bool = False
     is_internal: Optional[bool] = False
     is_published: bool = False
     is_featured: bool = False
@@ -212,7 +208,6 @@ class ProductUpdate(BaseModel):
 
     is_published: Optional[bool] = None
     is_featured: Optional[bool] = None
-    is_returnable: Optional[bool] = None
     is_active: Optional[bool] = None
 
     model_config = ConfigDict(from_attributes=True)

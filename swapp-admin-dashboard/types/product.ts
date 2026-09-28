@@ -31,7 +31,6 @@ export interface ProductVariant {
   variant_uuid?: string;
   sku: string;
   price: number;
-  refill_price: number;
   cost_price: number;
   sale_price?: number | null;
   stock_quantity: number;
@@ -75,10 +74,7 @@ export interface Product {
   is_featured?: boolean;
   is_active: boolean;
   is_internal: boolean;
-
-  reference_cost?: number;
-  reference_price?: number;
-  reference_refill_price?: number;
+  linked_internal_product_id?: number | null;
 
   variants?: ProductVariant[];
   media?: {

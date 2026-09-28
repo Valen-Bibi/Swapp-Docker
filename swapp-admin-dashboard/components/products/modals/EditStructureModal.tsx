@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Trash2, AlertCircle, Save, Recycle } from "lucide-react";
+import { X, Trash2, AlertCircle, Save, Fingerprint, ImageIcon, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { ProductService } from "@/services/product.service";
 import { SwappInput } from "@/components/ui/SwappInput";
@@ -9,7 +9,6 @@ import { SwappSelect } from "@/components/ui/SwappSelect";
 import { SwappCheckbox } from "@/components/ui/SwappCheckbox";
 import { SwappDropzone } from "@/components/ui/SwappDropzone";
 import { SwappTextarea } from "@/components/ui/SwappTextarea";
-import { SwappToggle } from "@/components/ui/SwappToggle";
 import { Product, Brand, Category, TaxClass } from "@/types/product";
 
 interface EditStructureModalProps {
@@ -19,8 +18,14 @@ interface EditStructureModalProps {
 	brands: Brand[];
 	categories: Category[];
 	taxClasses: TaxClass[];
-	onSuccess: () => void; // Simplificado
+	onSuccess: () => void;
 }
+
+const TABS = [
+	{ id: 1, title: "Identidad", icon: Fingerprint },
+	{ id: 2, title: "Vitrina y SEO", icon: ImageIcon },
+	{ id: 3, title: "Logística Física", icon: Truck },
+];
 
 export default function EditStructureModal({
 	isOpen,
@@ -33,7 +38,7 @@ export default function EditStructureModal({
 }: EditStructureModalProps) {
 	const [editingProduct, setEditingProduct] = useState<Partial<Product>>({});
 	const [isSaving, setIsSaving] = useState(false);
-	const [showOptionalFields, setShowOptionalFields] = useState(false);
+	const [activeTab, setActiveTab] = useState(1);
 
 	// Estados Multimedia
 	const [newImageFile, setNewImageFile] = useState<File | null>(null);
@@ -44,16 +49,10 @@ export default function EditStructureModal({
 	const [newGalleryPreviews, setNewGalleryPreviews] = useState<string[]>([]);
 	const [mediaToDelete, setMediaToDelete] = useState<string[]>([]);
 
-	// Estados Locales para estructuras complejas
+	// Estados Locales para dimensiones
 	const [dimLength, setDimLength] = useState(0);
 	const [dimWidth, setDimWidth] = useState(0);
 	const [dimHeight, setDimHeight] = useState(0);
-
-	// --- ESTADOS DE LOGÍSTICA INVERSA ---
-	const [internalProducts, setInternalProducts] = useState<any[]>([]);
-	const [isLoadingInternal, setIsLoadingInternal] = useState(false);
-	const [linkedInternalProductId, setLinkedInternalProductId] =
-		useState<string>("");
 
 	// --- LÓGICA DE CATEGORÍAS JERÁRQUICAS ---
 	const parentCategories = categories.filter((c) => !c.parent_id);
@@ -61,9 +60,7 @@ export default function EditStructureModal({
 
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
-			if (e.key === "Escape" && isOpen) {
-				onClose();
-			}
+			if (e.key === "Escape" && isOpen) onClose();
 		};
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
@@ -72,70 +69,39 @@ export default function EditStructureModal({
 	useEffect(() => {
 		if (isOpen && product) {
 			setEditingProduct(product);
+			setActiveTab(1); // Volvemos a la primera pestaña al abrir
 			setNewImageFile(null);
 			setNewGalleryFiles([]);
 			setNewGalleryPreviews([]);
 			setMediaToDelete([]);
-			setShowOptionalFields(false);
 
 			setDimLength((product.dimensions as any)?.length || 0);
 			setDimWidth((product.dimensions as any)?.width || 0);
 			setDimHeight((product.dimensions as any)?.height || 0);
 
 			const mainMedia = product.media?.find(
-				(m: any) =>
-					m.media_type === "image" && m.media_subtype === "main" && m.is_active,
+				(m: any) => m.media_type === "image" && m.media_subtype === "main" && m.is_active,
 			);
 			setPreviewUrl(mainMedia ? mainMedia.file_url : null);
 			setMainMediaUuid(mainMedia ? mainMedia.media_uuid : null);
 
 			const galleryMedia = product.media?.filter(
-				(m: any) =>
-					m.media_type === "image" &&
-					m.media_subtype === "gallery" &&
-					m.is_active,
+				(m: any) => m.media_type === "image" && m.media_subtype === "gallery" && m.is_active,
 			);
 			setExistingGallery(galleryMedia || []);
-
-			const fetchInternalProducts = async () => {
-				setIsLoadingInternal(true);
-				try {
-					const allProducts = await ProductService.getAll();
-					const internal = allProducts.filter(
-						(p: any) =>
-							p.is_internal && p.product_uuid !== product.product_uuid,
-					);
-					setInternalProducts(internal);
-					setLinkedInternalProductId(
-						(product as any).linked_internal_product_id?.toString() || "",
-					);
-				} catch (error) {
-					console.error("Error cargando productos internos:", error);
-				} finally {
-					setIsLoadingInternal(false);
-				}
-			};
-			fetchInternalProducts();
 		}
 	}, [isOpen, product]);
 
 	if (!isOpen || !product) return null;
 
 	const generateSlug = (text: string) =>
-		text
-			.toLowerCase()
-			.trim()
-			.replace(/[^\w\s-]/g, "")
-			.replace(/[\s_-]+/g, "-")
-			.replace(/^-+|-+$/g, "");
+		text.toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "");
 
 	const handleImageDrop = (acceptedFiles: File[]) => {
 		const file = acceptedFiles[0];
 		if (!file) return;
 		if (previewUrl) {
-			const userConfirmed = window.confirm(
-				"Esta nueva imagen reemplazará a la actual como imagen principal. ¿Deseas continuar?",
-			);
+			const userConfirmed = window.confirm("Esta nueva imagen reemplazará a la actual como imagen principal. ¿Deseas continuar?");
 			if (!userConfirmed) return;
 			if (mainMediaUuid && !mediaToDelete.includes(mainMediaUuid)) {
 				setMediaToDelete((prev) => [...prev, mainMediaUuid]);
@@ -146,9 +112,7 @@ export default function EditStructureModal({
 	};
 
 	const handleRemoveImage = () => {
-		const userConfirmed = window.confirm(
-			"¿Estás seguro de que querés eliminar la imagen principal?",
-		);
+		const userConfirmed = window.confirm("¿Estás seguro de que querés eliminar la imagen principal?");
 		if (!userConfirmed) return;
 		if (mainMediaUuid && !mediaToDelete.includes(mainMediaUuid)) {
 			setMediaToDelete((prev) => [...prev, mainMediaUuid]);
@@ -170,49 +134,31 @@ export default function EditStructureModal({
 	};
 
 	const removeExistingGalleryImage = (media_uuid: string) => {
-		const userConfirmed = window.confirm(
-			"¿Seguro que querés eliminar esta imagen de la galería?",
-		);
+		const userConfirmed = window.confirm("¿Seguro que querés eliminar esta imagen de la galería?");
 		if (!userConfirmed) return;
 		if (!mediaToDelete.includes(media_uuid)) {
 			setMediaToDelete((prev) => [...prev, media_uuid]);
 		}
-		setExistingGallery((prev) =>
-			prev.filter((m) => m.media_uuid !== media_uuid),
-		);
+		setExistingGallery((prev) => prev.filter((m) => m.media_uuid !== media_uuid));
 	};
 
 	const handleEditSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		if (!editingProduct || !editingProduct.product_uuid) return;
 
-		if (editingProduct.is_published) {
+		if (editingProduct.is_published && !(editingProduct as any).is_internal) {
 			if (!previewUrl && !newImageFile) {
-				toast.error("Para publicar, la Imagen Principal es obligatoria.");
-				return;
+				setActiveTab(2);
+				return toast.error("Para publicar, la Imagen Principal es obligatoria.");
 			}
 			if (existingGallery.length === 0 && newGalleryFiles.length === 0) {
-				toast.error(
-					"Para publicar, debés tener al menos 1 imagen en la galería.",
-				);
-				return;
+				setActiveTab(2);
+				return toast.error("Para publicar, debés tener al menos 1 imagen en la galería.");
 			}
-			if (!editingProduct.short_description?.trim()) {
-				toast.error("Para publicar, la Descripción Corta es obligatoria.");
-				return;
+			if (!editingProduct.short_description?.trim() || !editingProduct.description?.trim()) {
+				setActiveTab(2);
+				return toast.error("Para publicar, las descripciones son obligatorias.");
 			}
-			if (!editingProduct.description?.trim()) {
-				toast.error("Para publicar, la Descripción Extendida es obligatoria.");
-				return;
-			}
-		}
-
-		if (editingProduct.is_returnable && !linkedInternalProductId) {
-			toast.error(
-				"Seleccioná el envase vacío correspondiente a la logística inversa.",
-			);
-			setShowOptionalFields(true);
-			return;
 		}
 
 		setIsSaving(true);
@@ -221,147 +167,114 @@ export default function EditStructureModal({
 		try {
 			if (mediaToDelete.length > 0) {
 				toast.loading("Limpiando imágenes eliminadas...", { id: toastId });
-				await Promise.all(
-					mediaToDelete.map((uuid) =>
-						ProductService.deleteMedia(editingProduct.product_uuid!, uuid),
-					),
-				);
+				await Promise.all(mediaToDelete.map((uuid) => ProductService.deleteMedia(editingProduct.product_uuid!, uuid)));
 			}
 
 			if (newImageFile) {
 				toast.loading("Actualizando imagen principal...", { id: toastId });
-				await ProductService.uploadMainImage(
-					editingProduct.product_uuid,
-					newImageFile,
-				);
+				await ProductService.uploadMainImage(editingProduct.product_uuid, newImageFile);
 			}
 
 			if (newGalleryFiles.length > 0) {
-				toast.loading(
-					`Subiendo ${newGalleryFiles.length} imágenes a la galería...`,
-					{ id: toastId },
-				);
-				await ProductService.uploadGalleryImages(
-					editingProduct.product_uuid,
-					newGalleryFiles,
-				);
+				toast.loading(`Subiendo ${newGalleryFiles.length} imágenes a la galería...`, { id: toastId });
+				await ProductService.uploadGalleryImages(editingProduct.product_uuid, newGalleryFiles);
 			}
 
 			toast.loading("Guardando información general...", { id: toastId });
 
-			const dimensionsObj =
-				dimLength > 0 || dimWidth > 0 || dimHeight > 0
-					? { length: dimLength, width: dimWidth, height: dimHeight }
-					: null;
+			const dimensionsObj = dimLength > 0 || dimWidth > 0 || dimHeight > 0
+				? { length: dimLength, width: dimWidth, height: dimHeight }
+				: null;
 
-			// Quitamos 'has_variants' para que no viaje al backend y no lo modifique por error
-			const { media, variants, has_variants, ...safeUpdateData } =
-				editingProduct as any;
+			// Filtramos datos sensibles/controlados por otros flujos
+			const { media, variants, has_variants, is_returnable, linked_internal_product_id, is_internal, category_id, ...safeUpdateData } = editingProduct as any;
 
 			await ProductService.update(editingProduct.product_uuid, {
 				...safeUpdateData,
-				brand_id: safeUpdateData.brand_id
-					? Number(safeUpdateData.brand_id)
-					: null,
-				category_id: safeUpdateData.category_id
-					? Number(safeUpdateData.category_id)
-					: null,
-				tax_class_id: safeUpdateData.tax_class_id
-					? Number(safeUpdateData.tax_class_id)
-					: null,
+				brand_id: safeUpdateData.brand_id ? Number(safeUpdateData.brand_id) : null,
+				tax_class_id: safeUpdateData.tax_class_id ? Number(safeUpdateData.tax_class_id) : null,
 				dimensions: dimensionsObj,
-				linked_internal_product_id:
-					editingProduct.is_returnable && linkedInternalProductId
-						? Number(linkedInternalProductId)
-						: null,
 			});
 
 			toast.success("Estructura actualizada exitosamente.", { id: toastId });
 			onSuccess();
 			onClose();
 		} catch (error: any) {
-			toast.error(error.response?.data?.detail || "Error al actualizar.", {
-				id: toastId,
-			});
+			toast.error(error.response?.data?.detail || "Error al actualizar.", { id: toastId });
 		} finally {
 			setIsSaving(false);
 		}
 	};
 
-	const brandOptions = brands.map((b) => ({
-		value: b.brand_id,
-		label: b.name,
-	}));
-	const taxOptions = taxClasses.map((t) => ({
-		value: t.tax_class_id,
-		label: `${t.name} (${t.rate}%)`,
-	}));
+	const brandOptions = brands.map((b) => ({ value: b.brand_id, label: b.name }));
+	const taxOptions = taxClasses.map((t) => ({ value: t.tax_class_id, label: `${t.name} (${t.rate}%)` }));
 	const weightUnitOptions = [
-		{ value: "kg", label: "kg" },
-		{ value: "g", label: "g" },
-		{ value: "lb", label: "lb" },
-		{ value: "oz", label: "oz" },
+		{ value: "kg", label: "kg" }, { value: "g", label: "g" }, { value: "lb", label: "lb" }, { value: "oz", label: "oz" },
 	];
 
 	return (
-		<div className="fixed inset-0 z-[100] flex items-center justify-center bg-swapp-azul-petroleo/5 dark:bg-swapp-negro/30 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95">
+		<div className="fixed inset-0 z-[100] flex items-center justify-center bg-swapp-azul-petroleo/20 dark:bg-swapp-negro/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95">
 			<div className="w-full max-w-4xl max-h-[90vh] flex flex-col rounded-xl bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md shadow-2xl border-t-4 border-t-swapp-verde-oscuro dark:border-t-swapp-verde-menta overflow-hidden transition-colors">
-				<div className="p-6 border-b border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo flex items-center justify-between shrink-0 transition-colors">
-					<h2 className="text-xl font-bold text-swapp-azul-oscuro dark:text-swapp-blanco">
-						Editar Estructura: {editingProduct.name}{" "}
-						{editingProduct.model ? `- ${editingProduct.model}` : ""}
-					</h2>
+				<div className="p-6 border-b border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0 transition-colors">
+					<div>
+						<h2 className="text-xl font-bold text-swapp-azul-oscuro dark:text-swapp-blanco truncate max-w-md">
+							{editingProduct.name} {editingProduct.model ? `- ${editingProduct.model}` : ""}
+						</h2>
+						<p className="text-xs text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 font-mono mt-1">
+							SKU Base / Estructura Global
+						</p>
+					</div>
 					<button
 						type="button"
 						onClick={onClose}
-						className="p-1 rounded-md text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50 hover:bg-red-500/10 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400 transition-colors">
+						className="p-1.5 rounded-md bg-swapp-azul-petroleo/5 text-swapp-azul-petroleo/50 dark:bg-swapp-tiza-verdoso/10 dark:text-swapp-tiza-verdoso/50 hover:bg-red-500/10 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400 transition-colors self-start sm:self-center">
 						<X className="h-5 w-5" />
 					</button>
 				</div>
 
-				<div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
-					<form
-						onSubmit={handleEditSubmit}
-						className="space-y-8 [&_input]:!bg-transparent [&_select]:!bg-transparent [&_textarea]:!bg-transparent">
-						<div className="space-y-6">
-							<div className="border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/30 pb-4 transition-colors">
-								<h3 className="text-sm font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
-									Estructura e Identidad
-								</h3>
-							</div>
+				{/* SELECTOR DE PESTAÑAS (TABS) */}
+				<div className="flex px-6 pt-4 gap-2 bg-swapp-blanco/30 dark:bg-swapp-azul-oscuro/30 border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/30 overflow-x-auto custom-scrollbar shrink-0">
+					{TABS.map((tab) => {
+						const isActive = activeTab === tab.id;
+						// Ocultamos la pestaña de Vitrina si es un producto interno
+						if (tab.id === 2 && (editingProduct as any).is_internal) return null;
+						
+						return (
+							<button
+								key={tab.id}
+								type="button"
+								onClick={() => setActiveTab(tab.id)}
+								className={`flex items-center gap-2 px-4 py-2.5 border-b-2 text-sm font-bold transition-colors whitespace-nowrap ${
+									isActive
+										? "border-swapp-verde-oscuro text-swapp-verde-oscuro dark:border-swapp-verde-menta dark:text-swapp-verde-menta bg-swapp-verde-oscuro/5 dark:bg-swapp-verde-menta/5 rounded-t-lg"
+										: "border-transparent text-swapp-azul-petroleo/50 hover:text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/50 dark:hover:text-swapp-tiza-verdoso"
+								}`}>
+								<tab.icon className="h-4 w-4" />
+								{tab.title}
+							</button>
+						);
+					})}
+				</div>
 
+				<div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
+					<form onSubmit={handleEditSubmit} className="space-y-8 [&_input]:!bg-transparent [&_select]:!bg-transparent [&_textarea]:!bg-transparent">
+						
+						{/* PESTAÑA 1: IDENTIDAD */}
+						<div className={activeTab === 1 ? "block animate-in fade-in slide-in-from-right-4" : "hidden"}>
 							<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
 								<div className="sm:col-span-2">
 									<SwappInput
 										label="Nombre Comercial"
 										required
 										value={editingProduct.name || ""}
-										onChange={(e) => {
-											const name = e.target.value;
-											setEditingProduct({
-												...editingProduct,
-												name: name,
-												slug: generateSlug(
-													`${name} ${(editingProduct as any).model || ""}`,
-												),
-											});
-										}}
+										onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
 									/>
 								</div>
 								<div className="sm:col-span-2">
 									<SwappInput
 										label="Modelo de Fábrica"
 										value={(editingProduct as any).model || ""}
-										onChange={(e) => {
-											const model = e.target.value;
-											setEditingProduct({
-												...editingProduct,
-												model: model,
-												slug: generateSlug(
-													`${editingProduct.name || ""} ${model}`,
-												),
-											} as any);
-										}}
+										onChange={(e) => setEditingProduct({ ...editingProduct, model: e.target.value } as any)}
 									/>
 								</div>
 								<div className="sm:col-span-4">
@@ -369,58 +282,26 @@ export default function EditStructureModal({
 										label="URL Amigable (Slug)"
 										required
 										value={editingProduct.slug || ""}
-										onChange={(e) =>
-											setEditingProduct({
-												...editingProduct,
-												slug: e.target.value,
-											})
-										}
+										onChange={(e) => setEditingProduct({ ...editingProduct, slug: generateSlug(e.target.value) })}
+										helpText="Impacta en el SEO y enlaces existentes. Editar con precaución."
 									/>
 								</div>
 							</div>
 
-							<div className="grid grid-cols-1 gap-6 sm:grid-cols-3 border-t border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo pt-6 transition-colors">
+							<div className="grid grid-cols-1 gap-6 sm:grid-cols-3 border-t border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo pt-6 mt-6 transition-colors">
 								<div className="space-y-1">
-									<label className="block text-sm font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso mb-1">
-										Categoría (Subcategoría){" "}
-										<span className="text-red-500">*</span>
+									<label className="block text-sm font-medium text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50 mb-1">
+										Categoría / Subcategoría
 									</label>
-									<select
-										className="w-full rounded-md border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo bg-transparent px-3 py-2.5 text-sm text-swapp-azul-oscuro dark:text-swapp-blanco outline-none transition-colors focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-1 focus:ring-swapp-verde-oscuro shadow-sm"
-										required
-										value={editingProduct.category_id || ""}
-										onChange={(e) =>
-											setEditingProduct({
-												...editingProduct,
-												category_id: e.target.value
-													? parseInt(e.target.value)
-													: null,
-											})
-										}>
-										<option
-											value=""
-											className="bg-swapp-blanco dark:bg-swapp-azul-oscuro"
-											disabled>
-											Seleccione subcategoría...
-										</option>
-										{parentCategories.map((parent) => (
-											<optgroup
-												key={parent.category_id}
-												label={parent.name}
-												className="bg-swapp-blanco dark:bg-swapp-azul-oscuro font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta">
-												{subCategories
-													.filter((sub) => sub.parent_id === parent.category_id)
-													.map((sub) => (
-														<option
-															key={sub.category_id}
-															value={sub.category_id}
-															className="bg-swapp-blanco dark:bg-swapp-azul-oscuro font-normal text-swapp-azul-oscuro dark:text-swapp-blanco">
-															{sub.name}
-														</option>
-													))}
-											</optgroup>
-										))}
-									</select>
+									<input 
+										type="text" 
+										disabled 
+										value={categories.find(c => c.category_id === editingProduct.category_id)?.name || "Sin categoría"}
+										className="w-full rounded-md border border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/30 bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/20 px-3 py-2.5 text-sm text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50 outline-none cursor-not-allowed"
+									/>
+									<p className="text-[10px] text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 leading-tight">
+										Dato bloqueado por sistema para preservar la integridad de los atributos técnicos (PIM).
+									</p>
 								</div>
 
 								<SwappSelect
@@ -428,14 +309,7 @@ export default function EditStructureModal({
 									placeholder="Sin marca"
 									options={brandOptions}
 									value={editingProduct.brand_id || ""}
-									onChange={(e) =>
-										setEditingProduct({
-											...editingProduct,
-											brand_id: e.target.value
-												? parseInt(e.target.value)
-												: null,
-										})
-									}
+									onChange={(e) => setEditingProduct({ ...editingProduct, brand_id: e.target.value ? parseInt(e.target.value) : null })}
 								/>
 
 								<SwappSelect
@@ -443,411 +317,134 @@ export default function EditStructureModal({
 									placeholder="Sin impuesto"
 									options={taxOptions}
 									value={editingProduct.tax_class_id || ""}
-									onChange={(e) =>
-										setEditingProduct({
-											...editingProduct,
-											tax_class_id: e.target.value
-												? parseInt(e.target.value)
-												: null,
-										})
-									}
+									onChange={(e) => setEditingProduct({ ...editingProduct, tax_class_id: e.target.value ? parseInt(e.target.value) : null })}
 								/>
 							</div>
 						</div>
 
-						<div className="flex items-center justify-between border-t border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo pt-6 transition-colors">
-							<div>
-								<h3 className="text-lg font-semibold text-swapp-azul-oscuro dark:text-swapp-blanco">
-									Detalles y Configuración Adicional
-								</h3>
-								<p className="text-sm text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 mt-1">
-									Logística extendida, SEO y multimedia avanzada
-								</p>
-							</div>
-							<SwappToggle
-								checked={showOptionalFields}
-								onChange={setShowOptionalFields}
-								id="toggle-optional-fields-edit"
-							/>
-						</div>
+						{/* PESTAÑA 2: VITRINA Y SEO */}
+						<div className={activeTab === 2 ? "block animate-in fade-in slide-in-from-right-4" : "hidden"}>
+							<div className="space-y-6">
+								{editingProduct.is_published && (
+									<div className="flex items-center gap-2 rounded-xl bg-swapp-verde-oscuro/10 dark:bg-swapp-verde-menta/10 p-4 text-sm font-medium text-swapp-verde-oscuro dark:text-swapp-verde-menta border border-swapp-verde-oscuro/20 dark:border-swapp-verde-menta/20 shadow-sm">
+										<AlertCircle className="h-5 w-5 shrink-0" />
+										<p>Producto publicado. Imágenes y descripciones obligatorias.</p>
+									</div>
+								)}
 
-						<div
-							className={`transition-all duration-500 ease-in-out -m-2 p-2 ${showOptionalFields ? "max-h-[5000px] opacity-100 mt-2" : "max-h-0 opacity-0 overflow-hidden"}`}>
-							<div className="space-y-10">
-								<div className="space-y-6">
-									{editingProduct.is_published && (
-										<div className="flex items-center gap-2 rounded-xl bg-swapp-verde-oscuro/10 dark:bg-swapp-verde-menta/10 p-4 text-sm font-medium text-swapp-verde-oscuro dark:text-swapp-verde-menta border border-swapp-verde-oscuro/20 dark:border-swapp-verde-menta/20 shadow-sm animate-in fade-in">
-											<AlertCircle className="h-5 w-5 shrink-0" />
-											<p>
-												Al optar por{" "}
-												<strong className="font-bold">
-													Publicar en tienda
-												</strong>
-												, los campos de descripciones e imágenes pasan a ser
-												obligatorios.
-											</p>
-										</div>
-									)}
-
-									<SwappInput
-										label={`Descripción Corta (Catálogo) ${editingProduct.is_published ? "*" : ""}`}
-										required={editingProduct.is_published}
-										value={editingProduct.short_description || ""}
-										onChange={(e) =>
-											setEditingProduct({
-												...editingProduct,
-												short_description: e.target.value,
-											})
-										}
-									/>
-									<SwappTextarea
-										label={`Descripción Extendida (Detalle) ${editingProduct.is_published ? "*" : ""}`}
-										rows={4}
-										required={editingProduct.is_published}
-										value={editingProduct.description || ""}
-										onChange={(e) =>
-											setEditingProduct({
-												...editingProduct,
-												description: e.target.value,
-											})
-										}
-									/>
+								<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 pt-2">
+									<div className="space-y-4">
+										<SwappCheckbox
+											label="Visible en tienda (Publicado)"
+											id="edit_is_published"
+											checked={editingProduct.is_published || false}
+											onChange={(e) => setEditingProduct({ ...editingProduct, is_published: e.target.checked })}
+										/>
+										<SwappCheckbox
+											label="Destacar en Home"
+											id="edit_is_featured"
+											checked={editingProduct.is_featured || false}
+											onChange={(e) => setEditingProduct({ ...editingProduct, is_featured: e.target.checked })}
+										/>
+									</div>
 								</div>
 
-								<div className="border-t border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo pt-6 space-y-6 transition-colors">
-									<h4 className="text-sm font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 flex items-center gap-2">
-										<Recycle className="h-4 w-4" /> Logística Inversa (Economía
-										Circular)
-									</h4>
-									<div className="grid grid-cols-1 gap-6 bg-swapp-verde-pastel/5 dark:bg-swapp-verde-menta/5 border border-swapp-verde-oscuro/10 dark:border-swapp-verde-menta/20 p-5 rounded-xl transition-colors">
-										<SwappCheckbox
-											label="Habilitar Logística Inversa (Envase Retornable)"
-											id="edit_is_returnable_logistics"
-											checked={editingProduct.is_returnable || false}
-											onChange={(e) =>
-												setEditingProduct({
-													...editingProduct,
-													is_returnable: e.target.checked,
-												})
-											}
+								<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 pt-4">
+									<SwappInput
+										label={`Descripción Corta (Tarjetas) ${editingProduct.is_published ? "*" : ""}`}
+										required={editingProduct.is_published}
+										value={editingProduct.short_description || ""}
+										onChange={(e) => setEditingProduct({ ...editingProduct, short_description: e.target.value })}
+									/>
+									<div className="sm:col-span-2">
+										<SwappTextarea
+											label={`Descripción Extendida (Detalle) ${editingProduct.is_published ? "*" : ""}`}
+											rows={4}
+											required={editingProduct.is_published}
+											value={editingProduct.description || ""}
+											onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}
 										/>
+									</div>
+								</div>
 
-										{editingProduct.is_returnable && (
-											<div className="space-y-1.5 animate-in fade-in slide-in-from-top-2">
-												<label className="block text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
-													Envase Vacío Asociado (Producto Interno){" "}
-													<span className="text-red-500">*</span>
-												</label>
-												{isLoadingInternal ? (
-													<div className="text-xs text-swapp-azul-petroleo/60 py-2">
-														Cargando envases disponibles...
+								<div className="grid grid-cols-1 gap-8 sm:grid-cols-2 border-t border-swapp-azul-petroleo/10 pt-6">
+									<div className="space-y-3">
+										<SwappDropzone label={`Imagen Principal (Reemplazar) ${editingProduct.is_published ? "*" : ""}`} helpText="JPG, PNG o WEBP. Max 5MB." onDropAction={handleImageDrop} />
+										{previewUrl ? (
+											<div className="relative inline-block mt-2">
+												<img src={previewUrl} alt="Principal" className="h-32 w-32 object-cover rounded-xl border-2 border-swapp-verde-oscuro shadow-sm bg-swapp-blanco" />
+												<button type="button" onClick={handleRemoveImage} className="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-1.5 shadow-md hover:bg-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
+											</div>
+										) : (
+											<div className="shrink-0 mt-6 h-32 w-32 rounded-xl border-2 border-dashed border-swapp-azul-petroleo/20 flex items-center justify-center text-xs text-swapp-azul-petroleo/50">Sin principal</div>
+										)}
+									</div>
+									<div className="space-y-3">
+										<SwappDropzone label={`Agregar a la Galería ${editingProduct.is_published ? "*" : ""}`} helpText="Subí múltiples imágenes extra." onDropAction={handleGalleryDrop} maxFiles={5} />
+										{(existingGallery.length > 0 || newGalleryPreviews.length > 0) && (
+											<div className="flex flex-wrap gap-4 mt-2 bg-swapp-tiza-verdoso/20 dark:bg-swapp-azul-petroleo/20 p-4 rounded-xl border border-swapp-azul-petroleo/10">
+												{existingGallery.map((m: any) => (
+													<div key={m.media_uuid} className="relative inline-block">
+														<img src={m.file_url} className="h-20 w-20 object-cover rounded-lg border border-swapp-verde-oscuro/50 opacity-80 bg-swapp-blanco" />
+														<button type="button" onClick={() => removeExistingGalleryImage(m.media_uuid)} className="absolute -top-2 -right-2 bg-swapp-azul-petroleo text-white rounded-full p-1 shadow-md hover:bg-red-500 transition-colors"><Trash2 className="w-3 h-3" /></button>
 													</div>
-												) : (
-													<select
-														className="w-full rounded-md border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo bg-transparent px-3 py-2.5 text-sm text-swapp-azul-oscuro dark:text-swapp-blanco outline-none shadow-sm focus:border-swapp-verde-oscuro focus:ring-1 focus:ring-swapp-verde-oscuro"
-														required
-														value={linkedInternalProductId}
-														onChange={(e) =>
-															setLinkedInternalProductId(e.target.value)
-														}>
-														<option
-															value=""
-															disabled
-															className="bg-swapp-blanco dark:bg-swapp-azul-oscuro">
-															Seleccione el envase físico a recuperar...
-														</option>
-														{internalProducts.map((ip) => (
-															<option
-																key={ip.product_id}
-																value={ip.product_id}
-																className="bg-swapp-blanco dark:bg-swapp-azul-oscuro">
-																{ip.name} {ip.model ? `- ${ip.model}` : ""}
-															</option>
-														))}
-													</select>
-												)}
-												<p className="text-[11px] text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 pt-1">
-													Al vender este producto, el sistema exigirá el
-													recupero de 1 unidad del envase seleccionado para
-													concretar la economía circular.
-												</p>
+												))}
+												{newGalleryPreviews.map((url, idx) => (
+													<div key={`new-${idx}`} className="relative inline-block">
+														<img src={url} className="h-20 w-20 object-cover rounded-lg border-2 border-swapp-verde-oscuro bg-swapp-blanco" />
+														<span className="absolute bottom-1 left-1 bg-swapp-verde-oscuro text-white text-[9px] px-1.5 py-0.5 rounded shadow-sm">NUEVA</span>
+														<button type="button" onClick={() => removeNewGalleryImage(idx)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"><X className="w-3 h-3" /></button>
+													</div>
+												))}
 											</div>
 										)}
 									</div>
 								</div>
 
-								<div className="border-t border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo pt-6 space-y-6 transition-colors">
-									<h4 className="text-sm font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
-										Gestión Multimedia
-									</h4>
-									<div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
-										<div className="space-y-3">
-											<SwappDropzone
-												label={`Imagen Principal (Reemplazar) ${editingProduct.is_published ? "*" : ""}`}
-												helpText="JPG, PNG o WEBP. Max 5MB."
-												onDropAction={handleImageDrop}
-											/>
-											{previewUrl ? (
-												<div className="relative inline-block mt-2">
-													<img
-														src={previewUrl}
-														alt="Principal"
-														className="h-32 w-32 object-cover rounded-xl border-2 border-swapp-verde-oscuro shadow-sm bg-swapp-blanco"
-													/>
-													<button
-														type="button"
-														onClick={handleRemoveImage}
-														className="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-1.5 shadow-md hover:bg-red-600 transition-colors">
-														<Trash2 className="w-4 h-4" />
-													</button>
-												</div>
-											) : (
-												<div className="shrink-0 mt-6 h-32 w-32 rounded-xl border-2 border-dashed border-swapp-azul-petroleo/20 flex items-center justify-center text-xs text-swapp-azul-petroleo/50">
-													Sin principal
-												</div>
-											)}
-										</div>
-										<div className="space-y-3">
-											<SwappDropzone
-												label={`Agregar a la Galería ${editingProduct.is_published ? "*" : ""}`}
-												helpText="Podés subir varias imágenes extra."
-												onDropAction={handleGalleryDrop}
-												maxFiles={5}
-											/>
-											{(existingGallery.length > 0 ||
-												newGalleryPreviews.length > 0) && (
-												<div className="flex flex-wrap gap-4 mt-2 bg-swapp-tiza-verdoso/20 dark:bg-swapp-azul-petroleo/20 p-4 rounded-xl border border-swapp-azul-petroleo/10">
-													{existingGallery.map((m: any) => (
-														<div
-															key={m.media_uuid}
-															className="relative inline-block">
-															<img
-																src={m.file_url}
-																className="h-20 w-20 object-cover rounded-lg border border-swapp-verde-oscuro/50 opacity-80 bg-swapp-blanco"
-															/>
-															<button
-																type="button"
-																onClick={() =>
-																	removeExistingGalleryImage(m.media_uuid)
-																}
-																className="absolute -top-2 -right-2 bg-swapp-azul-petroleo text-white rounded-full p-1 shadow-md hover:bg-red-500 transition-colors">
-																<Trash2 className="w-3 h-3" />
-															</button>
-														</div>
-													))}
-													{newGalleryPreviews.map((url, idx) => (
-														<div
-															key={`new-${idx}`}
-															className="relative inline-block">
-															<img
-																src={url}
-																className="h-20 w-20 object-cover rounded-lg border-2 border-swapp-verde-oscuro bg-swapp-blanco"
-															/>
-															<span className="absolute bottom-1 left-1 bg-swapp-verde-oscuro text-white text-[9px] px-1.5 py-0.5 rounded shadow-sm">
-																NUEVA
-															</span>
-															<button
-																type="button"
-																onClick={() => removeNewGalleryImage(idx)}
-																className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors">
-																<X className="w-3 h-3" />
-															</button>
-														</div>
-													))}
-												</div>
-											)}
-										</div>
-									</div>
-								</div>
-
-								<div className="space-y-6 border-t border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo pt-6 transition-colors">
-									<h4 className="text-sm font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
-										Posicionamiento y SEO
-									</h4>
-									<div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-										<SwappInput
-											label="Meta Título"
-											value={editingProduct.meta_title || ""}
-											onChange={(e) =>
-												setEditingProduct({
-													...editingProduct,
-													meta_title: e.target.value,
-												})
-											}
-										/>
-										<SwappInput
-											label="Meta Keywords"
-											value={editingProduct.meta_keywords || ""}
-											onChange={(e) =>
-												setEditingProduct({
-													...editingProduct,
-													meta_keywords: e.target.value,
-												})
-											}
-										/>
-									</div>
-									<SwappTextarea
-										label="Meta Descripción"
-										rows={2}
-										value={editingProduct.meta_description || ""}
-										onChange={(e) =>
-											setEditingProduct({
-												...editingProduct,
-												meta_description: e.target.value,
-											})
-										}
-									/>
-								</div>
-
-								<div className="space-y-6 border-t border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo pt-6 transition-colors">
-									<h4 className="text-sm font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
-										Logística Física y Envíos
-									</h4>
-									<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-										<SwappInput
-											label="Cantidad Máx por Orden"
-											type="text"
-											formatThousands
-											min="0"
-											value={editingProduct.max_order_quantity || ""}
-											onChange={(e) =>
-												setEditingProduct({
-													...editingProduct,
-													max_order_quantity: parseInt(e.target.value) || 0,
-												})
-											}
-										/>
-										<SwappInput
-											label="Peso"
-											type="text"
-											formatThousands
-											step="0.01"
-											min="0"
-											value={editingProduct.weight || ""}
-											onChange={(e) =>
-												setEditingProduct({
-													...editingProduct,
-													weight: parseFloat(e.target.value) || 0,
-												})
-											}
-										/>
-										<SwappSelect
-											label="Unidad de Peso"
-											options={weightUnitOptions}
-											value={editingProduct.weight_unit || "kg"}
-											onChange={(e) =>
-												setEditingProduct({
-													...editingProduct,
-													weight_unit: e.target.value,
-												})
-											}
-										/>
-									</div>
-									<div className="grid grid-cols-3 gap-4">
-										<SwappInput
-											label="Largo (cm)"
-											type="text"
-											formatThousands
-											min="0"
-											value={dimLength === 0 ? "" : dimLength}
-											onChange={(e) =>
-												setDimLength(parseFloat(e.target.value) || 0)
-											}
-										/>
-										<SwappInput
-											label="Ancho (cm)"
-											type="text"
-											formatThousands
-											min="0"
-											value={dimWidth === 0 ? "" : dimWidth}
-											onChange={(e) =>
-												setDimWidth(parseFloat(e.target.value) || 0)
-											}
-										/>
-										<SwappInput
-											label="Alto (cm)"
-											type="text"
-											formatThousands
-											min="0"
-											value={dimHeight === 0 ? "" : dimHeight}
-											onChange={(e) =>
-												setDimHeight(parseFloat(e.target.value) || 0)
-											}
-										/>
-									</div>
-								</div>
-
-								<div className="space-y-6 border-t border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo pt-6 transition-colors">
-									<h4 className="text-sm font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
-										Archivos Digitales
-									</h4>
-									<div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-										<SwappInput
-											label="URL de Descarga"
-											value={editingProduct.download_url || ""}
-											onChange={(e) =>
-												setEditingProduct({
-													...editingProduct,
-													download_url: e.target.value,
-												})
-											}
-										/>
-										<SwappInput
-											label="Tamaño (Bytes)"
-											type="text"
-											formatThousands
-											min="0"
-											value={editingProduct.file_size || ""}
-											onChange={(e) =>
-												setEditingProduct({
-													...editingProduct,
-													file_size: parseInt(e.target.value) || 0,
-												})
-											}
-										/>
-										<SwappInput
-											label="Extensión (Ej: pdf)"
-											value={editingProduct.file_extension || ""}
-											onChange={(e) =>
-												setEditingProduct({
-													...editingProduct,
-													file_extension: e.target.value,
-												})
-											}
-										/>
-									</div>
-								</div>
-
-								<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 pt-6 border-t border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo transition-colors">
-									<div className="space-y-4">
-										<SwappCheckbox
-											label="Publicado (Visible en tienda)"
-											id="edit_is_published"
-											checked={editingProduct.is_published || false}
-											onChange={(e) =>
-												setEditingProduct({
-													...editingProduct,
-													is_published: e.target.checked,
-												})
-											}
-										/>
-										<SwappCheckbox
-											label="Destacar producto"
-											id="edit_is_featured"
-											checked={editingProduct.is_featured || false}
-											onChange={(e) =>
-												setEditingProduct({
-													...editingProduct,
-													is_featured: e.target.checked,
-												})
-											}
-										/>
+								<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 border-t border-swapp-azul-petroleo/10 pt-6">
+									<SwappInput label="Meta Título SEO" value={editingProduct.meta_title || ""} onChange={(e) => setEditingProduct({ ...editingProduct, meta_title: e.target.value })} />
+									<SwappInput label="Meta Keywords" value={editingProduct.meta_keywords || ""} onChange={(e) => setEditingProduct({ ...editingProduct, meta_keywords: e.target.value })} />
+									<div className="sm:col-span-2">
+										<SwappTextarea label="Meta Descripción SEO" rows={2} value={editingProduct.meta_description || ""} onChange={(e) => setEditingProduct({ ...editingProduct, meta_description: e.target.value })} />
 									</div>
 								</div>
 							</div>
 						</div>
 
-						<div className="mt-8 flex justify-end gap-3 pt-6 border-t border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo transition-colors">
+						{/* PESTAÑA 3: LOGÍSTICA FÍSICA Y ARCHIVOS */}
+						<div className={activeTab === 3 ? "block animate-in fade-in slide-in-from-right-4" : "hidden"}>
+							<div className="space-y-8">
+								<div>
+									<h4 className="text-sm font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 mb-4">
+										Logística Física y Envíos
+									</h4>
+									<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+										<SwappInput label="Cantidad Máx por Orden" type="text" formatThousands min="0" value={editingProduct.max_order_quantity || ""} onChange={(e) => setEditingProduct({ ...editingProduct, max_order_quantity: parseInt(e.target.value) || 0 })} />
+										<SwappInput label="Peso (Bulto cerrado)" type="text" formatThousands step="0.01" min="0" value={editingProduct.weight || ""} onChange={(e) => setEditingProduct({ ...editingProduct, weight: parseFloat(e.target.value) || 0 })} />
+										<SwappSelect label="Unidad de Peso" options={weightUnitOptions} value={editingProduct.weight_unit || "kg"} onChange={(e) => setEditingProduct({ ...editingProduct, weight_unit: e.target.value })} />
+									</div>
+									<div className="grid grid-cols-3 gap-4 mt-6">
+										<SwappInput label="Largo (cm)" type="text" formatThousands min="0" value={dimLength === 0 ? "" : dimLength} onChange={(e) => setDimLength(parseFloat(e.target.value) || 0)} />
+										<SwappInput label="Ancho (cm)" type="text" formatThousands min="0" value={dimWidth === 0 ? "" : dimWidth} onChange={(e) => setDimWidth(parseFloat(e.target.value) || 0)} />
+										<SwappInput label="Alto (cm)" type="text" formatThousands min="0" value={dimHeight === 0 ? "" : dimHeight} onChange={(e) => setDimHeight(parseFloat(e.target.value) || 0)} />
+									</div>
+								</div>
+
+								<div className="border-t border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo pt-6">
+									<h4 className="text-sm font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 mb-4">
+										Archivos Digitales (Descargables)
+									</h4>
+									<div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+										<SwappInput label="URL de Descarga Segura" value={editingProduct.download_url || ""} onChange={(e) => setEditingProduct({ ...editingProduct, download_url: e.target.value })} />
+										<SwappInput label="Tamaño (Bytes)" type="text" formatThousands min="0" value={editingProduct.file_size || ""} onChange={(e) => setEditingProduct({ ...editingProduct, file_size: parseInt(e.target.value) || 0 })} />
+										<SwappInput label="Extensión (Ej: pdf, zip)" value={editingProduct.file_extension || ""} onChange={(e) => setEditingProduct({ ...editingProduct, file_extension: e.target.value })} />
+									</div>
+								</div>
+							</div>
+						</div>
+
+						{/* FOOTER DEL MODAL */}
+						<div className="mt-8 flex justify-end gap-3 pt-6 border-t border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo bg-swapp-blanco/30 dark:bg-swapp-azul-oscuro/30 -mx-6 px-6 -mb-6 pb-6 rounded-b-xl transition-colors">
 							<button
 								type="button"
 								onClick={onClose}
@@ -857,9 +454,9 @@ export default function EditStructureModal({
 							<button
 								type="submit"
 								disabled={isSaving}
-								className="flex items-center gap-2 rounded-lg bg-swapp-verde-pastel dark:bg-swapp-verde-menta px-6 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro transition-colors hover:bg-swapp-verde-oscuro dark:hover:bg-swapp-verde-pastel disabled:opacity-50">
+								className="flex items-center gap-2 rounded-lg bg-swapp-verde-pastel dark:bg-swapp-verde-menta px-6 py-2 text-sm font-medium text-swapp-blanco dark:text-swapp-azul-oscuro transition-colors hover:bg-swapp-verde-oscuro dark:hover:bg-swapp-verde-pastel disabled:opacity-50 shadow-md">
 								<Save className="h-4 w-4" />
-								{isSaving ? "Guardando..." : "Guardar Estructura"}
+								{isSaving ? "Guardando..." : "Guardar Cambios Globales"}
 							</button>
 						</div>
 					</form>

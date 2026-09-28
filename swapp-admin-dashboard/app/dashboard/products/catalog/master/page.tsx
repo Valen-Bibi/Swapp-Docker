@@ -21,6 +21,7 @@ import {
 	ImagePlus,
 	Loader2,
 	Network,
+	Lock,
 } from "lucide-react";
 import { toast } from "sonner";
 import TableSkeleton from "@/components/tables/TableSkeleton";
@@ -479,33 +480,40 @@ export default function MasterCatalogPage() {
 												<img
 													src={mainImageUrl}
 													alt={`Imagen de ${p.name}`}
-													className="h-12 w-12 rounded-md object-cover bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo shadow-sm p-0.5"
+													className={`h-12 w-12 rounded-md object-cover bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm border shadow-sm p-0.5 transition-all ${
+														isInternal
+															? "border-swapp-azul-petroleo/30 dark:border-swapp-tiza-verdoso/20 grayscale-[0.8] opacity-70"
+															: "border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo"
+													}`}
 												/>
 											) : (
-												<div className="h-12 w-12 rounded-md bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/40 border border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo flex items-center justify-center text-swapp-azul-petroleo/30 dark:text-swapp-tiza-verdoso/30 transition-colors shadow-sm">
+												<div
+													className={`h-12 w-12 rounded-md bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/40 border border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo flex items-center justify-center text-swapp-azul-petroleo/30 dark:text-swapp-tiza-verdoso/30 transition-colors shadow-sm ${
+														isInternal ? "opacity-60" : ""
+													}`}>
 													<ImageIcon className="h-6 w-6" />
 												</div>
 											)}
 										</td>
 
-										{/* NOMBRE, MARCA, MODELO Y SLUG */}
+										{/* NOMBRE, MARCA Y MODELO */}
 										<td className="px-6 py-4">
 											<div
-												className={`font-bold text-swapp-azul-oscuro dark:text-swapp-blanco ${!p.is_active ? "line-through text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60" : ""}`}>
-												{p.name}
-												{pModel ? ` - ${pModel}` : ""}
+												className={`font-bold text-swapp-azul-oscuro dark:text-swapp-blanco flex items-center gap-2 flex-wrap ${!p.is_active ? "line-through text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60" : ""}`}>
+												<span>
+													{p.name}
+													{pModel ? ` - ${pModel}` : ""}
+												</span>
 											</div>
-											<div className="text-xs text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 flex items-center gap-1 mt-0.5 font-medium">
-												{p.brand?.name && (
-													<>
-														<span className="text-swapp-verde-oscuro dark:text-swapp-verde-menta">
-															{p.brand.name}
-														</span>
-														<span>•</span>
-													</>
-												)}
-												<span>/{p.slug}</span>
-											</div>
+											
+											{/* MARCA */}
+											{p.brand?.name && (
+												<div className="text-xs text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 flex items-center gap-1 mt-1 font-medium">
+													<span className="text-swapp-verde-oscuro dark:text-swapp-verde-menta">
+														{p.brand.name}
+													</span>
+												</div>
+											)}
 										</td>
 
 										{/* COLUMNA DINÁMICA: ACORDEÓN VS. SKU ÚNICO */}
@@ -550,7 +558,7 @@ export default function MasterCatalogPage() {
 													<div className="flex flex-col gap-0.5">
 														<div className="flex items-center gap-1.5 group/sku">
 															<span
-																className={`font-medium ${!p.variants[0].is_active ? "line-through opacity-60" : "text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/90"}`}>
+																className={`font-medium ${!p.variants[0].is_active ? "line-through opacity-60" : "text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60"}`}>
 																{p.variants[0].sku}
 															</span>
 															<div className="flex opacity-0 group-hover/sku:opacity-100 transition-opacity">
@@ -614,38 +622,41 @@ export default function MasterCatalogPage() {
 
 										{/* LOGÍSTICA CON STATUS BADGE */}
 										<td className="px-6 py-4">
-											<StatusBadge
-												variant={p.is_returnable ? "info" : "neutral"}
-												className="!text-[10px] uppercase">
-												{p.is_returnable ? "Retornable" : "Estándar"}
-												{isInternal ? " - INTERNO" : ""}
-											</StatusBadge>
+											<div className="flex justify-center">
+												<StatusBadge
+													variant={isInternal ? "neutral" : (p.is_returnable ? "info" : "neutral")}
+													className="!text-[10px] uppercase !border-none">
+													{isInternal ? "Interno" : (p.is_returnable ? "Retornable" : "Estándar")}
+												</StatusBadge>
+											</div>
 										</td>
 
 										{/* ESTADO Y SALUD CON STATUS BADGE */}
 										<td className="px-6 py-4">
-											<div className="flex flex-col gap-2.5 items-start">
+											<div className="flex flex-col gap-2.5 items-center">
 												<StatusBadge
 													variant={p.is_published ? "primary" : "neutral"}
-													className="!text-[10px] uppercase">
+													className="!text-[10px] uppercase !border-none">
 													{p.is_published ? "Publicado" : "Borrador"}
 												</StatusBadge>
 
-												<SwappTooltip text="Nivel de completitud de la Ficha Técnica">
-													<div className="flex items-center gap-2 w-24">
-														<div className="h-1.5 w-full bg-swapp-azul-petroleo/10 dark:bg-swapp-azul-petroleo/40 border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo rounded-full overflow-hidden">
-															<div
-																className="h-full rounded-full bg-swapp-verde-oscuro dark:bg-swapp-verde-menta transition-all duration-500"
-																style={{
-																	width: `${calculateHealthScore(p)}%`,
-																}}
-															/>
+												{!isInternal && (
+													<SwappTooltip text="Nivel de completitud de la Ficha Técnica">
+														<div className="flex items-center justify-center gap-2 w-24">
+															<div className="h-1.5 w-full bg-swapp-azul-petroleo/10 dark:bg-swapp-azul-petroleo/40 border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo rounded-full overflow-hidden">
+																<div
+																	className="h-full rounded-full bg-swapp-verde-oscuro dark:bg-swapp-verde-menta transition-all duration-500"
+																	style={{
+																		width: `${calculateHealthScore(p)}%`,
+																	}}
+																/>
+															</div>
+															<span className="text-[10px] font-bold text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+																{calculateHealthScore(p)}%
+															</span>
 														</div>
-														<span className="text-[10px] font-bold text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
-															{calculateHealthScore(p)}%
-														</span>
-													</div>
-												</SwappTooltip>
+													</SwappTooltip>
+												)}
 											</div>
 										</td>
 
@@ -663,14 +674,19 @@ export default function MasterCatalogPage() {
 																setIsNewVariantModalOpen(true);
 															}}
 														/>
-														<TableActionIcon
-															icon={Network}
-															tooltip="Arquitectura de Relaciones"
-															onClick={() => {
-																setSelectedProductForRelations(p);
-																setIsRelationsModalOpen(true);
-															}}
-														/>
+														
+														{/* EL BOTÓN DE RELACIONES SE OCULTA EN PRODUCTOS INTERNOS */}
+														{!isInternal && (
+															<TableActionIcon
+																icon={Network}
+																tooltip="Arquitectura de Relaciones"
+																onClick={() => {
+																	setSelectedProductForRelations(p);
+																	setIsRelationsModalOpen(true);
+																}}
+															/>
+														)}
+														
 														<TableActionIcon
 															icon={Edit}
 															tooltip="Editar Estructura General"
@@ -824,10 +840,10 @@ export default function MasterCatalogPage() {
 																		) : (
 																			<div className="flex items-center gap-2 group/sku">
 																				<span
-																					className={`font-medium text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso/90 ${
+																					className={`font-medium ${
 																						!v.is_active
-																							? "line-through opacity-70"
-																							: ""
+																							? "line-through opacity-60"
+																							: "text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60"
 																					}`}>
 																					{v.sku}
 																				</span>

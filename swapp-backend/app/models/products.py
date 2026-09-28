@@ -141,7 +141,7 @@ class Product(Base):
     meta_keywords = Column(Text)
     
     is_featured = Column(Boolean, default=False)
-    is_internal = Column(Boolean, default=False, nullable=False)
+    is_internal = Column(Boolean, default=False, nullable=False) # <- Mantenemos el pilar del nuevo sistema
     is_published = Column(Boolean, default=False)
     published_at = Column(DateTime(timezone=True))
     visibility = Column(String(20), default='catalog')
@@ -163,7 +163,6 @@ class Product(Base):
     
     brand_id = Column(BigInteger, ForeignKey("swapp.brands.brand_id"), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
-    is_returnable = Column(Boolean, default=False, nullable=False)
     tax_class_id = Column(BigInteger, ForeignKey("swapp.tax_classes.tax_class_id"), nullable=True)
     
     category = relationship("ProductCategory", back_populates="products")
@@ -179,8 +178,11 @@ class Product(Base):
     related_to = relationship("ProductRelationship", foreign_keys="[ProductRelationship.source_product_id]", back_populates="source_product")
     related_from = relationship("ProductRelationship", foreign_keys="[ProductRelationship.target_product_id]", back_populates="target_product")
     inventory_movements = relationship("InventoryMovement", back_populates="product", cascade="all, delete")
-    order_items = relationship("OrderItem", back_populates="product")
+    order_items = relationship("OrderItem", foreign_keys="[OrderItem.product_id]", back_populates="product")
 
+    @property
+    def is_returnable(self) -> bool:
+        return any(rel.relationship_type == 'container_return' for rel in self.related_to)
 class ProductVariant(Base):
     __tablename__ = "product_variants"
     __table_args__ = {"schema": "swapp"}
@@ -191,7 +193,6 @@ class ProductVariant(Base):
     
     sku = Column(String(50), unique=True, index=True)
     price = Column(Numeric(10,2), default=0.0, nullable=False)
-    refill_price = Column(Numeric(10, 2), nullable=True)
     cost_price = Column(Numeric(10,2), default=0.0, nullable=False)
     stock_quantity = Column(Integer, default=0)
     
@@ -206,9 +207,7 @@ class ProductVariant(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     product = relationship("Product", back_populates="variants")
-    order_items = relationship("OrderItem", back_populates="variant")
-
-
+    order_items = relationship("OrderItem", foreign_keys="[OrderItem.variant_id]", back_populates="variant")
 class ProductMedia(Base):
     __tablename__ = "product_media"
     __table_args__ = {"schema": "swapp"}
