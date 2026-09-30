@@ -36,5 +36,10 @@ export const OrderService = {
 		);
 		return data;
 	},
+	
+	updateOrder: async (orderUuid: string, payload: any) => {
+		const { data } = await api.patch(`/api/orders/admin/${orderUuid}`, payload);
+		return data;
+	},
 
 };
