@@ -640,7 +640,10 @@ export default function OrdersPage() {
 					setIsPaymentModalOpen(false);
 					setPaymentOrder(null);
 				}}
-				order={paymentOrder}
+				order={
+					orders.find((o) => o.order_uuid === paymentOrder?.order_uuid) ||
+					paymentOrder
+				}
 				onSuccess={fetchData}
 			/>
 
