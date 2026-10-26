@@ -1,40 +1,13 @@
-import shutil
-import base64
 import os
-import uuid
-import io
-from typing import Optional, List
-from datetime import timedelta
-from contextlib import asynccontextmanager
-
-from pydantic import BaseModel
-from fastapi import FastAPI, Depends, HTTPException, status, File, UploadFile, Form
+from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from fastapi.staticfiles import StaticFiles
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy.exc import IntegrityError
-from ultralytics import YOLO
-from PIL import Image
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.orm import Session
 
-from . import models, database, auth, schemas
-from .database import engine, get_db, Base
-from .routers import products, auth_routes, staff, orders, dashboard_routes, clients, payments
-
-ml_models = {}
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    print("Servidor FastAPI encendido.")
-    print("Cargando cerebro IA de Swapp en segundo plano...")
-    
-    ml_models["yolo_detector"] = YOLO("modelos_ia/best.pt")
-    print("IA cargada y lista para detectar envases.")
-    
-    yield
-    
-    print("Apagando servidor, limpiando memoria de IA...")
-    ml_models.clear()
+from . import models, auth, schemas
+from .database import get_db
+from .routers import admin as admin_routers
+from .routers import public as public_routers
 
 entorno = os.getenv("ENVIRONMENT", "development")
 
@@ -44,19 +17,16 @@ if entorno == "production":
         title="Swapp API",
         docs_url=None,
         redoc_url=None,
-        openapi_url=None,
-        lifespan=lifespan
+        openapi_url=None
     )
 else:
     print("🚧 Iniciando en modo DESARROLLO: Documentación activada.")
-    app = FastAPI(title="Swapp API", lifespan=lifespan)
-
-os.makedirs("uploads", exist_ok=True)
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+    app = FastAPI(title="Swapp API")
 
 origins = [
     "http://localhost:3000",
     "http://localhost:3001",
+    "http://localhost:3002",
     "http://127.0.0.1:3000",
     "https://swapp.com.ar",
     "https://admin.swapp.com.ar",
@@ -71,13 +41,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(products.router)
-app.include_router(auth_routes.router)
-app.include_router(staff.router)
-app.include_router(orders.router)
-app.include_router(dashboard_routes.router)
-app.include_router(clients.router)
-app.include_router(payments.router)
+# Routers del Panel de Control (Admin)
+app.include_router(admin_routers.auth_routes.router)
+app.include_router(admin_routers.clients.router)
+app.include_router(admin_routers.dashboard_routes.router)
+app.include_router(admin_routers.orders.router)
+app.include_router(admin_routers.payments.router)
+app.include_router(admin_routers.products.router)
+app.include_router(admin_routers.staff.router)
+
+# Routers del Catálogo Público (B2C)
+app.include_router(public_routers.catalog.router)
 
 @app.post("/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
@@ -119,81 +93,3 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
         }
     )
     return {"access_token": access_token, "token_type": "bearer"}
-
-
-class EscaneoCreate(BaseModel):
-    user_id: int
-    producto_nombre: str
-    confianza: float
-    imagen_base64: str
-
-
-@app.post("/escaneos")
-def registrar_escaneo(
-    escaneo: EscaneoCreate,
-    db: Session = Depends(get_db),
-    current_user = Depends(auth.get_current_user)
-):
-    producto_db = db.query(models.Product).filter(models.Product.name == escaneo.producto_nombre).first()
-    product_id = producto_db.product_id if producto_db else None
-
-    if "," in escaneo.imagen_base64:
-        img_data_str = escaneo.imagen_base64.split(",")[1]
-    else:
-        img_data_str = escaneo.imagen_base64
-
-    img_bytes = base64.b64decode(img_data_str)
-
-    filename = f"{uuid.uuid4().hex}.jpg"
-    filepath = os.path.join("uploads", filename)
-
-    with open(filepath, "wb") as f:
-        f.write(img_bytes)
-
-    image_url = f"/uploads/{filename}"
-
-    nuevo_analisis = models.UserImageAnalysis(
-        user_id=escaneo.user_id,
-        product_id=product_id,
-        recognized_product_id=product_id,
-        confidence_score=escaneo.confianza,
-        image_url=image_url,
-        recognition_status="completed" if product_id else "no_match"
-    )
-
-    db.add(nuevo_analisis)
-    db.commit()
-    db.refresh(nuevo_analisis)
-
-    return {
-        "status": "success",
-        "analysis_id": nuevo_analisis.analysis_id,
-        "producto": escaneo.producto_nombre,
-        "imagen_guardada": image_url
-    }
-
-
-@app.post("/api/detectar-envase")
-async def detectar_envase(
-    file: UploadFile = File(...),
-    current_user = Depends(auth.get_current_user)
-):
-    image_bytes = await file.read()
-    image = Image.open(io.BytesIO(image_bytes))
-
-    model = ml_models["yolo_detector"]
-    results = model(image)
-
-    envases_detectados = []
-    for r in results:
-        for box in r.boxes:
-            class_id = int(box.cls[0])
-            nombre_envase = model.names[class_id]
-            confianza = float(box.conf[0])
-
-            envases_detectados.append({
-                "envase": nombre_envase,
-                "certeza": round(confianza * 100, 2)
-            })
-
-    return {"productos_detectados": envases_detectados}

@@ -1,30 +1,131 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+
+
+
+
+@theme {
+
+  --color-swapp-negro: #000000;
+
+  --color-swapp-azul-oscuro: #172638;
+
+  --color-swapp-azul-petroleo: #264B6B;
+
+  --color-swapp-azul-oceano: #85B2CC;
+
+  --color-swapp-verde-oscuro: #1D3D2B;
+
+  --color-swapp-verde-pastel: #3D7052;
+
+  --color-swapp-verde-menta: #8DC9A0;
+
+  --color-swapp-tiza-verdoso: #F2F6F8;
+
+  --color-swapp-blanco: #FFFFFF;
+
+
+
+  --color-background: var(--background);
+
+  --color-foreground: var(--foreground);
+
+}
+
+
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+
+  --background: #FFFFFF;
+
+  --foreground: #172638;
+
+  --scrollbar-thumb: #17263860;
+
+  --scrollbar-thumb-hover: #2F6F4E;
+
 }
+
+
+
+.dark {
+
+  --background: #10131B;
+
+  --foreground: #EDEAE5;
+
+  --scrollbar-thumb: #F6F8FF40;
+
+  --scrollbar-thumb-hover: #9BD6B3;
+
+}
+
+
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))) rgb(var(--background-start-rgb));
+
+  background: var(--background);
+
+  color: var(--foreground);
+
+  font-family: Arial, Helvetica, sans-serif;
+
 }
 
-.bg-swapp-gradient {
-  background: linear-gradient(to bottom,
-      theme('colors.swapp.tiza') 100%);
-}
 
-.hide-scrollbar::-webkit-scrollbar {
-  display: none;
-}
 
-.hide-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+@layer base {
+
+
+
+  * {
+
+    scrollbar-width: thin;
+
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+
+  }
+
+
+
+  ::-webkit-scrollbar {
+
+    width: 4px;
+
+    height: 4px;
+
+  }
+
+
+
+  ::-webkit-scrollbar-track {
+
+    background: transparent;
+
+  }
+
+
+
+  ::-webkit-scrollbar-thumb {
+
+    background-color: var(--scrollbar-thumb);
+
+    border-radius: 10px;
+
+    transition: background-color 0.2s ease-in-out;
+
+  }
+
+
+
+  ::-webkit-scrollbar-thumb:hover {
+
+    background-color: var(--scrollbar-thumb-hover);
+
+  }
+
 }

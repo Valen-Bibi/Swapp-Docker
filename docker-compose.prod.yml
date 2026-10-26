@@ -25,7 +25,7 @@ services:
 
   frontend:
     build:
-      context: ./swapp-admin-dashboard
+      context: ./swapp-frontend
       args:
         NEXT_PUBLIC_API_URL: "https://api.swapp.com.ar"
     container_name: swapp-frontend

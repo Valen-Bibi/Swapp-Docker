@@ -1,46 +1,75 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth, AuthProvider } from "@/context/AuthContext";
+import React, { useEffect, useState } from "react";
+import { CatalogService } from "@/services/product.service";
+import { PublicProduct } from "@/types/product";
+import { Loader2 } from "lucide-react";
+import ProductCard from "@/components/catalog/ProductCard";
 
-export default function LandingPage() {
-	const { isAuthenticated, isFirstTimeUser, isLoading } = useAuth();
-	const router = useRouter();
+export default function Home() {
+  const [products, setProducts] = useState<PublicProduct[]>([]);
+  const [loading, setLoading] = useState(true);
 
-	// Bandera extra para asegurar que el navegador ya cargó todo
-	const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    const loadCatalog = async () => {
+      try {
+        const data = await CatalogService.getProducts();
+        setProducts(data);
+      } catch (error) {
+        console.error("Error cargando el catálogo público:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadCatalog();
+  }, []);
 
-	useEffect(() => {
-		setIsMounted(true);
-	}, []);
+  return (
+    <div className="container mx-auto px-4 py-16 max-w-6xl flex flex-col gap-20">
+      {/* Sección Hero */}
+      <section className="text-center max-w-3xl mx-auto flex flex-col gap-6">
+        <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-swapp-azul-oscuro dark:text-swapp-tiza-verdoso">
+          Economía circular en{" "}
+          <span className="text-swapp-verde-pastel dark:text-swapp-verde-menta">
+            cada burbuja.
+          </span>
+        </h1>
+        <p className="text-lg md:text-xl opacity-80 leading-relaxed">
+          Somos tu plataforma de logística inversa. Ofrecemos máquinas
+          gasificadoras, cilindros de CO2 nuevos y un sistema de recambio a
+          domicilio simple y sustentable. Entregá tu envase vacío, recibí uno
+          lleno y cuidemos juntos el planeta.
+        </p>
+      </section>
 
-	useEffect(() => {
-		// 1. Si todavía está leyendo el localStorage o no se montó, no hacemos nada
-		if (!isMounted || isLoading) return;
+      {/* Catálogo */}
+      <section className="flex flex-col gap-8">
+        <div className="flex items-center justify-between border-b border-swapp-tiza-verdoso/20 pb-4">
+          <h2 className="text-2xl font-bold text-swapp-azul-oscuro dark:text-swapp-blanco">
+            Nuestro Catálogo
+          </h2>
+          <span className="text-sm opacity-60">
+            {products.length} {products.length === 1 ? "producto disponible" : "productos disponibles"}
+          </span>
+        </div>
 
-		// 2. Le damos un pequeño respiro de 100ms a Next.js para que termine sus
-		// tareas de desarrollo antes de disparar el push.
-		const redirectTimer = setTimeout(() => {
-			if (isAuthenticated) {
-				router.push("/hub");
-			} else if (isFirstTimeUser) {
-				router.push("/tutorial");
-			} else {
-				router.push("/login");
-			}
-		}, 100);
-
-		// Limpiamos el timer por seguridad
-		return () => clearTimeout(redirectTimer);
-	}, [isAuthenticated, isFirstTimeUser, isLoading, router, isMounted]);
-
-	// 3. Pantalla de carga mientras se resuelve la redirección
-	return (
-		<div className="fixed inset-0 bg-black flex items-center justify-center z-[70] overflow-hidden">
-			<div className="relative w-full h-full sm:w-[400px] sm:h-[850px] sm:max-h-[90vh] bg-swapp-negro sm:rounded-[32px] overflow-hidden flex flex-col items-center justify-center">
-				<div className="w-14 h-14 border-4 border-swapp-verde-pastel/30 border-t-swapp-verde-pastel rounded-full animate-spin drop-shadow-[0_0_10px_rgba(1,195,142,0.8)]"></div>
-			</div>
-		</div>
-	);
+        {loading ? (
+          <div className="flex items-center justify-center py-20 gap-3 text-swapp-azul-petroleo dark:text-swapp-verde-menta">
+            <Loader2 className="h-6 w-6 animate-spin" />
+            <span className="text-sm font-medium">Cargando catálogo...</span>
+          </div>
+        ) : products.length === 0 ? (
+          <div className="text-center py-16 rounded-2xl border border-swapp-azul-petroleo/10 bg-swapp-tiza-verdoso/20 dark:bg-swapp-azul-oscuro/20">
+            <p className="opacity-70">No hay productos publicados en este momento.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {products.map((p) => (
+              <ProductCard key={p.product_uuid} product={p} />
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
+  );
 }
