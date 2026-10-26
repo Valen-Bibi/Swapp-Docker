@@ -1,6 +1,6 @@
 import React from "react";
 import { LucideIcon } from "lucide-react";
-import { SwappToggle } from "@/components/ui/SwappToggle"; // Asumo que este ya existe en tu proyecto
+import { SwappToggle } from "@/components/ui/SwappToggle";
 
 interface GlassFilterToggleProps {
 	id: string;
