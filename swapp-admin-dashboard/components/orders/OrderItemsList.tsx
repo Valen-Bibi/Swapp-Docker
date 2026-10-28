@@ -36,20 +36,23 @@ const OrderItemRow = ({
 	const quantity = watch(`items.${index}.quantity`);
 	const expectedReturnQty = watch(`items.${index}.expected_return_qty`);
 	const requiresReturn = watch(`items.${index}.requires_return`);
-	const subtotal = watch(`items.${index}.subtotal`);
 	const campaignName = watch(`items.${index}.campaign_name`);
 
-	// NUEVO: Variables para controlar el Precio Manual Dual
+	// Variables de IVA y Precios Manuales
+	const taxRate = watch(`items.${index}.tax_rate`) || 0;
 	const isCustomPrice = watch(`items.${index}.is_custom_price`);
-	const unitPrice = watch(`items.${index}.unit_price`); // Usado para "Cilindro Nuevo"
-	const customRefillPrice = watch(`items.${index}.custom_refill_price`); // Usado para "Recarga"
+	const unitPrice = watch(`items.${index}.unit_price`);
+	const customRefillPrice = watch(`items.${index}.internal_unit_price`);
 
 	const selectedProduct = products.find((p) => p.product_id === productId);
 	const selectedVariant = selectedProduct?.variants?.find(
 		(v) => v.variant_id === variantId,
 	);
 
-	// --- BÚSQUEDA DEL PRODUCTO INTERNO (ENVASE) ---
+	// --- VALIDACIÓN DE STOCK (SOFT WARNING) ---
+	const stockAvailable = selectedVariant?.stock_quantity ?? 0;
+	const isOverStock = selectedVariant && quantity > stockAvailable;
+
 	const internalProduct = selectedProduct?.linked_internal_product_id
 		? products.find(
 				(p) => p.product_id === selectedProduct.linked_internal_product_id,
@@ -75,9 +78,11 @@ const OrderItemRow = ({
 		refillsCount = requiresReturn ? Math.min(Math.max(0, rawReturns), qty) : 0;
 		newsCount = qty - refillsCount;
 
-		const priceNew = Number(selectedVariant.price) || 0;
+		// APLICACIÓN DE IVA: Multiplicamos el precio del catálogo por la alícuota
+		const taxMultiplier = 1 + Number(taxRate) / 100;
+		const priceNew = (Number(selectedVariant.price) || 0) * taxMultiplier;
 		const priceRefill = internalVariant
-			? Number(internalVariant.price)
+			? Number(internalVariant.price) * taxMultiplier
 			: priceNew;
 
 		let dAmountNew = 0;
@@ -104,38 +109,46 @@ const OrderItemRow = ({
 		finalPriceNew = priceNew - dAmountNew;
 		finalPriceRefill = priceRefill - dAmountRefill;
 
-		calcSubtotal = newsCount * finalPriceNew + refillsCount * finalPriceRefill;
+		// Calculamos el subtotal bruto
+		const rawSubtotal =
+			newsCount * finalPriceNew + refillsCount * finalPriceRefill;
+
+		// REDONDEO POR CIENES
+		calcSubtotal = Math.round(rawSubtotal / 100) * 100;
 	}
 
 	useEffect(() => {
 		if (isCustomPrice) {
-			// MODO MANUAL: Calculamos el subtotal separando los precios custom ingresados
 			const currentUnitPrice = unitPrice || 0;
 			const currentRefillPrice = customRefillPrice || 0;
-			const customSubtotal =
+			let customSubtotal =
 				newsCount * currentUnitPrice + refillsCount * currentRefillPrice;
 
-			if (getValues(`items.${index}.subtotal`) !== customSubtotal) {
-				setValue(`items.${index}.subtotal`, customSubtotal, {
+			// REDONDEO POR CIENES MODO MANUAL
+			customSubtotal = Math.round(customSubtotal / 100) * 100;
+
+			if (getValues(`items.${index}.subtotal_price`) !== customSubtotal) {
+				setValue(`items.${index}.subtotal_price`, customSubtotal, {
 					shouldValidate: true,
 					shouldDirty: true,
 				});
+				setValue(`items.${index}.subtotal`, customSubtotal);
 			}
 
 			if (getValues(`items.${index}.campaign_name`)) {
 				setValue(`items.${index}.campaign_name`, null);
 			}
 		} else if (selectedProduct && selectedVariant) {
-			// MODO AUTOMÁTICO: Respetamos la lógica del catálogo
-			const currentSubtotal = getValues(`items.${index}.subtotal`);
+			const currentSubtotal = getValues(`items.${index}.subtotal_price`);
 			if (currentSubtotal !== calcSubtotal) {
-				setValue(`items.${index}.subtotal`, calcSubtotal, {
+				setValue(`items.${index}.subtotal_price`, calcSubtotal, {
 					shouldValidate: true,
 					shouldDirty: true,
 				});
-				// Mantenemos sincronizados los valores manuales por si el usuario decide editar
+				setValue(`items.${index}.subtotal`, calcSubtotal);
+
 				setValue(`items.${index}.unit_price`, finalPriceNew);
-				setValue(`items.${index}.custom_refill_price`, finalPriceRefill);
+				setValue(`items.${index}.internal_unit_price`, finalPriceRefill);
 				setValue(`items.${index}.campaign_name`, dName);
 			}
 		}
@@ -161,6 +174,8 @@ const OrderItemRow = ({
 	const inputStyles =
 		"w-full rounded-md border border-swapp-tiza-verdoso dark:border-swapp-azul-petroleo bg-swapp-blanco dark:bg-swapp-azul-oscuro px-3 py-2 text-sm text-swapp-azul-oscuro dark:text-swapp-tiza-verdoso outline-none focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta transition-colors disabled:opacity-50";
 
+	const currentSubtotalDisplay = watch(`items.${index}.subtotal_price`) || 0;
+
 	return (
 		<tr className="border-b border-swapp-tiza-verdoso/40 dark:border-swapp-azul-petroleo/40 last:border-0 transition-colors duration-200 hover:bg-swapp-blanco/60 dark:hover:bg-swapp-azul-petroleo/20">
 			<td className="px-4 py-3">
@@ -180,16 +195,22 @@ const OrderItemRow = ({
 								);
 								const currentQty = getValues(`items.${index}.quantity`) || 1;
 
+								const productTaxRate = Number(
+									(product as any)?.tax_class?.rate ??
+										(product as any)?.tax_rate ??
+										0,
+								);
+
 								let autoVariantId = null;
 								if (product?.variants?.length === 1) {
 									autoVariantId = product.variants[0].variant_id;
 								}
 
 								setValue(`items.${index}.variant_id`, autoVariantId);
+								setValue(`items.${index}.tax_rate`, productTaxRate);
 								setValue(`items.${index}.discount_id`, null);
 								setValue(`items.${index}.campaign_name`, null);
 								setValue(`items.${index}.discount_amount`, 0);
-
 								setValue(`items.${index}.is_custom_price`, false);
 
 								if (
@@ -248,9 +269,10 @@ const OrderItemRow = ({
 								Variante...
 							</option>
 							{selectedProduct?.variants?.map((v) => {
-								const pNew = Number(v.price) || 0;
+								const taxMult = 1 + taxRate / 100;
+								const pNew = (Number(v.price) || 0) * taxMult;
 								const pRefill = internalVariant
-									? Number(internalVariant.price)
+									? Number(internalVariant.price) * taxMult
 									: 0;
 								const hasRefill =
 									pRefill > 0 &&
@@ -279,26 +301,41 @@ const OrderItemRow = ({
 						control={control}
 						name={`items.${index}.quantity`}
 						render={({ field }) => (
-							<input
-								type="number"
-								min="1"
-								className={`${inputStyles} w-20 text-center`}
-								value={field.value || ""}
-								onChange={(e) => {
-									const newQty = parseInt(e.target.value) || 0;
-									field.onChange(newQty);
+							<div className="flex flex-col gap-1.5 items-start">
+								<input
+									type="number"
+									min="1"
+									className={`${inputStyles} w-20 text-center ${
+										isOverStock
+											? "!border-amber-500 !text-amber-600 dark:!text-amber-400 focus:!ring-amber-500 bg-amber-500/5"
+											: ""
+									}`}
+									value={field.value || ""}
+									onChange={(e) => {
+										const newQty = parseInt(e.target.value) || 0;
+										field.onChange(newQty);
 
-									if (requiresReturn) {
-										// Ajustamos inteligentemente el retorno si superaba la nueva cantidad
-										const currentReturns = getValues(
-											`items.${index}.expected_return_qty`,
-										);
-										if (currentReturns > newQty) {
-											setValue(`items.${index}.expected_return_qty`, newQty);
+										if (requiresReturn) {
+											const currentReturns = getValues(
+												`items.${index}.expected_return_qty`,
+											);
+											if (currentReturns > newQty) {
+												setValue(`items.${index}.expected_return_qty`, newQty);
+											}
 										}
-									}
-								}}
-							/>
+									}}
+								/>
+
+								{/* ALERTA DE STOCK NEGATIVO (SOFT WARNING) */}
+								{isOverStock && (
+									<SwappTooltip text="El pedido dejará el inventario en negativo">
+										<span className="flex items-center gap-1 w-max text-[9px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+											<AlertCircle className="h-2.5 w-2.5" />
+											Quedan {stockAvailable}
+										</span>
+									</SwappTooltip>
+								)}
+							</div>
 						)}
 					/>
 
@@ -335,12 +372,10 @@ const OrderItemRow = ({
 
 			<td className="px-4 py-3 align-top min-w-[200px]">
 				<div className="flex flex-col gap-1.5">
-					{/* INTERFAZ DE PRECIO: MODO MANUAL DUAL VS MODO CATÁLOGO */}
 					{isCustomPrice ? (
 						<div className="flex flex-col gap-2 bg-amber-500/5 dark:bg-amber-500/10 p-2 rounded-lg border border-amber-500/20">
 							<div className="flex items-start justify-between gap-2">
 								<div className="flex flex-col gap-2 w-full">
-									{/* INPUT PRECIO NUEVO */}
 									{newsCount > 0 && (
 										<div className="flex items-center gap-2">
 											<span className="text-[10px] uppercase font-bold text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 w-16">
@@ -370,7 +405,6 @@ const OrderItemRow = ({
 										</div>
 									)}
 
-									{/* INPUT PRECIO RECARGA */}
 									{refillsCount > 0 && (
 										<div className="flex items-center gap-2">
 											<span className="text-[10px] uppercase font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta w-16">
@@ -381,7 +415,7 @@ const OrderItemRow = ({
 											</span>
 											<Controller
 												control={control}
-												name={`items.${index}.custom_refill_price`}
+												name={`items.${index}.internal_unit_price`}
 												render={({ field }) => (
 													<input
 														type="number"
@@ -420,7 +454,7 @@ const OrderItemRow = ({
 									Manual
 								</span>
 								<span className="text-xs font-bold text-swapp-azul-oscuro dark:text-swapp-blanco">
-									Subtotal: {formatCurrency(subtotal || 0)}
+									Subtotal: {formatCurrency(currentSubtotalDisplay)}
 								</span>
 							</div>
 						</div>
@@ -428,7 +462,7 @@ const OrderItemRow = ({
 						<>
 							<div className="flex items-center gap-2">
 								<span className="text-sm font-bold text-swapp-azul-oscuro dark:text-swapp-blanco">
-									{formatCurrency(subtotal || 0)}
+									{formatCurrency(currentSubtotalDisplay)}
 								</span>
 								<SwappTooltip text="Modificar precios manualmente">
 									<button
@@ -437,7 +471,7 @@ const OrderItemRow = ({
 											setValue(`items.${index}.is_custom_price`, true);
 											setValue(`items.${index}.unit_price`, finalPriceNew);
 											setValue(
-												`items.${index}.custom_refill_price`,
+												`items.${index}.internal_unit_price`,
 												finalPriceRefill,
 											);
 										}}
@@ -447,15 +481,23 @@ const OrderItemRow = ({
 								</SwappTooltip>
 							</div>
 
-							{campaignName && (
-								<span className="inline-flex items-center gap-1 text-[9px] font-medium text-swapp-verde-oscuro dark:text-swapp-verde-menta bg-swapp-verde-pastel/20 dark:bg-swapp-verde-menta/10 px-1.5 py-0.5 rounded uppercase tracking-wider w-max mt-0.5 border border-swapp-verde-pastel/20 dark:border-swapp-verde-menta/20">
-									<Tag className="h-2.5 w-2.5" />
-									{campaignName}
-								</span>
-							)}
+							<div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+								{taxRate > 0 && (
+									<span className="text-[10px] text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50 font-medium bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/20 px-1.5 py-0.5 rounded border border-swapp-azul-petroleo/10">
+										IVA {Number(taxRate)}%
+									</span>
+								)}
+
+								{campaignName && (
+									<span className="inline-flex items-center gap-1 text-[9px] font-medium text-swapp-verde-oscuro dark:text-swapp-verde-menta bg-swapp-verde-pastel/20 dark:bg-swapp-verde-menta/10 px-1.5 py-0.5 rounded uppercase tracking-wider w-max border border-swapp-verde-pastel/20 dark:border-swapp-verde-menta/20">
+										<Tag className="h-2.5 w-2.5" />
+										{campaignName}
+									</span>
+								)}
+							</div>
 
 							{selectedVariant && quantity > 0 && (
-								<div className="flex flex-col mt-1 gap-0.5 text-[10px] font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/20 p-1.5 rounded border border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50 w-max">
+								<div className="flex flex-col mt-1.5 gap-0.5 text-[10px] font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/20 p-1.5 rounded border border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50 w-max">
 									{refillsCount > 0 && (
 										<span className="flex justify-between gap-3">
 											<span>
@@ -563,7 +605,10 @@ export default function OrderItemsList() {
 							variant_id: null,
 							quantity: 1,
 							unit_price: 0,
+							internal_unit_price: 0,
+							subtotal_price: 0,
 							subtotal: 0,
+							tax_rate: 0,
 							requires_return: false,
 							expected_return_qty: 0,
 							discount_id: null,
@@ -572,7 +617,6 @@ export default function OrderItemsList() {
 							internal_product_id: null,
 							internal_variant_id: null,
 							is_custom_price: false,
-							custom_refill_price: 0, // <- El nuevo campo por defecto
 						})
 					}
 					className="inline-flex items-center gap-2 rounded-lg bg-swapp-verde-oscuro dark:bg-swapp-verde-menta px-3 py-1.5 text-xs font-medium text-swapp-blanco dark:text-swapp-azul-oscuro hover:bg-swapp-verde-pastel dark:hover:bg-swapp-tiza-verdoso transition-colors disabled:opacity-50">

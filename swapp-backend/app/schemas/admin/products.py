@@ -136,7 +136,9 @@ class ProductCatalogResponse(BaseModel):
     description: Optional[str] = None
     short_description: Optional[str] = None
     category_id: Optional[int] = None
+    
     tax_class_id: Optional[int] = None
+    tax_class: Optional[TaxClassResponse] = None
 
     brand_id: Optional[int] = None
     brand: Optional[BrandResponse] = None
@@ -145,7 +147,6 @@ class ProductCatalogResponse(BaseModel):
     media: List[ProductMediaResponse] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
-
 class ProductCreate(BaseModel):
     name: str
     slug: str

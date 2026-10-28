@@ -17,6 +17,7 @@ export const createOrderSchema = z.object({
   client_id: z.number().min(1, "Debes seleccionar un cliente válido"),
   delivery_address: z.string().min(5, "Dirección obligatoria"),
   delivery_zone: z.string().or(z.literal("")).nullable().optional(),
+  order_date: z.string().optional(),
   scheduled_delivery_date: z.string().or(z.literal("")).nullable().optional(),
   logistics_notes: z.string().or(z.literal("")).nullable().optional(),
   total_amount: z.number().min(0),

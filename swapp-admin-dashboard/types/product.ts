@@ -50,6 +50,7 @@ export interface Product {
   category_id?: number | null;
   brand_id?: number | null;
   tax_class_id?: number | null;
+  tax_class?: TaxClass | null;
   brand?: Brand | null;
   
   short_description?: string | null;

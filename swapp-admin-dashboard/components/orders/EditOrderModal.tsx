@@ -13,6 +13,15 @@ interface EditOrderModalProps {
 	onSuccess: () => void;
 }
 
+// Convierte una fecha ISO a formato YYYY-MM-DDTHH:mm respetando el huso horario local
+const toLocalDatetimeInput = (isoString?: string | null) => {
+	if (!isoString) return "";
+	const date = new Date(isoString);
+	if (isNaN(date.getTime())) return "";
+	const offsetMs = date.getTimezoneOffset() * 60000;
+	return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
+};
+
 export default function EditOrderModal({
 	isOpen,
 	onClose,
@@ -28,6 +37,7 @@ export default function EditOrderModal({
 		defaultValues: {
 			delivery_address: "",
 			delivery_zone: "",
+			order_date: "",
 			scheduled_delivery_date: "",
 			logistics_notes: "",
 		},
@@ -49,9 +59,10 @@ export default function EditOrderModal({
 			reset({
 				delivery_address: order.delivery_address || "",
 				delivery_zone: order.delivery_zone || "",
-				scheduled_delivery_date: order.scheduled_delivery_date
-					? new Date(order.scheduled_delivery_date).toISOString().slice(0, 16)
-					: "",
+				order_date: toLocalDatetimeInput(order.order_date || order.created_at),
+				scheduled_delivery_date: toLocalDatetimeInput(
+					order.scheduled_delivery_date,
+				),
 				logistics_notes: order.logistics_notes || "",
 			});
 		}
@@ -65,6 +76,9 @@ export default function EditOrderModal({
 			const payload = {
 				...data,
 				delivery_zone: data.delivery_zone || null,
+				order_date: data.order_date
+					? new Date(data.order_date).toISOString()
+					: undefined,
 				scheduled_delivery_date: data.scheduled_delivery_date
 					? new Date(data.scheduled_delivery_date).toISOString()
 					: null,
@@ -76,17 +90,15 @@ export default function EditOrderModal({
 			onSuccess();
 			onClose();
 		} catch (error: any) {
-			// PARCHE ANTI-PYDANTIC
 			const errDetail = error.response?.data?.detail;
 			const errorMessage = Array.isArray(errDetail)
 				? errDetail.map((e: any) => e.msg).join(", ")
-				: (errDetail || "Error al actualizar el pedido");
+				: errDetail || "Error al actualizar el pedido";
 
 			toast.error(errorMessage, { id: toastId });
 		}
 	};
 
-	// CLASES ESTANDARIZADAS GLASSMORPHISM
 	const inputBaseClass =
 		"w-full rounded-md border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo/50 bg-transparent px-3 py-2 text-sm text-swapp-azul-oscuro dark:text-swapp-blanco outline-none transition-all focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta shadow-sm placeholder:text-swapp-azul-petroleo/40 dark:placeholder:text-swapp-tiza-verdoso/40";
 	const labelBaseClass =
@@ -100,7 +112,7 @@ export default function EditOrderModal({
 					<div>
 						<h2 className="text-xl font-bold text-swapp-azul-oscuro dark:text-swapp-blanco flex items-center gap-2">
 							<MapPin className="h-5 w-5 text-swapp-verde-oscuro dark:text-swapp-verde-menta" />
-							Editar Logística
+							Editar Logística y Fechas
 						</h2>
 						<p className="text-xs font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 mt-1 pl-7 transition-colors">
 							{order.client?.first_name} {order.client?.last_name} •{" "}
@@ -121,9 +133,10 @@ export default function EditOrderModal({
 						id="edit-order-form"
 						onSubmit={handleSubmit(onSubmit)}
 						className="flex flex-col gap-5 [&_input]:!bg-transparent [&_textarea]:!bg-transparent">
-						
 						<div>
-							<label className={labelBaseClass}>Dirección de Entrega <span className="text-red-500">*</span></label>
+							<label className={labelBaseClass}>
+								Dirección de Entrega <span className="text-red-500">*</span>
+							</label>
 							<input
 								type="text"
 								{...register("delivery_address", { required: true })}
@@ -131,18 +144,29 @@ export default function EditOrderModal({
 							/>
 						</div>
 
-						<div className="grid grid-cols-2 gap-4">
+						<div>
+							<label className={labelBaseClass}>Zona / Localidad</label>
+							<input
+								type="text"
+								{...register("delivery_zone")}
+								className={inputBaseClass}
+							/>
+						</div>
+
+						<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 							<div>
-								<label className={labelBaseClass}>Zona / Localidad</label>
+								<label className={labelBaseClass}>
+									Fecha del Pedido (Comercial)
+								</label>
 								<input
-									type="text"
-									{...register("delivery_zone")}
+									type="datetime-local"
+									{...register("order_date")}
 									className={inputBaseClass}
 								/>
 							</div>
 
 							<div>
-								<label className={labelBaseClass}>Fecha y Hora</label>
+								<label className={labelBaseClass}>Entrega Programada</label>
 								<input
 									type="datetime-local"
 									{...register("scheduled_delivery_date")}

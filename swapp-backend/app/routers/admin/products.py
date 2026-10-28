@@ -234,7 +234,8 @@ def get_all_products_admin(
                      joinedload(models.Product.discounts), 
                      joinedload(models.Product.media),
                      joinedload(models.Product.variants),
-                     joinedload(models.Product.related_to)
+                     joinedload(models.Product.related_to),
+                     joinedload(models.Product.tax_class)
                  )\
                  .order_by(models.Product.name)\
                  .all()

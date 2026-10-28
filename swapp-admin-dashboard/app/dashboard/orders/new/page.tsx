@@ -15,6 +15,12 @@ import { OrderService } from "@/services/order.service";
 import PageHeader from "@/components/layout/PageHeader";
 import OrderForm from "@/components/orders/OrderForm";
 
+const getCurrentLocalDatetime = () => {
+	const now = new Date();
+	const offsetMs = now.getTimezoneOffset() * 60000;
+	return new Date(now.getTime() - offsetMs).toISOString().slice(0, 16);
+};
+
 export default function NewOrderPage() {
 	const router = useRouter();
 
@@ -24,39 +30,50 @@ export default function NewOrderPage() {
 			client_id: 0,
 			delivery_address: "",
 			delivery_zone: "",
+			order_date: getCurrentLocalDatetime(),
 			scheduled_delivery_date: "",
 			logistics_notes: "",
-			total_amount: 0,
+			total_price: 0,
 			items: [],
-		},
+		} as any,
 	});
 
 	const onSubmit = async (data: CreateOrderValues) => {
 		const toastId = toast.loading("Registrando pedido transaccional...");
-		
+
 		try {
-			// SANITIZACIÓN: Si la fecha o las notas están vacías, enviamos 'null'
-			// para que FastAPI y la base de datos no rechacen la petición (Error 422).
+			const rawData = data as any;
 			const payload = {
-				...data,
-				scheduled_delivery_date: data.scheduled_delivery_date || null,
-				logistics_notes: data.logistics_notes || null,
+				...rawData,
+				total_price: Number(rawData.total_price ?? rawData.total_amount ?? 0),
+				order_date: rawData.order_date
+					? new Date(rawData.order_date).toISOString()
+					: new Date().toISOString(),
+				scheduled_delivery_date: rawData.scheduled_delivery_date
+					? new Date(rawData.scheduled_delivery_date).toISOString()
+					: null,
+				logistics_notes: rawData.logistics_notes || null,
+				items: (rawData.items || []).map((item: any) => ({
+					...item,
+					subtotal_price: Number(item.subtotal_price ?? item.subtotal ?? 0),
+					internal_unit_price: Number(
+						item.internal_unit_price ?? item.custom_refill_price ?? 0,
+					),
+				})),
 			};
 
 			await OrderService.createAdminOrder(payload);
-			
+
 			toast.success("Pedido creado y stock reservado exitosamente", {
 				id: toastId,
 			});
 			router.push("/dashboard/orders");
 		} catch (error: any) {
-			// PARCHE ANTI-PYDANTIC
 			const errDetail = error.response?.data?.detail;
 			const errorMessage = Array.isArray(errDetail)
 				? errDetail.map((e: any) => e.msg).join(", ")
-				: (errDetail || "Error al registrar el pedido");
+				: errDetail || "Error al registrar el pedido";
 
-			// ACÁ FALTABA EL ID: Esto asegura que el mensaje de error reemplace al de "Cargando..."
 			toast.error(errorMessage, { id: toastId });
 		}
 	};

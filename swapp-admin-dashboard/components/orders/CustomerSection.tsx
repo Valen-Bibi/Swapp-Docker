@@ -101,7 +101,7 @@ export default function CustomerSection() {
 			<div>
 				<h3 className="text-lg font-bold text-swapp-azul-oscuro dark:text-swapp-blanco border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50 pb-3 mb-5 flex items-center gap-2">
 					<MapPin className="h-5 w-5 text-swapp-verde-oscuro dark:text-swapp-verde-menta" />
-					Logística de Entrega
+					Logística y Fechas
 				</h3>
 
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -116,7 +116,7 @@ export default function CustomerSection() {
 						{renderError("delivery_address")}
 					</div>
 
-					<div className="flex flex-col">
+					<div className="flex flex-col md:col-span-2">
 						<label className={labelBaseClass}>Zona / Localidad</label>
 						<input
 							type="text"
@@ -130,7 +130,20 @@ export default function CustomerSection() {
 					<div className="flex flex-col">
 						<label className={labelBaseClass}>
 							<Calendar className="h-4 w-4 text-swapp-verde-oscuro dark:text-swapp-verde-menta" />
-							Fecha Programada (Opcional)
+							Fecha del Pedido *
+						</label>
+						<input
+							type="datetime-local"
+							className={inputBaseClass}
+							{...register("order_date")}
+						/>
+						{renderError("order_date")}
+					</div>
+
+					<div className="flex flex-col">
+						<label className={labelBaseClass}>
+							<Calendar className="h-4 w-4 text-swapp-verde-oscuro dark:text-swapp-verde-menta" />
+							Entrega Programada (Opcional)
 						</label>
 						<input
 							type="datetime-local"

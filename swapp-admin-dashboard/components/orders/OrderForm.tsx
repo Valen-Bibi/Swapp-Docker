@@ -16,18 +16,25 @@ export default function OrderForm() {
 
 	const items = watch("items") || [];
 
-	const totalAmount = items.reduce(
-		(acc: number, item: any) => acc + (Number(item.subtotal) || 0),
+	// Sumatoria de todos los subtotales redondeados de los ítems
+	let totalPrice = items.reduce(
+		(acc: number, item: any) =>
+			acc + (Number(item.subtotal_price ?? item.subtotal) || 0),
 		0,
 	);
 
+	// REDONDEO POR CIENES DEL TOTAL GENERAL (Por si acaso quedó algún residuo)
+	totalPrice = Math.round(totalPrice / 100) * 100;
+
 	// Inyectamos silenciosamente el total en el estado del formulario
 	useEffect(() => {
-		setValue("total_amount", totalAmount, {
+		setValue("total_price", totalPrice, {
 			shouldValidate: true,
 			shouldDirty: true,
 		});
-	}, [totalAmount, setValue]);
+		// Retrocompatibilidad con esquemas viejos que buscan total_amount
+		setValue("total_amount", totalPrice);
+	}, [totalPrice, setValue]);
 
 	return (
 		<div className="flex flex-col gap-8">
@@ -46,13 +53,13 @@ export default function OrderForm() {
 						Total a Cobrar
 					</span>
 					<span className="text-2xl font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta">
-						{formatCurrency(totalAmount)}
+						{formatCurrency(totalPrice)}
 					</span>
 				</div>
 
 				<button
 					type="submit"
-					disabled={isSubmitting || totalAmount === 0}
+					disabled={isSubmitting || totalPrice === 0}
 					className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-swapp-verde-oscuro dark:bg-swapp-verde-menta px-6 py-3 text-sm font-bold text-swapp-blanco dark:text-swapp-azul-oscuro hover:bg-swapp-verde-pastel dark:hover:bg-swapp-tiza-verdoso transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg">
 					{isSubmitting ? (
 						<>

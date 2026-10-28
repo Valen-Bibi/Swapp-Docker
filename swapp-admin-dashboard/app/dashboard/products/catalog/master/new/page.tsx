@@ -120,11 +120,12 @@ export default function NewProductWizard() {
 
 	useEffect(() => {
 		const loadAttributes = async () => {
+			setCustomAttributes({});
+			setCustomVariantAttributes({});
+
 			if (!formData.category_id) {
 				setStructuralAttributes([]);
 				setVariantAttributes([]);
-				setCustomAttributes({});
-				setCustomVariantAttributes({});
 				return;
 			}
 			setIsLoadingPim(true);
@@ -139,19 +140,6 @@ export default function NewProductWizard() {
 						(g: any) => g.attribute_id === linked.attribute_id,
 					);
 					return { ...linked, values: globalAttr ? globalAttr.values : [] };
-				});
-
-				const globalVariants = globalAttrs.filter((g: any) => g.is_variant);
-				globalVariants.forEach((gv: any) => {
-					if (
-						!enrichedAttrs.some((e: any) => e.attribute_id === gv.attribute_id)
-					) {
-						enrichedAttrs.unshift({
-							...gv,
-							is_required: true,
-							values: gv.values || [],
-						});
-					}
 				});
 
 				setStructuralAttributes(

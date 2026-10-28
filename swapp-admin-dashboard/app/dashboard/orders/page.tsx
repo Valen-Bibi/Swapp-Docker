@@ -173,8 +173,11 @@ export default function OrdersPage() {
 		handleSort,
 	} = useTableSort(filteredOrders, {
 		client: (o) => `${o.client?.first_name} ${o.client?.last_name}`,
-		date: (o) => new Date(o.scheduled_delivery_date || o.created_at).getTime(),
-		total: (o) => o.total_amount,
+		date: (o) =>
+			new Date(
+				o.scheduled_delivery_date || o.order_date || o.created_at,
+			).getTime(),
+		total: (o) => o.total_price ?? o.total_amount ?? 0,
 		status: (o) => o.status,
 	});
 
@@ -329,6 +332,9 @@ export default function OrdersPage() {
 								"",
 							);
 
+							const orderTotalPrice = Number(
+								order.total_price ?? order.total_amount ?? 0,
+							);
 							const activePayments =
 								order.payments?.filter(
 									(p: any) => p.payment_status === "completed",
@@ -337,8 +343,12 @@ export default function OrdersPage() {
 								(acc: number, curr: any) => acc + Number(curr.amount),
 								0,
 							);
-							const remainingDebt = Number(order.total_amount) - totalPaid;
+							const remainingDebt = Number(
+								(orderTotalPrice - totalPaid).toFixed(2),
+							);
 							const isFullyPaid = remainingDebt <= 0;
+
+							const displayOrderDate = order.order_date || order.created_at;
 
 							const baseRowClasses =
 								"border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50 last:border-0 transition-colors duration-200";
@@ -400,8 +410,8 @@ export default function OrdersPage() {
 
 												<div className="flex flex-col gap-0.5 mt-1">
 													<span className="text-[11px] text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50 font-medium">
-														Creado:{" "}
-														{new Date(order.created_at).toLocaleDateString(
+														Pedido:{" "}
+														{new Date(displayOrderDate).toLocaleDateString(
 															"es-AR",
 														)}
 													</span>
@@ -429,7 +439,7 @@ export default function OrdersPage() {
 										<td className="px-6 py-4">
 											<div className="flex flex-col gap-2">
 												<span className="font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta text-lg">
-													{formatCurrency(order.total_amount)}
+													{formatCurrency(orderTotalPrice)}
 												</span>
 
 												<div className="flex flex-wrap gap-1.5 mt-0.5">
@@ -543,7 +553,7 @@ export default function OrdersPage() {
 																	Producto y SKU
 																</th>
 																<th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-azul-oceano/60 w-1/5 text-center">
-																	Cantidad
+																	Cantidad y Detalle
 																</th>
 																<th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-azul-oceano/60 w-1/5">
 																	Logística Inversa
@@ -562,33 +572,85 @@ export default function OrdersPage() {
 																	(v) => v.variant_id === item.variant_id,
 																);
 
+																const itemSubtotalPrice = Number(
+																	item.subtotal_price ?? item.subtotal ?? 0,
+																);
+																const refillsQty = item.requires_return
+																	? Math.min(
+																			Math.max(
+																				0,
+																				item.expected_return_qty || 0,
+																			),
+																			item.quantity,
+																		)
+																	: 0;
+																const newsQty = item.quantity - refillsQty;
+																const hasMixedOrRefill =
+																	refillsQty > 0 &&
+																	Number(item.internal_unit_price) > 0;
+
 																return (
 																	<tr
 																		key={idx}
 																		className="border-b border-swapp-azul-petroleo/5 dark:border-swapp-azul-petroleo/20 last:border-0 hover:bg-swapp-blanco/60 dark:hover:bg-swapp-azul-petroleo/20">
 																		<td className="px-4 py-3">
-																			<span className="font-bold text-swapp-azul-oscuro dark:text-swapp-blanco block">
-																				{productInfo?.name ||
-																					`Producto ID: ${item.product_id}`}
-																				{(productInfo as any)?.model &&
-																					` - ${(productInfo as any).model}`}
-																				{variantInfo?.variant_attributes &&
-																					Object.keys(
-																						variantInfo.variant_attributes,
-																					).length > 0 &&
-																					` - ${Object.values(variantInfo.variant_attributes).join(" / ")}`}
-																			</span>
-																			{item.variant_id && (
-																				<span className="font-mono font-medium text-[10px] text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60 mt-0.5 block">
-																					SKU:{" "}
-																					{variantInfo?.sku ||
-																						`Var ID: ${item.variant_id}`}
+																			<div className="flex items-center gap-2">
+																				<span className="font-bold text-swapp-azul-oscuro dark:text-swapp-blanco block">
+																					{productInfo?.name ||
+																						`Producto ID: ${item.product_id}`}
+																					{(productInfo as any)?.model &&
+																						` - ${(productInfo as any).model}`}
+																					{variantInfo?.variant_attributes &&
+																						Object.keys(
+																							variantInfo.variant_attributes,
+																						).length > 0 &&
+																						` - ${Object.values(variantInfo.variant_attributes).join(" / ")}`}
 																				</span>
-																			)}
+																				{item.is_custom_price && (
+																					<span className="text-[9px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+																						Manual
+																					</span>
+																				)}
+																			</div>
+																			<div className="flex items-center gap-2 mt-0.5">
+																				{item.variant_id && (
+																					<span className="font-mono font-medium text-[10px] text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60">
+																						SKU:{" "}
+																						{variantInfo?.sku ||
+																							`Var ID: ${item.variant_id}`}
+																					</span>
+																				)}
+																				{item.tax_rate !== undefined && (
+																					<span className="text-[10px] text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50">
+																						• IVA {Number(item.tax_rate)}%
+																					</span>
+																				)}
+																			</div>
 																		</td>
 																		<td className="px-4 py-3 text-center font-bold text-swapp-azul-petroleo dark:text-swapp-tiza-verdoso">
-																			{item.quantity} x{" "}
-																			{formatCurrency(item.unit_price)}
+																			{hasMixedOrRefill ? (
+																				<div className="flex flex-col items-center gap-0.5 text-[11px]">
+																					{newsQty > 0 && (
+																						<span>
+																							{newsQty} nuevo
+																							{newsQty > 1 ? "s" : ""} x{" "}
+																							{formatCurrency(item.unit_price)}
+																						</span>
+																					)}
+																					<span className="text-swapp-verde-oscuro dark:text-swapp-verde-menta">
+																						{refillsQty} recarga
+																						{refillsQty > 1 ? "s" : ""} x{" "}
+																						{formatCurrency(
+																							item.internal_unit_price,
+																						)}
+																					</span>
+																				</div>
+																			) : (
+																				<span>
+																					{item.quantity} x{" "}
+																					{formatCurrency(item.unit_price)}
+																				</span>
+																			)}
 																		</td>
 																		<td className="px-4 py-3">
 																			{item.requires_return ? (
@@ -606,7 +668,7 @@ export default function OrdersPage() {
 																			)}
 																		</td>
 																		<td className="px-4 py-3 text-right font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta">
-																			{formatCurrency(item.subtotal)}
+																			{formatCurrency(itemSubtotalPrice)}
 																		</td>
 																	</tr>
 																);

@@ -65,22 +65,15 @@ export default function NewVariantModal({
 
 				const variantLinkedAttrs = linkedAttrs.filter((l: any) => l.is_variant);
 
-				// --- NUEVA LÓGICA: INYECCIÓN DE COLOR GLOBAL ---
 				const colorAttr = globalAttrs.find(
 					(g: any) => g.name.toLowerCase() === "color" && g.is_variant,
 				);
-				if (
-					colorAttr &&
-					!variantLinkedAttrs.some(
-						(l: any) => l.attribute_id === colorAttr.attribute_id,
-					)
-				) {
-					// Lo insertamos al principio de los atributos para que siempre se renderice
+				{
 					variantLinkedAttrs.unshift({
 						attribute_id: colorAttr.attribute_id,
 						name: colorAttr.name,
 						is_variant: true,
-						is_required: false, // Opcional, para no bloquear productos que no lleven color
+						is_required: false,
 					});
 				}
 

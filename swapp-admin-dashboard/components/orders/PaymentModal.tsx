@@ -64,15 +64,15 @@ export default function PaymentModal({
 	}, [isOpen, onClose]);
 
 	// --- CÁLCULOS DE TESORERÍA ---
-	const totalAmount = Number(order?.total_amount || 0);
+	const totalPrice = Number(order?.total_price ?? order?.total_amount ?? 0);
 	const activePayments =
 		order?.payments?.filter((p: any) => p.payment_status === "completed") || [];
 	const totalPaid = activePayments.reduce(
 		(acc: number, curr: any) => acc + Number(curr.amount),
 		0,
 	);
-	// Redondeo de seguridad para evitar errores de coma flotante (ej: 0.000000000001)
-	const remainingDebt = Number((totalAmount - totalPaid).toFixed(2));
+	// Redondeo de seguridad para evitar errores de coma flotante
+	const remainingDebt = Number((totalPrice - totalPaid).toFixed(2));
 	const isFullyPaid = remainingDebt <= 0;
 
 	// Pre-cargamos el input con el monto faltante al abrir el modal
@@ -111,7 +111,7 @@ export default function PaymentModal({
 		// 3. Separamos enteros de decimales (limitado a 2 decimales)
 		const parts = val.split(",");
 		let integerPart = parts[0];
-		let decimalPart = parts.length > 1 ? "," + parts[1].substring(0, 2) : "";
+		const decimalPart = parts.length > 1 ? "," + parts[1].substring(0, 2) : "";
 
 		// 4. Formateamos la parte entera con el estándar argentino (puntos para miles)
 		if (integerPart) {
@@ -238,7 +238,7 @@ export default function PaymentModal({
 									Total Pedido:
 								</span>
 								<span className="font-bold text-swapp-azul-oscuro dark:text-swapp-blanco">
-									{formatCurrency(totalAmount)}
+									{formatCurrency(totalPrice)}
 								</span>
 							</div>
 							<div className="flex justify-between items-center text-sm">
