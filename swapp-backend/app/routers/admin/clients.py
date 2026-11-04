@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
 from typing import List
 from uuid import UUID
@@ -16,26 +16,39 @@ def create_client(
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
-    existing_client = db.query(models.Client).filter(
-        models.Client.whatsapp_number == client_data.whatsapp_number
-    ).first()
-    
-    if existing_client:
-        raise HTTPException(
-            status_code=400, 
-            detail="Ya existe un cliente con este número de WhatsApp."
-        )
+    if client_data.whatsapp_number:
+        existing_client = db.query(models.Client).filter(
+            models.Client.whatsapp_number == client_data.whatsapp_number
+        ).first()
+        
+        if existing_client:
+            raise HTTPException(
+                status_code=400, 
+                detail="Ya existe un cliente con este número de WhatsApp."
+            )
 
+    client_dict = client_data.model_dump(exclude={'addresses'})
+    
     new_client = models.Client(
-        **client_data.model_dump(),
+        **client_dict,
         created_by=admin_user.staff_id,
         updated_by=admin_user.staff_id
     )
     
     db.add(new_client)
+    db.flush()
+
+    for address_data in client_data.addresses:
+        new_address = models.ClientAddress(
+            client_id=new_client.client_id,
+            **address_data.model_dump()
+        )
+        db.add(new_address)
+
     db.commit()
     db.refresh(new_client)
     return new_client
+
 
 @router.get("", response_model=List[schemas.ClientResponse])
 def get_clients(
@@ -44,7 +57,7 @@ def get_clients(
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
-    query = db.query(models.Client)
+    query = db.query(models.Client).options(joinedload(models.Client.addresses))
 
     if is_active is not None:
         query = query.filter(models.Client.is_active == is_active)
@@ -55,12 +68,15 @@ def get_clients(
             or_(
                 models.Client.first_name.ilike(search_filter),
                 models.Client.last_name.ilike(search_filter),
+                models.Client.company_name.ilike(search_filter),
                 models.Client.whatsapp_number.ilike(search_filter),
-                models.Client.dni.ilike(search_filter)
+                models.Client.dni.ilike(search_filter),
+                models.Client.cuit.ilike(search_filter)
             )
         )
 
     return query.order_by(models.Client.created_at.desc()).all()
+
 
 @router.get("/{client_uuid}", response_model=schemas.ClientResponse)
 def get_client(
@@ -68,10 +84,14 @@ def get_client(
     db: Session = Depends(get_db),
     admin_user = Depends(get_current_admin_user)
 ):
-    client = db.query(models.Client).filter(models.Client.client_uuid == client_uuid).first()
+    client = db.query(models.Client)\
+               .options(joinedload(models.Client.addresses))\
+               .filter(models.Client.client_uuid == client_uuid)\
+               .first()
     if not client:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
     return client
+
 
 @router.patch("/{client_uuid}", response_model=schemas.ClientResponse)
 def update_client(
@@ -86,8 +106,7 @@ def update_client(
 
     update_dict = update_data.model_dump(exclude_unset=True)
     
-    # Prevenir choque de WhatsApp único al actualizar
-    if "whatsapp_number" in update_dict and update_dict["whatsapp_number"] != client.whatsapp_number:
+    if "whatsapp_number" in update_dict and update_dict["whatsapp_number"] and update_dict["whatsapp_number"] != client.whatsapp_number:
         existing = db.query(models.Client).filter(
             models.Client.whatsapp_number == update_dict["whatsapp_number"]
         ).first()
@@ -101,6 +120,7 @@ def update_client(
     db.commit()
     db.refresh(client)
     return client
+
 
 @router.patch("/{client_uuid}/toggle")
 def toggle_client_status(
@@ -118,3 +138,40 @@ def toggle_client_status(
     db.commit()
     status_str = "activado" if client.is_active else "desactivado"
     return {"message": f"Cliente {status_str} exitosamente", "is_active": client.is_active}
+
+@router.post("/{client_uuid}/addresses", response_model=schemas.ClientAddressResponse, status_code=status.HTTP_201_CREATED)
+def add_client_address(
+    client_uuid: UUID,
+    address_data: schemas.ClientAddressCreate,
+    db: Session = Depends(get_db),
+    admin_user = Depends(get_current_admin_user)
+):
+    client = db.query(models.Client).filter(models.Client.client_uuid == client_uuid).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+
+    if address_data.is_default:
+        db.query(models.ClientAddress).filter(models.ClientAddress.client_id == client.client_id).update({"is_default": False})
+
+    new_address = models.ClientAddress(
+        client_id=client.client_id,
+        **address_data.model_dump()
+    )
+    db.add(new_address)
+    db.commit()
+    db.refresh(new_address)
+    return new_address
+
+@router.delete("/addresses/{address_uuid}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_client_address(
+    address_uuid: UUID,
+    db: Session = Depends(get_db),
+    admin_user = Depends(get_current_admin_user)
+):
+    address = db.query(models.ClientAddress).filter(models.ClientAddress.address_uuid == address_uuid).first()
+    if not address:
+        raise HTTPException(status_code=404, detail="Dirección no encontrada")
+    
+    db.delete(address)
+    db.commit()
+    return
