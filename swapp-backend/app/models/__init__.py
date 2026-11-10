@@ -40,7 +40,8 @@ from .orders import (
     Payment
 )
 
-from .clients import (
-    Client,
-    ClientContainerLedger
+from .clients import ( 
+    Client, 
+    ClientAddress, 
+    ClientContainerLedger 
 )

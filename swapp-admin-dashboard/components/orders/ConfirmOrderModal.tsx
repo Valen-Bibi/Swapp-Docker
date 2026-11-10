@@ -1,7 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { AlertTriangle, CheckCircle2, X, Recycle, Info } from "lucide-react";
+import {
+	AlertTriangle,
+	CheckCircle2,
+	X,
+	Recycle,
+	Info,
+	Calendar,
+} from "lucide-react";
 import { SwappTooltip } from "@/components/ui/SwappTooltip";
 
 interface OrderItem {
@@ -15,12 +22,21 @@ interface OrderItem {
 interface ConfirmOrderModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	onConfirm: (actualReturns?: Record<number, number>) => void;
+	onConfirm: (
+		actualReturns?: Record<number, number>,
+		completedAt?: string,
+	) => void;
 	actionType: "complete" | "cancel" | null;
 	isLoading: boolean;
 	order?: any;
-	products?: any[]; // Recibimos products para intentar mostrar el nombre si existe
+	products?: any[];
 }
+
+const getCurrentLocalDatetime = () => {
+	const now = new Date();
+	const offsetMs = now.getTimezoneOffset() * 60000;
+	return new Date(now.getTime() - offsetMs).toISOString().slice(0, 16);
+};
 
 export default function ConfirmOrderModal({
 	isOpen,
@@ -35,6 +51,9 @@ export default function ConfirmOrderModal({
 		{},
 	);
 
+	// NUEVO: Estado para la Fecha de Cierre (Retroactiva)
+	const [completedAt, setCompletedAt] = useState<string>("");
+
 	// --- CERRAR CON ESCAPE ---
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
@@ -46,7 +65,6 @@ export default function ConfirmOrderModal({
 		return () => window.removeEventListener("keydown", handleKeyDown);
 	}, [isOpen, onClose]);
 
-	// Inicializamos los retornos reales igualando la expectativa original
 	useEffect(() => {
 		if (isOpen && order && actionType === "complete") {
 			const initialReturns: Record<number, number> = {};
@@ -56,8 +74,10 @@ export default function ConfirmOrderModal({
 				}
 			});
 			setActualReturns(initialReturns);
+			setCompletedAt(getCurrentLocalDatetime()); // Reseteamos al reloj local actual al abrir
 		} else {
 			setActualReturns({});
+			setCompletedAt("");
 		}
 	}, [isOpen, order, actionType]);
 
@@ -78,7 +98,9 @@ export default function ConfirmOrderModal({
 		if (isCancel) {
 			onConfirm();
 		} else {
-			onConfirm(actualReturns);
+			// Enviamos la ISO completa (UTC correcta para FastAPI)
+			const isoDate = new Date(completedAt).toISOString();
+			onConfirm(actualReturns, isoDate);
 		}
 	};
 
@@ -107,7 +129,7 @@ export default function ConfirmOrderModal({
 						</div>
 						<div>
 							<h3 className="text-xl font-bold text-swapp-azul-oscuro dark:text-swapp-blanco tracking-tight">
-								{isCancel ? "Cancelar Pedido" : "Confirmar Entrega"}
+								{isCancel ? "Cancelar Pedido" : "Cerrar Pedido"}
 							</h3>
 							<p className="text-xs font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 mt-0.5">
 								ID: {order?.order_uuid?.split("-")[0].toUpperCase()}
@@ -123,7 +145,29 @@ export default function ConfirmOrderModal({
 				</div>
 
 				{/* BODY */}
-				<div className="p-6 overflow-y-auto custom-scrollbar flex flex-col gap-5">
+				<div className="p-6 overflow-y-auto custom-scrollbar flex flex-col gap-6">
+					{/* NUEVO: Selección de Fecha de Cierre */}
+					{!isCancel && (
+						<div className="flex flex-col gap-2">
+							<label className="text-xs font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 flex items-center gap-2">
+								<Calendar className="h-4 w-4 text-swapp-verde-oscuro dark:text-swapp-verde-menta" />
+								Fecha Exacta de Entrega
+							</label>
+							<input
+								type="datetime-local"
+								value={completedAt}
+								onChange={(e) => setCompletedAt(e.target.value)}
+								className="w-full rounded-md border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo bg-transparent px-3 py-2 text-sm text-swapp-azul-oscuro dark:text-swapp-blanco outline-none focus:ring-1 focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta shadow-sm"
+							/>
+							<p className="text-[10px] text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50 italic">
+								Modifica esta fecha si estás cargando entregas atrasadas en el
+								sistema.
+							</p>
+						</div>
+					)}
+
+					<div className="border-t border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/30" />
+
 					<p className="text-sm font-medium text-swapp-azul-petroleo/80 dark:text-swapp-tiza-verdoso/80">
 						{isCancel
 							? "¿Estás seguro de que deseas cancelar este pedido? Se liberará el stock reservado de los productos y volverá al inventario general."
@@ -152,7 +196,6 @@ export default function ConfirmOrderModal({
 
 							<div className="flex flex-col gap-2">
 								{returnableItems.map((item: OrderItem) => {
-									// Intentamos buscar el nombre del producto si `products` fue inyectado
 									const productInfo = products?.find(
 										(p) => p.product_id === item.product_id,
 									);
@@ -182,7 +225,7 @@ export default function ConfirmOrderModal({
 												<input
 													type="number"
 													min="0"
-													max={item.expected_return_qty} // Opcional, dependiendo de si permitís que traigan de más
+													max={item.expected_return_qty}
 													className="w-16 h-8 rounded-md bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-sm border border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo px-2 text-center text-sm font-bold text-swapp-azul-oscuro dark:text-swapp-blanco outline-none focus:ring-1 focus:border-swapp-verde-oscuro dark:focus:border-swapp-verde-menta focus:ring-swapp-verde-oscuro dark:focus:ring-swapp-verde-menta transition-all shadow-sm"
 													value={actualReturns[item.item_id] ?? ""}
 													onChange={(e) =>

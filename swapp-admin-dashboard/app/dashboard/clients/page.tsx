@@ -10,6 +10,8 @@ import {
 	Power,
 	IdCard,
 	Mail,
+	Building2,
+	User,
 } from "lucide-react";
 import { toast } from "sonner";
 import TableSkeleton from "@/components/tables/TableSkeleton";
@@ -23,13 +25,14 @@ import ClientModal from "@/components/clients/modals/ClientModal";
 import GlassTableWrapper from "@/components/tables/GlassTableWrapper";
 import GlassTableHead, { GlassTh } from "@/components/tables/GlassTableHead";
 import TableActionIcon from "@/components/tables/TableActionIcon";
+import { Client } from "@/types/client";
 
 export default function ClientsPage() {
-	const [clients, setClients] = useState<any[]>([]);
+	const [clients, setClients] = useState<Client[]>([]);
 	const [loading, setLoading] = useState(true);
 
 	const [isModalOpen, setIsModalOpen] = useState(false);
-	const [editingClient, setEditingClient] = useState<any | null>(null);
+	const [editingClient, setEditingClient] = useState<Client | null>(null);
 
 	const [searchTerm, setSearchTerm] = useState("");
 	const [statusFilter, setStatusFilter] = useState<string>("active");
@@ -57,7 +60,7 @@ export default function ClientsPage() {
 		return () => clearTimeout(timeoutId);
 	}, [searchTerm, statusFilter]);
 
-	const openModal = (client?: any) => {
+	const openModal = (client?: Client) => {
 		setEditingClient(client || null);
 		setIsModalOpen(true);
 	};
@@ -81,7 +84,7 @@ export default function ClientsPage() {
 			<div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<PageHeader
 					title="Directorio de Clientes"
-					description="Gestión del CRM y direcciones predeterminadas"
+					description="Gestión B2B/B2C y libreta de direcciones"
 					icon={Users}
 				/>
 
@@ -111,7 +114,7 @@ export default function ClientsPage() {
 						<SearchBar
 							searchTerm={searchTerm}
 							onSearchChange={setSearchTerm}
-							placeholder="Buscar nombre, DNI o WhatsApp..."
+							placeholder="Buscar empresa, nombre, CUIT/DNI..."
 						/>
 
 						<SwappTooltip text="Registrar un nuevo cliente">
@@ -128,9 +131,9 @@ export default function ClientsPage() {
 			{/* CONTENEDOR DE TABLA MODULARIZADO */}
 			<GlassTableWrapper>
 				<GlassTableHead>
-					<GlassTh>Cliente</GlassTh>
+					<GlassTh>Cliente / Empresa</GlassTh>
 					<GlassTh>Contacto</GlassTh>
-					<GlassTh>Ubicación por Defecto</GlassTh>
+					<GlassTh>Ubicación Principal</GlassTh>
 					<GlassTh align="right">Acciones</GlassTh>
 				</GlassTableHead>
 
@@ -145,73 +148,147 @@ export default function ClientsPage() {
 						</tr>
 					) : (
 						clients.map((client) => {
-							const cleanPhone = client.whatsapp_number.replace(/\D/g, "");
+							// Limpieza del teléfono para el enlace a WhatsApp
+							const cleanPhone = client.whatsapp_number
+								? client.whatsapp_number.replace(/\D/g, "")
+								: null;
+
+							// Extracción de la dirección principal de la nueva libreta
+							const defaultAddress =
+								client.addresses?.find((a) => a.is_default) ||
+								client.addresses?.[0] ||
+								null;
+
+							const extraAddressesCount = client.addresses
+								? client.addresses.length - 1
+								: 0;
+
+							// Lógica de visualización B2B vs B2C
+							const isB2B = client.client_type === "business";
+							const mainName = isB2B
+								? client.company_name
+								: `${client.first_name || ""} ${client.last_name || ""}`.trim();
+							const documentNumber = isB2B ? client.cuit : client.dni;
 
 							return (
 								<tr
 									key={client.client_uuid}
-									className={`border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50 last:border-0 transition-colors duration-200 hover:bg-swapp-blanco/80 dark:hover:bg-swapp-azul-petroleo/30 ${!client.is_active ? "opacity-60 bg-swapp-azul-petroleo/10 dark:bg-swapp-azul-oscuro/80 hover:bg-swapp-azul-petroleo/20 dark:hover:bg-swapp-azul-oscuro/90" : ""}`}>
-									{/* Nombre y DNI */}
-									<td className="px-6 py-4">
-										<div className="flex flex-col gap-1.5">
-											<span
-												className={`font-bold text-base ${!client.is_active ? "line-through text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60" : "text-swapp-azul-oscuro dark:text-swapp-blanco"}`}>
-												{client.first_name} {client.last_name}
-											</span>
-											<div className="flex items-center gap-1.5 text-xs font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
-												<IdCard className="h-3.5 w-3.5" />
-												{client.dni || "Sin DNI"}
-											</div>
-										</div>
-									</td>
-
-									{/* Contacto */}
+									className={`border-b border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50 last:border-0 transition-colors duration-200 hover:bg-swapp-blanco/80 dark:hover:bg-swapp-azul-petroleo/30 ${
+										!client.is_active
+											? "opacity-60 bg-swapp-azul-petroleo/10 dark:bg-swapp-azul-oscuro/80 hover:bg-swapp-azul-petroleo/20 dark:hover:bg-swapp-azul-oscuro/90"
+											: ""
+									}`}>
+									{/* Columna 1: Nombre y Documento (B2B/B2C) */}
 									<td className="px-6 py-4">
 										<div className="flex flex-col gap-1.5">
 											<div className="flex items-center gap-2">
-												<span className="font-bold text-swapp-azul-oscuro dark:text-swapp-blanco">
-													{client.whatsapp_number}
+												<span
+													className={`font-bold text-base ${
+														!client.is_active
+															? "line-through text-swapp-azul-petroleo/60 dark:text-swapp-tiza-verdoso/60"
+															: "text-swapp-azul-oscuro dark:text-swapp-blanco"
+													}`}>
+													{mainName || "Sin Nombre"}
 												</span>
-												<SwappTooltip text="Enviar WhatsApp">
-													<a
-														href={`https://web.whatsapp.com/send?phone=${cleanPhone}`}
-														target="_blank"
-														rel="noopener noreferrer"
-														className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 backdrop-blur-sm border border-emerald-500/20 dark:border-emerald-500/30 p-1 rounded-md transition-colors shadow-sm inline-flex">
-														<Phone className="h-3.5 w-3.5" />
-													</a>
-												</SwappTooltip>
+												<span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/20 border border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50 px-1.5 py-0.5 rounded-sm">
+													{isB2B ? (
+														<Building2 className="h-3 w-3" />
+													) : (
+														<User className="h-3 w-3" />
+													)}
+													{isB2B ? "Empresa" : "Final"}
+												</span>
 											</div>
-											{client.email && (
-												<div className="flex items-center gap-1.5 text-xs font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
-													<Mail className="h-3.5 w-3.5" /> {client.email}
+											<div className="flex items-center gap-1.5 text-xs font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+												<IdCard className="h-3.5 w-3.5 shrink-0" />
+												{isB2B ? "CUIT: " : "DNI: "}
+												{documentNumber || "No registrado"}
+											</div>
+											{/* Contacto interno si es B2B */}
+											{isB2B && (client.first_name || client.last_name) && (
+												<div className="text-[10px] font-medium text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50 mt-0.5">
+													Cto: {client.first_name} {client.last_name}
 												</div>
 											)}
 										</div>
 									</td>
 
-									{/* Ubicación */}
+									{/* Columna 2: Contacto (WhatsApp / Email) */}
 									<td className="px-6 py-4">
 										<div className="flex flex-col gap-1.5">
-											<span className="font-bold text-swapp-azul-oscuro dark:text-swapp-blanco">
-												{client.default_delivery_zone}
-											</span>
-											<div className="flex items-start gap-1.5 text-xs font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
-												<MapPin className="h-3.5 w-3.5 shrink-0 mt-0.5 text-swapp-verde-oscuro dark:text-swapp-verde-menta" />
-												<SwappTooltip text="Ver en Maps">
-													<a
-														href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${client.default_delivery_address},${client.default_delivery_zone}, Argentina`)}`}
-														target="_blank"
-														rel="noopener noreferrer"
-														className="max-w-[200px] truncate hover:text-swapp-verde-oscuro dark:hover:text-swapp-verde-menta transition-colors cursor-pointer">
-														{client.default_delivery_address}
-													</a>
-												</SwappTooltip>
-											</div>
+											{client.whatsapp_number ? (
+												<div className="flex items-center gap-2">
+													<span className="font-bold text-swapp-azul-oscuro dark:text-swapp-blanco">
+														{client.whatsapp_number}
+													</span>
+													<SwappTooltip text="Enviar WhatsApp">
+														<a
+															href={`https://web.whatsapp.com/send?phone=${cleanPhone}`}
+															target="_blank"
+															rel="noopener noreferrer"
+															className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 backdrop-blur-sm border border-emerald-500/20 dark:border-emerald-500/30 p-1 rounded-md transition-colors shadow-sm inline-flex">
+															<Phone className="h-3.5 w-3.5" />
+														</a>
+													</SwappTooltip>
+												</div>
+											) : (
+												<span className="text-xs italic text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50">
+													Sin WhatsApp
+												</span>
+											)}
+
+											{client.email && (
+												<div className="flex items-center gap-1.5 text-xs font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+													<Mail className="h-3.5 w-3.5 shrink-0" />{" "}
+													<span className="truncate max-w-[150px]">
+														{client.email}
+													</span>
+												</div>
+											)}
 										</div>
 									</td>
 
-									{/* Acciones */}
+									{/* Columna 3: Ubicación (Libreta de Direcciones) */}
+									<td className="px-6 py-4">
+										{defaultAddress ? (
+											<div className="flex flex-col gap-1.5">
+												<div className="flex items-center gap-2">
+													<span className="font-bold text-swapp-azul-oscuro dark:text-swapp-blanco">
+														{defaultAddress.locality}{" "}
+														{defaultAddress.province
+															? `(${defaultAddress.province})`
+															: ""}
+													</span>
+													{extraAddressesCount > 0 && (
+														<span className="text-[9px] font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta bg-swapp-verde-oscuro/10 dark:bg-swapp-verde-menta/10 px-1.5 py-0.5 rounded-sm">
+															+{extraAddressesCount} más
+														</span>
+													)}
+												</div>
+												<div className="flex items-start gap-1.5 text-xs font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+													<MapPin className="h-3.5 w-3.5 shrink-0 mt-0.5 text-swapp-verde-oscuro dark:text-swapp-verde-menta" />
+													<SwappTooltip text="Ver en Maps">
+														<a
+															href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${defaultAddress.address_line}, ${defaultAddress.locality}, Argentina`)}`}
+															target="_blank"
+															rel="noopener noreferrer"
+															className="max-w-[200px] truncate hover:text-swapp-verde-oscuro dark:hover:text-swapp-verde-menta transition-colors cursor-pointer">
+															{defaultAddress.address_line}{" "}
+															{defaultAddress.apartment_lot
+																? ` - ${defaultAddress.apartment_lot}`
+																: ""}
+														</a>
+													</SwappTooltip>
+												</div>
+											</div>
+										) : (
+											<span className="text-xs italic text-swapp-azul-petroleo/50 dark:text-swapp-tiza-verdoso/50">
+												Libreta vacía
+											</span>
+										)}
+									</td>
+
+									{/* Columna 4: Acciones */}
 									<td className="px-6 py-4">
 										<div className="flex items-center justify-end gap-2">
 											<TableActionIcon
@@ -239,15 +316,17 @@ export default function ClientsPage() {
 				</tbody>
 			</GlassTableWrapper>
 
-			<ClientModal
-				isOpen={isModalOpen}
-				onClose={() => {
-					setIsModalOpen(false);
-					setEditingClient(null);
-				}}
-				client={editingClient}
-				onSuccess={fetchClients}
-			/>
+			{isModalOpen && (
+				<ClientModal
+					isOpen={isModalOpen}
+					onClose={() => {
+						setIsModalOpen(false);
+						setEditingClient(null);
+					}}
+					client={editingClient}
+					onSuccess={fetchClients}
+				/>
+			)}
 		</div>
 	);
 }

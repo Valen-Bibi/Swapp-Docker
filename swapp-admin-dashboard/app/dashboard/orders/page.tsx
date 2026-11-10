@@ -17,6 +17,9 @@ import {
 	FileText,
 	Edit,
 	DollarSign,
+	Building2,
+	User,
+	IdCard,
 } from "lucide-react";
 import { toast } from "sonner";
 import TableSkeleton from "@/components/tables/TableSkeleton";
@@ -105,6 +108,7 @@ export default function OrdersPage() {
 
 	const confirmStatusUpdate = async (
 		actualReturns?: Record<number, number>,
+		completedAt?: string,
 	) => {
 		if (!selectedOrderUuid || !actionType) return;
 		setIsUpdating(true);
@@ -117,6 +121,7 @@ export default function OrdersPage() {
 				selectedOrderUuid,
 				newStatus,
 				actualReturns,
+				completedAt, // Enviamos el timestamp retroactivo si existe
 			);
 			toast.success(
 				newStatus === "completed"
@@ -139,10 +144,12 @@ export default function OrdersPage() {
 	const filteredOrders = orders.filter((order) => {
 		const clientFullName =
 			`${order.client?.first_name || ""} ${order.client?.last_name || ""}`.toLowerCase();
+		const companyName = (order.client?.company_name || "").toLowerCase();
 		const clientPhone = order.client?.whatsapp_number || "";
 
 		const matchesSearch =
 			clientFullName.includes(searchTerm.toLowerCase()) ||
+			companyName.includes(searchTerm.toLowerCase()) ||
 			clientPhone.includes(searchTerm) ||
 			order.order_uuid.includes(searchTerm);
 
@@ -172,7 +179,10 @@ export default function OrdersPage() {
 		sortDirection,
 		handleSort,
 	} = useTableSort(filteredOrders, {
-		client: (o) => `${o.client?.first_name} ${o.client?.last_name}`,
+		client: (o) =>
+			(o.client?.client_type === "business"
+				? o.client?.company_name
+				: `${o.client?.first_name} ${o.client?.last_name}`) || "",
 		date: (o) =>
 			new Date(
 				o.scheduled_delivery_date || o.order_date || o.created_at,
@@ -181,7 +191,6 @@ export default function OrdersPage() {
 		status: (o) => o.status,
 	});
 
-	// Badge estandarizado
 	const getStatusBadge = (status: string) => {
 		switch (status) {
 			case "pending":
@@ -273,7 +282,7 @@ export default function OrdersPage() {
 						<SearchBar
 							searchTerm={searchTerm}
 							onSearchChange={setSearchTerm}
-							placeholder="Buscar cliente o teléfono..."
+							placeholder="Buscar cliente, empresa o teléfono..."
 						/>
 					</div>
 				</div>
@@ -282,7 +291,7 @@ export default function OrdersPage() {
 			<GlassTableWrapper>
 				<GlassTableHead>
 					<SortableHeader
-						label="Cliente / Contacto"
+						label="Cliente / Empresa"
 						columnKey="client"
 						currentSortKey={sortKey}
 						currentDirection={sortDirection}
@@ -324,9 +333,14 @@ export default function OrdersPage() {
 								0,
 							);
 
-							const clientFullName =
-								`${order.client?.first_name || ""} ${order.client?.last_name || ""}`.trim() ||
-								"Cliente Desconocido";
+							// Datos B2B / B2C
+							const isB2B = order.client?.client_type === "business";
+							const clientFullName = isB2B
+								? order.client?.company_name
+								: `${order.client?.first_name || ""} ${order.client?.last_name || ""}`.trim();
+							const documentNumber = isB2B
+								? order.client?.cuit
+								: order.client?.dni;
 							const cleanPhone = (order.client?.whatsapp_number || "").replace(
 								/\D/g,
 								"",
@@ -360,19 +374,37 @@ export default function OrdersPage() {
 							return (
 								<React.Fragment key={order.order_uuid}>
 									<tr className={`${baseRowClasses} ${rowStatusStyle}`}>
+										{/* Columna Cliente B2B/B2C */}
 										<td className="px-6 py-4">
 											<div className="flex flex-col gap-1.5">
-												<span className="font-bold text-swapp-azul-oscuro dark:text-swapp-blanco text-base">
-													{clientFullName}
-												</span>
-												<div className="flex items-center gap-2 text-xs">
+												<div className="flex items-center gap-2">
+													<span className="font-bold text-swapp-azul-oscuro dark:text-swapp-blanco text-base truncate max-w-[200px]">
+														{clientFullName || "Sin Nombre"}
+													</span>
+													<span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70 bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/20 border border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50 px-1.5 py-0.5 rounded-sm shrink-0">
+														{isB2B ? (
+															<Building2 className="h-3 w-3" />
+														) : (
+															<User className="h-3 w-3" />
+														)}
+														{isB2B ? "Empresa" : "Final"}
+													</span>
+												</div>
+												<div className="flex items-center gap-2 text-xs font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
+													<IdCard className="h-3.5 w-3.5 shrink-0" />
+													<span>
+														{isB2B ? "CUIT: " : "DNI: "}
+														{documentNumber || "No registrado"}
+													</span>
+												</div>
+												<div className="flex items-center gap-2 text-xs mt-0.5">
 													<span className="font-medium text-swapp-azul-petroleo/70 dark:text-swapp-tiza-verdoso/70">
 														{order.client?.whatsapp_number || "Sin teléfono"}
 													</span>
 													{cleanPhone && (
 														<SwappTooltip text="WhatsApp Cliente">
 															<a
-																href={`https://web.whatsapp.com/send?phone=${cleanPhone}&text=Hola%20${order.client?.first_name || ""},%20te%20escribimos%20de%20Swapp%20por%20tu%20pedido.`}
+																href={`https://web.whatsapp.com/send?phone=${cleanPhone}&text=Hola,%20te%20escribimos%20de%20Swapp%20por%20tu%20pedido.`}
 																target="_blank"
 																rel="noopener noreferrer"
 																className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 backdrop-blur-sm border border-emerald-500/20 dark:border-emerald-500/30 p-1 rounded-md transition-colors shadow-sm">

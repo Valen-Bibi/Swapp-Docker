@@ -21,20 +21,19 @@ export const OrderService = {
 	},
 
 	updateOrderStatus: async (
-		orderUuid: string,
-		newStatus: string,
-		actualReturns?: Record<number, number>
-	) => {
-		const payload = {
-			new_status: newStatus,
-			actual_returns: actualReturns || {},
-		};
+    orderUuid: string,
+    newStatus: string,
+    actualReturns?: Record<number, number>,
+    completedAt?: string
+  ) => {
+    const payload = {
+      new_status: newStatus,
+      actual_returns: actualReturns,
+      completed_at: completedAt,
+    };
 
-		const { data } = await api.patch(
-			`/api/orders/admin/${orderUuid}/status`,
-			payload
-		);
-		return data;
+		const response = await api.patch(`/api/orders/admin/${orderUuid}/status`, payload);
+    return response.data;
 	},
 	
 	updateOrder: async (orderUuid: string, payload: any) => {

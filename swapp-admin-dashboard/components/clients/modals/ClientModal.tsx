@@ -18,7 +18,10 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { ClientService } from "@/services/client.service";
-import { clientSchema, ClientFormValues } from "@/lib/validations/client.schema";
+import {
+	clientSchema,
+	ClientFormValues,
+} from "@/lib/validations/client.schema";
 
 interface ClientModalProps {
 	isOpen: boolean;
@@ -67,7 +70,11 @@ export default function ClientModal({
 		},
 	});
 
-	const { fields: addressFields, append: appendAddress, remove: removeAddress } = useFieldArray({
+	const {
+		fields: addressFields,
+		append: appendAddress,
+		remove: removeAddress,
+	} = useFieldArray({
 		control,
 		name: "addresses",
 	});
@@ -90,16 +97,21 @@ export default function ClientModal({
 			if (client) {
 				reset({
 					...client,
-					addresses: client.addresses && client.addresses.length > 0 ? client.addresses : [{
-						address_line: client.default_delivery_address || "",
-						has_street_number: true,
-						province: "Buenos Aires",
-						locality: client.default_delivery_zone || "",
-						zip_code: "",
-						apartment_lot: "",
-						is_default: true,
-						notes: "",
-					}]
+					addresses:
+						client.addresses && client.addresses.length > 0
+							? client.addresses
+							: [
+									{
+										address_line: client.default_delivery_address || "",
+										has_street_number: true,
+										province: "Buenos Aires",
+										locality: client.default_delivery_zone || "",
+										zip_code: "",
+										apartment_lot: "",
+										is_default: true,
+										notes: "",
+									},
+								],
 				});
 			} else {
 				reset({
@@ -159,7 +171,7 @@ export default function ClientModal({
 			const errDetail = error.response?.data?.detail;
 			const errorMessage = Array.isArray(errDetail)
 				? errDetail.map((e: any) => e.msg).join(", ")
-				: (errDetail || "Error al procesar el cliente");
+				: errDetail || "Error al procesar el cliente";
 
 			toast.error(errorMessage, { id: toastId });
 		}
@@ -203,7 +215,7 @@ export default function ClientModal({
 		<div className="fixed inset-0 z-[100] flex items-center justify-center bg-swapp-azul-petroleo/5 dark:bg-swapp-negro/30 backdrop-blur-sm p-4 animate-in fade-in zoom-in-95">
 			<div className="w-full max-w-3xl rounded-xl bg-swapp-blanco/50 dark:bg-swapp-azul-oscuro/40 backdrop-blur-md shadow-2xl border-t-4 border-t-swapp-verde-oscuro dark:border-t-swapp-verde-menta overflow-hidden flex flex-col max-h-[95vh] transition-colors">
 				{/* HEADER */}
-				<div className="p-6 border-b border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0 transition-colors">
+				<div className="p-6 border-b border-swapp-azul-petroleo/20 dark:border-swapp-azul-petroleo flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0 transition-colors relative">
 					<h2 className="text-xl font-bold text-swapp-azul-oscuro dark:text-swapp-blanco flex items-center gap-2">
 						{client ? (
 							<Edit className="h-5 w-5 text-swapp-verde-oscuro dark:text-swapp-verde-menta" />
@@ -213,7 +225,7 @@ export default function ClientModal({
 						{client ? "Editar Cliente" : "Nuevo Cliente"}
 					</h2>
 
-					<div className="flex items-center gap-2 bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/30 p-1 rounded-lg border border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50">
+					<div className="flex items-center gap-2 bg-swapp-azul-petroleo/5 dark:bg-swapp-azul-petroleo/30 p-1 rounded-lg border border-swapp-azul-petroleo/10 dark:border-swapp-azul-petroleo/50 sm:mr-10">
 						<button
 							type="button"
 							onClick={() => setValue("client_type", "consumer")}
@@ -243,42 +255,88 @@ export default function ClientModal({
 						id="client-form"
 						onSubmit={handleSubmit(onSubmit)}
 						className="space-y-8">
-						
 						{/* SECCIÓN 1: DATOS FISCALES / PERSONALES */}
 						<div className="space-y-5">
 							<h3 className="text-sm font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta border-b border-swapp-verde-oscuro/10 dark:border-swapp-verde-menta/10 pb-2 flex items-center gap-2">
-								{currentClientType === "business" ? <Building2 className="h-4 w-4" /> : <User className="h-4 w-4" />}
+								{currentClientType === "business" ? (
+									<Building2 className="h-4 w-4" />
+								) : (
+									<User className="h-4 w-4" />
+								)}
 								Datos de Facturación
 							</h3>
-							
+
 							{currentClientType === "consumer" ? (
 								<div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
 									<div className="sm:col-span-5">
-										<label className={labelBaseClass}>Nombre <span className="text-red-500">*</span></label>
-										<input type="text" className={inputBaseClass} {...register("first_name")} />
-										{errors.first_name && <p className={errorTextClass}>{errors.first_name.message}</p>}
+										<label className={labelBaseClass}>
+											Nombre <span className="text-red-500">*</span>
+										</label>
+										<input
+											type="text"
+											className={inputBaseClass}
+											{...register("first_name")}
+										/>
+										{errors.first_name && (
+											<p className={errorTextClass}>
+												{errors.first_name.message}
+											</p>
+										)}
 									</div>
 									<div className="sm:col-span-5">
-										<label className={labelBaseClass}>Apellido <span className="text-red-500">*</span></label>
-										<input type="text" className={inputBaseClass} {...register("last_name")} />
-										{errors.last_name && <p className={errorTextClass}>{errors.last_name.message}</p>}
+										<label className={labelBaseClass}>
+											Apellido <span className="text-red-500">*</span>
+										</label>
+										<input
+											type="text"
+											className={inputBaseClass}
+											{...register("last_name")}
+										/>
+										{errors.last_name && (
+											<p className={errorTextClass}>
+												{errors.last_name.message}
+											</p>
+										)}
 									</div>
 									<div className="sm:col-span-2">
 										<label className={labelBaseClass}>DNI</label>
-										<input type="text" className={inputBaseClass} {...register("dni")} />
+										<input
+											type="text"
+											className={inputBaseClass}
+											{...register("dni")}
+										/>
 									</div>
 								</div>
 							) : (
 								<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 									<div>
-										<label className={labelBaseClass}>Razón Social <span className="text-red-500">*</span></label>
-										<input type="text" className={inputBaseClass} {...register("company_name")} />
-										{errors.company_name && <p className={errorTextClass}>{errors.company_name.message}</p>}
+										<label className={labelBaseClass}>
+											Razón Social <span className="text-red-500">*</span>
+										</label>
+										<input
+											type="text"
+											className={inputBaseClass}
+											{...register("company_name")}
+										/>
+										{errors.company_name && (
+											<p className={errorTextClass}>
+												{errors.company_name.message}
+											</p>
+										)}
 									</div>
 									<div>
-										<label className={labelBaseClass}>CUIT <span className="text-red-500">*</span></label>
-										<input type="text" placeholder="Ej: 30-12345678-9" className={inputBaseClass} {...register("cuit")} />
-										{errors.cuit && <p className={errorTextClass}>{errors.cuit.message}</p>}
+										<label className={labelBaseClass}>
+											CUIT <span className="text-red-500">*</span>
+										</label>
+										<input
+											type="text"
+											placeholder="Ej: 30-12345678-9"
+											className={inputBaseClass}
+											{...register("cuit")}
+										/>
+										{errors.cuit && (
+											<p className={errorTextClass}>{errors.cuit.message}</p>
+										)}
 									</div>
 								</div>
 							)}
@@ -289,16 +347,29 @@ export default function ClientModal({
 							<h3 className="text-sm font-bold text-swapp-verde-oscuro dark:text-swapp-verde-menta border-b border-swapp-verde-oscuro/10 dark:border-swapp-verde-menta/10 pb-2">
 								Contacto de Logística
 							</h3>
-							
+
 							{currentClientType === "business" && (
 								<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 									<div>
-										<label className={labelBaseClass}>Nombre del Contacto</label>
-										<input type="text" placeholder="Encargado / Recepción" className={inputBaseClass} {...register("first_name")} />
+										<label className={labelBaseClass}>
+											Nombre del Contacto
+										</label>
+										<input
+											type="text"
+											placeholder="Encargado / Recepción"
+											className={inputBaseClass}
+											{...register("first_name")}
+										/>
 									</div>
 									<div>
-										<label className={labelBaseClass}>Apellido del Contacto</label>
-										<input type="text" className={inputBaseClass} {...register("last_name")} />
+										<label className={labelBaseClass}>
+											Apellido del Contacto
+										</label>
+										<input
+											type="text"
+											className={inputBaseClass}
+											{...register("last_name")}
+										/>
 									</div>
 								</div>
 							)}
@@ -306,13 +377,30 @@ export default function ClientModal({
 							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 								<div>
 									<label className={labelBaseClass}>WhatsApp (Opcional)</label>
-									<input type="text" placeholder="Ej: 11 12345678" className={inputBaseClass} {...phoneRest} onChange={handlePhoneFormat} />
-									{errors.whatsapp_number && <p className={errorTextClass}>{errors.whatsapp_number.message}</p>}
+									<input
+										type="text"
+										placeholder="Ej: 11 12345678"
+										className={inputBaseClass}
+										{...phoneRest}
+										onChange={handlePhoneFormat}
+									/>
+									{errors.whatsapp_number && (
+										<p className={errorTextClass}>
+											{errors.whatsapp_number.message}
+										</p>
+									)}
 								</div>
 								<div>
 									<label className={labelBaseClass}>Correo (Opcional)</label>
-									<input type="email" placeholder="Ej: logistica@empresa.com" className={inputBaseClass} {...register("email")} />
-									{errors.email && <p className={errorTextClass}>{errors.email.message}</p>}
+									<input
+										type="email"
+										placeholder="Ej: logistica@empresa.com"
+										className={inputBaseClass}
+										{...register("email")}
+									/>
+									{errors.email && (
+										<p className={errorTextClass}>{errors.email.message}</p>
+									)}
 								</div>
 							</div>
 						</div>
@@ -325,17 +413,27 @@ export default function ClientModal({
 								</h3>
 								<button
 									type="button"
-									onClick={() => appendAddress({
-										address_line: "", has_street_number: true, province: "Buenos Aires", locality: "", zip_code: "", apartment_lot: "", is_default: addressFields.length === 0, notes: ""
-									})}
+									onClick={() =>
+										appendAddress({
+											address_line: "",
+											has_street_number: true,
+											province: "Buenos Aires",
+											locality: "",
+											zip_code: "",
+											apartment_lot: "",
+											is_default: addressFields.length === 0,
+											notes: "",
+										})
+									}
 									className="text-[10px] font-bold uppercase tracking-wider bg-swapp-verde-oscuro/10 text-swapp-verde-oscuro dark:bg-swapp-verde-menta/10 dark:text-swapp-verde-menta hover:bg-swapp-verde-oscuro hover:text-white px-2 py-1 rounded transition-colors flex items-center gap-1">
 									<Plus className="h-3 w-3" /> Agregar
 								</button>
 							</div>
 
 							{addressFields.map((field, index) => (
-								<div key={field.id} className={`p-4 rounded-xl border relative transition-colors ${watch(`addresses.${index}.is_default`) ? "border-swapp-verde-oscuro/30 bg-swapp-verde-oscuro/5 dark:border-swapp-verde-menta/30 dark:bg-swapp-verde-menta/5" : "border-swapp-azul-petroleo/20 bg-swapp-blanco/20 dark:border-swapp-azul-petroleo/50 dark:bg-swapp-azul-oscuro/20"}`}>
-									
+								<div
+									key={field.id}
+									className={`p-4 rounded-xl border relative transition-colors ${watch(`addresses.${index}.is_default`) ? "border-swapp-verde-oscuro/30 bg-swapp-verde-oscuro/5 dark:border-swapp-verde-menta/30 dark:bg-swapp-verde-menta/5" : "border-swapp-azul-petroleo/20 bg-swapp-blanco/20 dark:border-swapp-azul-petroleo/50 dark:bg-swapp-azul-oscuro/20"}`}>
 									<div className="absolute -top-3 right-4 flex items-center gap-2">
 										{!watch(`addresses.${index}.is_default`) && (
 											<button
@@ -361,38 +459,89 @@ export default function ClientModal({
 
 									<div className="grid grid-cols-1 sm:grid-cols-12 gap-4 mt-2">
 										<div className="sm:col-span-8">
-											<label className={labelBaseClass}>Calle y Número <span className="text-red-500">*</span></label>
+											<label className={labelBaseClass}>
+												Calle y Número <span className="text-red-500">*</span>
+											</label>
 											<div className="flex items-center gap-2">
-												<input type="text" placeholder="Ej: Las Magnolias 123" className={inputBaseClass} {...register(`addresses.${index}.address_line` as const)} />
+												<input
+													type="text"
+													placeholder="Ej: Las Magnolias 123"
+													className={inputBaseClass}
+													{...register(
+														`addresses.${index}.address_line` as const,
+													)}
+												/>
 												<label className="flex items-center gap-1.5 text-xs text-swapp-azul-petroleo/70 whitespace-nowrap cursor-pointer">
-													<input type="checkbox" {...register(`addresses.${index}.has_street_number` as const)} className="rounded border-swapp-azul-petroleo/30 text-swapp-verde-oscuro focus:ring-swapp-verde-oscuro bg-transparent" />
+													<input
+														type="checkbox"
+														{...register(
+															`addresses.${index}.has_street_number` as const,
+														)}
+														className="rounded border-swapp-azul-petroleo/30 text-swapp-verde-oscuro focus:ring-swapp-verde-oscuro bg-transparent"
+													/>
 													Tiene Nro.
 												</label>
 											</div>
-											{errors.addresses?.[index]?.address_line && <p className={errorTextClass}>{errors.addresses[index].address_line.message}</p>}
+											{errors.addresses?.[index]?.address_line && (
+												<p className={errorTextClass}>
+													{errors.addresses[index].address_line.message}
+												</p>
+											)}
 										</div>
 										<div className="sm:col-span-4">
 											<label className={labelBaseClass}>Lote / Depto</label>
-											<input type="text" placeholder="Ej: Lote 45, 2B" className={inputBaseClass} {...register(`addresses.${index}.apartment_lot` as const)} />
+											<input
+												type="text"
+												placeholder="Ej: Lote 45, 2B"
+												className={inputBaseClass}
+												{...register(
+													`addresses.${index}.apartment_lot` as const,
+												)}
+											/>
 										</div>
 
 										<div className="sm:col-span-4">
 											<label className={labelBaseClass}>Provincia</label>
-											<input type="text" className={inputBaseClass} {...register(`addresses.${index}.province` as const)} />
+											<input
+												type="text"
+												className={inputBaseClass}
+												{...register(`addresses.${index}.province` as const)}
+											/>
 										</div>
 										<div className="sm:col-span-5">
-											<label className={labelBaseClass}>Localidad / Barrio <span className="text-red-500">*</span></label>
-											<input type="text" placeholder="Ej: Pilar" className={inputBaseClass} {...register(`addresses.${index}.locality` as const)} />
-											{errors.addresses?.[index]?.locality && <p className={errorTextClass}>{errors.addresses[index].locality.message}</p>}
+											<label className={labelBaseClass}>
+												Localidad / Barrio{" "}
+												<span className="text-red-500">*</span>
+											</label>
+											<input
+												type="text"
+												placeholder="Ej: Pilar"
+												className={inputBaseClass}
+												{...register(`addresses.${index}.locality` as const)}
+											/>
+											{errors.addresses?.[index]?.locality && (
+												<p className={errorTextClass}>
+													{errors.addresses[index].locality.message}
+												</p>
+											)}
 										</div>
 										<div className="sm:col-span-3">
 											<label className={labelBaseClass}>CP</label>
-											<input type="text" placeholder="1629" className={inputBaseClass} {...register(`addresses.${index}.zip_code` as const)} />
+											<input
+												type="text"
+												placeholder="1629"
+												className={inputBaseClass}
+												{...register(`addresses.${index}.zip_code` as const)}
+											/>
 										</div>
 									</div>
 								</div>
 							))}
-							{errors.addresses?.root && <p className={errorTextClass}>{errors.addresses.root.message}</p>}
+							{errors.addresses?.root && (
+								<p className={errorTextClass}>
+									{errors.addresses.root.message}
+								</p>
+							)}
 						</div>
 					</form>
 				</div>

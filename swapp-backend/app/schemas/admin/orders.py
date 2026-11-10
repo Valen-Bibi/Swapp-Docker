@@ -97,6 +97,7 @@ class OrderStatusUpdate(BaseModel):
     new_status: str
     actual_returns: Optional[Dict[int, int]] = None
     notes: Optional[str] = None
+    completed_at: Optional[datetime] = None
 
 class OrderClientInfo(BaseModel):
     first_name: str

@@ -19,11 +19,7 @@ def _resolve_unit_cost(
     target_date: Optional[datetime],
     fallback_cost: float = 0.0
 ) -> float:
-    """
-    Busca el costo histórico en swapp.product_price_history (record_type = 'cost_price').
-    Si se especifica target_date, busca el costo vigente en esa fecha; si no encuentra,
-    toma el último registrado o el cost_price actual de la variante.
-    """
+
     base_query = db.query(models.ProductPriceHistory).filter(
         models.ProductPriceHistory.product_id == product_id,
         models.ProductPriceHistory.record_type == "cost_price"
@@ -299,8 +295,12 @@ def update_order_status(
     order.status = new_status
     order.updated_by = admin_user.staff_id
 
-    if new_status == 'completed' and not order.completed_at:
-        order.completed_at = func.now()
+    # Si se completa, usamos la fecha enviada por el frontend (retroactiva) o la del servidor (func.now())
+    if new_status == 'completed':
+        if payload.completed_at:
+            order.completed_at = payload.completed_at
+        elif not order.completed_at:
+            order.completed_at = func.now()
 
     history = models.OrderStatusHistory(
         order_id=order.order_id,
@@ -414,6 +414,9 @@ def update_order_status(
                     stock_after = stock_before + returned_qty
                     internal_variant.stock_quantity = stock_after
 
+                    # Usamos la fecha retrospectiva si existe, si no la actual
+                    effective_movement_date = payload.completed_at or datetime.utcnow()
+
                     empty_container_movement = models.InventoryMovement(
                         product_id=internal_prod_id,
                         variant_id=internal_variant.variant_id,
@@ -425,13 +428,13 @@ def update_order_status(
                         reference_id=order.order_id,
                         reference_type='empty_container_return',
                         reason=f"Ingreso de envases vacíos (Pedido {order.order_uuid})",
-                        created_by=admin_user.staff_id
+                        created_by=admin_user.staff_id,
+                        created_at=effective_movement_date # Inyectamos la fecha retrospectiva en el movimiento
                     )
                     db.add(empty_container_movement)
 
     db.commit()
     return {"message": f"Estado actualizado a {new_status}. El inventario y la cuenta corriente se ajustaron correctamente."}
-
 
 @router.patch("/{order_uuid}", response_model=schemas.OrderResponse)
 def update_order_details(
