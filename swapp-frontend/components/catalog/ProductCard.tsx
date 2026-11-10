@@ -20,11 +20,16 @@ export default function ProductCard({
 	const fullName = `${p.name}${p.model ? ` - ${p.model}` : ""}`;
 	const taxMultiplier = 1 + (p.tax_rate || 0) / 100;
 	const standardBase = p.variants?.[0]?.price || 0;
-	const roundToThousands = (val: number) => Math.round(val / 1000) * 1000;
-	const standardFinal = roundToThousands(standardBase * taxMultiplier);
+	const smartRound = (val: number) => {
+		if (val > 20000) {
+			return Math.round(val / 1000) * 1000;
+		}
+		return Math.round(val / 100) * 100;
+	};
+	const standardFinal = smartRound(standardBase * taxMultiplier);
 
 	const exchangeBase = p.exchange_option?.price || 0;
-	const exchangeFinal = roundToThousands(exchangeBase * taxMultiplier);
+	const exchangeFinal = smartRound(exchangeBase * taxMultiplier);
 
 	const format = (val: number) =>
 		Number(val).toLocaleString("es-AR", { maximumFractionDigits: 0 });

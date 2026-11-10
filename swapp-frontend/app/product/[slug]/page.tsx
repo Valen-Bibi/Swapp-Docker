@@ -74,12 +74,17 @@ export default function ProductDetailPage() {
 	const taxMultiplier = 1 + (product.tax_rate || 0) / 100;
 	const standardBase = product.variants?.[0]?.price || 0;
 
-	const roundToThousands = (val: number) => Math.round(val / 1000) * 1000;
+	const smartRound = (val: number) => {
+		if (val > 20000) {
+			return Math.round(val / 1000) * 1000;
+		}
+		return Math.round(val / 100) * 100;
+	};
 
-	const standardFinal = roundToThousands(standardBase * taxMultiplier);
+	const standardFinal = smartRound(standardBase * taxMultiplier);
 
 	const exchangeBase = product.exchange_option?.price || 0;
-	const exchangeFinal = roundToThousands(exchangeBase * taxMultiplier);
+	const exchangeFinal = smartRound(exchangeBase * taxMultiplier);
 
 	const format = (val: number) =>
 		Number(val).toLocaleString("es-AR", { maximumFractionDigits: 0 });

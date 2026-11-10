@@ -7,10 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { ShoppingCart, ArrowLeft } from "lucide-react";
 
-import {
-	createOrderSchema,
-	CreateOrderValues,
-} from "@/lib/validations/order.schema";
+import { createOrderSchema, CreateOrderValues } from "@/lib/validations/order.schema";
 import { OrderService } from "@/services/order.service";
 import PageHeader from "@/components/layout/PageHeader";
 import OrderForm from "@/components/orders/OrderForm";
